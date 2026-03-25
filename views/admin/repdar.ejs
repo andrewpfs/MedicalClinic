@@ -21,9 +21,9 @@ const change = (e) =>{
 //const nav = UseNavigate();
 const submit = async e =>{
     e.preventDefault()
-    await router.post("/addemp", emp)
-
-}
+    const [rows] = await router.get("/pulldar", {min : rep.min},{max : rep.max},{DepartmentName : rep.DepartmentName})
+    
+};
 </script>
 <div>
     <h1>Department Appointment Report</h1>

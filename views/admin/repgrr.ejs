@@ -1,6 +1,31 @@
 <!-- General Revenue Report
 
-
-
+SELECT D.DepartmentName,O.OfficeName,SUM(T.Amount) AS "Revenue" 
+FROM department AS D,appointment AS A,office AS O,transaction as T
+WHERE A.officeID=O.officeID AND D.OfficeID=O.OfficeID AND T.AppointmentID=A.AppointmentID 
+GROUP BY D.DepartmentID
+ORDER BY "Revenue";
 
 -->
+<script>
+    const [rep,setRep] = useState({
+    min: "",
+    max: ""
+})
+
+const change = (e) =>{
+    setRep(prev=>({...prev, [e.target.name]:e.target.value}));
+}
+//const nav = UseNavigate();
+const submit = async e =>{
+    e.preventDefault()
+    const [rows] = await router.get("/pullgrr", {min : rep.min},{max : rep.max})
+
+}
+</script>
+<div>
+    <h1>General Appointment Report</h1>
+    Insert Minimum and Maximum Range for the Dates
+    Minimum:<input type="date" placeholder="YYYY-MM-DD" onchange={change} name="min">
+    Maximum:<input type="date" placeholder="YYYY-MM-DD" onchange={change} name="max">
+</div>

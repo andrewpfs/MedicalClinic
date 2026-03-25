@@ -13,9 +13,6 @@ const [emp,setEmp] = useState({
     Password: "",
     DepartmentID: null,
     Department: "",
-    gender: "",
-    race: "",
-    ethnic: "",
     Specialty: "",
     IsPrimaryCare: null,
     AssignedDoctorID: ""
@@ -27,16 +24,15 @@ const change = (e) =>{
 //const nav = UseNavigate();
 const submit = async e =>{
     e.preventDefault()
-    emp.GenderCode = res.json("SELECT GenderCode FROM gender WHERE GenderText="+emp.gender)
-    emp.RaceCode = res.json("SELECT RaceCode FROM race WHERE RaceText="+emp.race)
-    emp.GenderCode = res.json("SELECT EthnicityCode FROM ethnicity WHERE EthnicityText="+emp.ethnic)
-    emp.DepartmentID = res.json("SELECT DepartmentID FROM department WHERE DepartmentName="+emp.Department)    
+    emp.DepartmentID = db.query("SELECT DepartmentID FROM department WHERE DepartmentName="+emp.Department)    
     await router.post("/addemp", emp)
     if (emp.Role="Doctor"){
-        await router.post("/adddoc",[])     //NEED TO SEe
+        const EmployeeID = db.query("SELECT EmployeeID FROM employee WHERE Email="+emp.Email);
+        await router.post("/adddoc",[EmployeeID,emp.Specialty,emp.IsPrimaryCare])
     }
     if (emp.Role="Nurse") {
-        await router.post("/addnur", [])
+        const EmployeeID = db.query("SELECT EmployeeID FROM employee WHERE Email="+emp.Email);
+        await router.post("/addnur", [empid,emp.AssignedDoctorID])
     }
     await router.get("/admin/home");
 }
@@ -53,30 +49,38 @@ const submit = async e =>{
     Ethnicity:<input type="text" placeholder="Ethnicity" onChange={change} name="ethnic"/>
     Role:<input type="text" placeholder="Role" onChange={change} name="Role"/> -->
     <br><label for="gender">Gender:</label>
-    <select name="gender" id="gender">
-        <option value="Male">Male</option>
-        <option value="Female">Female</option>
-        <option value="Non-Binary">Non-Binary</option>
-        <option value="Other">Other</option>
+    <select name="GenderCode">
+        <option value="">Select Sex</option>
+        <option value="1">Male</option>
+        <option value="2">Female</option>
+        <option value="3">Other</option>
     </select>
-    <label for="race">Race:</label>
-    <select name="race" id="race">
-        <option value="White">White</option>
-        <option value="Asian">Asian</option>
-        <option value="Black">Black</option>
-        <option value="Pacific Islander">Pacific Islander</option>
-        <option value="Other">Other</option>
+    <label>Race:</label>
+    <select name="RaceCode">
+        <option value="">Select Race</option>
+        <option value="1">White</option>
+        <option value="3">African</option>
+        <option value="2">Asian</option>
+        <option value="5">Other</option>
     </select>
-    <label for="ethnic">Ethnicity:</label>
-    <select name="ethnic" id="ethnic">
-        <option value="European-American">European-American</option>
-        <option value="Hispanic/Latino">Hispanic/Latino</option>
-        <option value="Asian-American">Asian-American</option>
-        <option value="African-American">African-American</option>
-        <option value="Other">Other</option>
+    <label>Ethnicity:</label>
+    <select name="EthnicityCode">
+        <option value="">Select Ethnicity</option>
+        <option value="1">Hispanic</option>
+        <option value="2">Latin American</option>
+        <option value="3">African</option>
+        <option value="4">Caribbean</option>
+        <option value="5">Indian</option>
+        <option value="6">Melanesian</option>
+        <option value="7">Chinese</option>
+        <option value="8">Japanese</option>
+        <option value="9">Korean</option>
+        <option value="10">Arabic</option>
+        <option value="11">European</option>
+        <option value="12">Other</option>
     </select>
-    <br><label for="Role">Role:</label>
-    <select name="Role" id="Role">
+    <br><label>Role:</label>
+    <select name="Role">
         <option value="Admin">Admin</option>
         <option value="Doctor">Doctor</option>
         <option value="Nurse">Nurse</option>

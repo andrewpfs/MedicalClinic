@@ -24,34 +24,73 @@ router.get('/adde', async (req, res) => {
 });
 router.get('/repgar', async (req, res) => {
     res.render('admin/repgar');
-})
+});
 router.get('/repgrr', async (req, res) => {
     res.render('admin/repgrr');
-})
+});
 router.get('/repdar', async (req, res) => {
     res.render('admin/repdar');
-})
+});
 router.get('/', async (req, res ) =>{
     const [rows] = await db.query("SELECT * FROM employee WHERE Role='Admin'")
     res.json(rows);
-})
-/*
-router.get('/pull', async (req,res) {
-    const q = "SELECT ? FROM employee WHERE EmployeeID="+id;
+});
+//Gets data for DAR Report
+router.get('/pulldar', async (req,res) =>{
+    const q = "SELECT E.EmployeeID,E.FirstName,E.LastName,D.DepartmentName,COUNT(A.AppointmentID) AS 'Appointments' FROM department AS D, appointment AS A, employee as E WHERE A.DoctorID=E.EmployeeID AND E.DepartmentID=D.DepartmentID AND A.AppointmentDate>=? AND A.Appointment<=? AND D.DepartmentName=? GROUP BY E.EmployeeID ORDER BY 'Appointments'";
+    const min = req.body.min;
+    const max = req.body.max;
+    const DepartmentName = req.body.DepartmentName;
+
+    const [rows] = db.query(q,min,max,DepartmentName);
+    return rows;
+});
+//Gets data for GAR Report
+router.get('/pullgar', async (req,res) =>{
+    //const q = "SELECT D.DepartmentName,COUNT(A.AppointmentID) AS 'Appointments' FROM department AS D,appointment AS A,office AS O WHERE A.officeID=O.officeID AND D.OfficeID=O.OfficeID AND A.AppointmentDate >= '${req.body.min}' AND A.AppointmentDate <= '${req.body.max}' GROUP BY D.DepartmentName ORDER BY 'Appointments'";
+    const q = "SELECT D.DepartmentName,COUNT(A.AppointmentID) AS 'Appointments' FROM department AS D,appointment AS A,office AS O WHERE A.officeID=O.officeID AND D.OfficeID=O.OfficeID AND A.AppointmentDate >= ? AND A.AppointmentDate <= ? GROUP BY D.DepartmentName ORDER BY 'Appointments'";
+    const min = req.body.min;
+    const max = req.body.max;
+
+    //const [rows] = db.query(q);
+    const [rows] = db.query(q,min,max);
+    return rows;
+});
+//Gets data for GRR Report
+router.get('/pullgrr', async (req,res) =>{
+    const q = "SELECT E.EmployeeID,E.FirstName,E.LastName,D.DepartmentName,COUNT(A.AppointmentID) AS 'Appointments' FROM department AS D, appointment AS A, employee as E WHERE A.DoctorID=E.EmployeeID AND E.DepartmentID=D.DepartmentID AND A.AppointmentDate>=? AND A.Appointment<=? AND D.DepartmentName=? GROUP BY E.EmployeeID ORDER BY 'Appointments'";
+    const min = req.body.min;
+    const max = req.body.max;
+    const DepartmentName = req.body.DepartmentName;
+
+    const [rows] = db.query(q,min,max,DepartmentName);
+    return rows;
+});
+
+router.post("/adddoc", async (req,res) =>{
+    const q = "INSERT INTO doctor (`EmployeeID`,`Specialty`,`IsPrimaryCare`) VALUES (?)";
     const r = [
-        req.body.
+        req.body.EmployeeID,
+        req.body.Specialty,
+        req.body.IsPrimaryCare
     ];
+    const query = await db.query(q,[r]);
+    res.json(query);
+});
 
-    const 
-})*/
-
-//router post adddoc
-
-//router post addnur
+router.post("/addnur", async (req,res) =>{
+    const q = "INSERT INTO nurse (`EmployeeID`,`ApprovedDoctorID`) VALUES (?)";
+    const r = [
+        req.body.EmployeeID,
+        req.body.ApprovedDoctorID
+    ];
+    const query = await db.query(q,[r]);
+    res.json(query);
+});
 
 // Creating and Employee - POST
 router.post('/addemp', async (req, res) => {
-    const q = "INSERT INTO employee (`FirstName`,`LastName`,`Birthdate`,`GenderCode`,`RaceCode`,`EthnicityCode`,`Role`,`Address`,`PhoneNumber`,`Email`,`Password`,`DepartmentID`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)"
+    const q = "INSERT INTO employee (`FirstName`,`LastName`,`Birthdate`,`GenderCode`,`RaceCode`,`EthnicityCode`,`Role`,`Address`,`PhoneNumber`,`Email`,`Password`,`DepartmentID`) VALUES (?)"
     //const q = "INSERT INTO employee (`FirstName`,`DepartmentID`) VALUES (?)";
     const r = [
         req.body.FirstName,

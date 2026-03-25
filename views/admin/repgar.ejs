@@ -1,15 +1,28 @@
 <!-- General Appointment Report
  
-SELECT D.DepartmentName,COUNT(A.AppointmentID) AS "Appointments" 
-    FROM department AS D,appointment AS A,office AS O
-    WHERE A.officeID=O.officeID AND D.OfficeID=O.OfficeID AND A.AppointmentDate >= min AND A.AppointmentDate <= max
-    GROUP BY D.DepartmentName
-    ORDER BY "Appointments";
+SELECT D.DepartmentName,O.OfficeName,COUNT(A.AppointmentID) AS "Appointments" 
+FROM department AS D,appointment AS A,office AS O
+WHERE A.officeID=O.officeID AND D.OfficeID=O.OfficeID AND A.AppointmentDate >= min AND A.AppointmentDate <= max
+GROUP BY D.DepartmentName
+ORDER BY "Appointments";
 
 
 -->
 <script>
+    const [rep,setRep] = useState({
+        min: "",
+        max: ""
+    })
 
+    const change = (e) =>{
+        setRep(prev=>({...prev, [e.target.name]:e.target.value}));
+    }
+    //const nav = UseNavigate();
+    const submit = async e =>{
+        e.preventDefault()
+        const [rows] = await router.get("/pullgar", {min : rep.min},{max : rep.max})
+
+    }
 </script>
 <div>
     <h1>General Appointment Report</h1>
