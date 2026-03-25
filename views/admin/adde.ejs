@@ -11,10 +11,14 @@ const [emp,setEmp] = useState({
     PhoneNumber: "",
     Email: "",
     Password: "",
+    DepartmentID: null,
     Department: "",
     gender: "",
     race: "",
-    ethnic: ""
+    ethnic: "",
+    Specialty: "",
+    IsPrimaryCare: null,
+    AssignedDoctorID: ""
 })
 
 const change = (e) =>{
@@ -26,7 +30,14 @@ const submit = async e =>{
     emp.GenderCode = res.json("SELECT GenderCode FROM gender WHERE GenderText="+emp.gender)
     emp.RaceCode = res.json("SELECT RaceCode FROM race WHERE RaceText="+emp.race)
     emp.GenderCode = res.json("SELECT EthnicityCode FROM ethnicity WHERE EthnicityText="+emp.ethnic)
+    emp.DepartmentID = res.json("SELECT DepartmentID FROM department WHERE DepartmentName="+emp.Department)    
     await router.post("/addemp", emp)
+    if (emp.Role="Doctor"){
+        await router.post("/adddoc",[])     //NEED TO SEe
+    }
+    if (emp.Role="Nurse") {
+        await router.post("/addnur", [])
+    }
     await router.get("/admin/home");
 }
 </script>
@@ -34,8 +45,8 @@ const submit = async e =>{
     <a href="/admin/home"><button>Back</button></a>
     <h1>Add New Employee</h1>
     
-    <input type="text" placeholder="First Name" onChange={change} name="FirstName"/>
-    <input type="text" placeholder="Last Name" onChange={change} name="LastName"/>
+    <input type="text" placeholder="First Name" onChange={change} name="FirstName" maxlength="30"/>
+    <input type="text" placeholder="Last Name" onChange={change} name="LastName" maxlength="30"/>
     Birth Date:<input type="date" placeholder="YYYY-MM-DD" onChange={change} name="Birthdate"/>
     <!-- Gender:<input type="text" placeholder="Gender" onChange={change} name="gender"/>
     Race:<input type="text" placeholder="Race" onChange={change} name="race"/>
@@ -70,11 +81,16 @@ const submit = async e =>{
         <option value="Doctor">Doctor</option>
         <option value="Nurse">Nurse</option>
         <option value="Receptionist">Receptionist</option>
-    </select>&#9;
-    Department:<input type="text" placeholder="Department" onChange={change} name="Department"/>
-    <br>Address:<input type="text" placeholder="Address" onChange={change} name="Address"/>
-    Phone Number:<input type="text" placeholder="000000000" onChange={change} name="PhoneNumber"/>
-    <br>Email:<input type="text" placeholder="Email" onChange={change} name="Email"/>
+    </select>
+    Department:<input type="text" placeholder="Department" onChange={change} name="Department" maxlength="30"/>
+    <br>Address:<input type="text" placeholder="Address" onChange={change} name="Address" maxlength="100"/>
+    Phone Number:<input type="tel" placeholder="000000000" onChange={change} name="PhoneNumber" minlength="10" maxlength="10"/>
+    <br>Email:<input type="email" placeholder="Email" onChange={change} name="Email"/>
     Password:<input type="text" placeholder="Password" onChange={change} name="Password"/>
+    <br><br>If a Doctor: <br>
+    Specialty:<input type="text" placeholder="Specialty" onchange={change} name="Specialty" maxlength="20"/>
+    Is PCP(0 for No, 1 for Yes):<input type="text" placeholder="0" onchange={change} name="IsPrimaryCare" minlength="0" maxlength="1"/>
+    <br><br>If a Nurse: <br>
+    Assigned Doctor ID:<input type="text" placeholder="0000" onchange={change} name="AssignedDoctorID"/>
     <button onClick={submit}>Add Employee</button>
 </div>

@@ -22,10 +22,6 @@ router.get('/home', async (req, res) => {
 router.get('/adde', async (req, res) => {
     res.render('admin/adde');
 });
-router.get('/', async (req, res ) =>{
-    const [rows] = await db.query("SELECT * FROM employee WHERE Role='Admin'")
-    res.json(rows);
-})
 router.get('/repgar', async (req, res) => {
     res.render('admin/repgar');
 })
@@ -35,8 +31,26 @@ router.get('/repgrr', async (req, res) => {
 router.get('/repdar', async (req, res) => {
     res.render('admin/repdar');
 })
+router.get('/', async (req, res ) =>{
+    const [rows] = await db.query("SELECT * FROM employee WHERE Role='Admin'")
+    res.json(rows);
+})
+/*
+router.get('/pull', async (req,res) {
+    const q = "SELECT ? FROM employee WHERE EmployeeID="+id;
+    const r = [
+        req.body.
+    ];
+
+    const 
+})*/
+
+//router post adddoc
+
+//router post addnur
+
 // Creating and Employee - POST
-router.post('/addemp', (req, res) => {
+router.post('/addemp', async (req, res) => {
     const q = "INSERT INTO employee (`FirstName`,`LastName`,`Birthdate`,`GenderCode`,`RaceCode`,`EthnicityCode`,`Role`,`Address`,`PhoneNumber`,`Email`,`Password`,`DepartmentID`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)"
     //const q = "INSERT INTO employee (`FirstName`,`DepartmentID`) VALUES (?)";
     const r = [
@@ -53,7 +67,7 @@ router.post('/addemp', (req, res) => {
         req.body.Password,
         req.body.DepartmentID,
     ];
-    const row = db.query(q,[r]);
+    const row = await db.query(q,[r]);
     res.json(row);
 });
 

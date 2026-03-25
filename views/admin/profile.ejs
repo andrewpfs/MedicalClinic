@@ -4,7 +4,7 @@ const router = express.Router();
 const db = require('../db');
 
 const id = 1;
-const First = res.json(db.query("SELECT FirstName FROM employee WHERE employeeID="+id));
+const First = "John";//res.json(db.query("SELECT FirstName FROM employee WHERE employeeID="+id));
 const Last = res.json(db.query("SELECT LastName FROM employee WHERE employeeID="+id));
 const Birth = res.json(db.query("SELECT Birthdate FROM employee WHERE employeeID="+id));
 const Gender = res.json(db.query("SELECT GenderText FROM employee,gender WHERE employeeID="+id+" AND employee.GenderCode=gender.GenderCode"));
@@ -18,7 +18,7 @@ const Role = res.json(db.query("SELECT FirstName FROM employee WHERE employeeID=
 </script>
 <div>
     <button><Link to="/admin/home">Home</Link></button>
-    <h1> Name: <%- First %> <%= Last %></h1>
+    <h1> Name: <%= First %> <%= Last %></h1>
     <h1>Role: <%= Role %></h1>
     <h1>Department: <%= Depart %></h1>
     <h1>Birth Date: <%= Birth %></h1>
