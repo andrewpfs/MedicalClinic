@@ -1,28 +1,36 @@
 const express = require('express');
+const cors = require('cors');
+const cookieParser = require('cookie-parser');
+const session = require('express-session');
 const app = express();
-const session = require('express-session'); 
-const patientRoutes = require('./routes/patient');
-
-app.set('view engine', 'ejs');
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cors());
+app.use(cookieParser());
+app.set('view engine', 'ejs');
+app.use(express.static('public'));
 
 app.use(session({
     secret: 'medical_clinic_secret',
     resave: false,
     saveUninitialized: true,
-    cookie: { secure: false } // Set to false since we aren't using HTTPS/SSL locally
+    cookie: { secure: false }
 }));
 
-app.use('/patient', patientRoutes);
+const patientRoutes = require('./routes/patient');
+const homeRoutes = require('./routes/home');
 
-const PORT = 3000;
-app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-});
+app.use('/patient', patientRoutes);
+app.use('/', homeRoutes);
+
 app.get('/logout', (req, res) => {
-    req.session.destroy((err) => {
+    req.session.destroy(() => {
         res.redirect('/patient/login');
     });
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`Server running on http://localhost:${PORT}`);
 });

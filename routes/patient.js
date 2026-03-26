@@ -1,23 +1,13 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db'); 
+const { register, login, logout } = require('../auth');
 
 router.get('/login', (req, res) => {
     res.render('patient/login'); 
 });
 
-router.post('/login', async (req, res) => {
-    const { email, password } = req.body;
-    try {
-        const [rows] = await db.query('SELECT PatientID FROM patient WHERE Email = ? AND Password = ?', [email, password]);
-        if (rows.length > 0) {
-            req.session.patientId = rows[0].PatientID;
-            res.redirect('/patient/profile');
-        } else {
-            res.status(401).send("Invalid credentials");
-        }
-    } catch (err) { res.status(500).send("Login error"); }
-});
+router.post('/login', login);
 
 router.get('/profile', async (req, res) => {
     if (!req.session.patientId) return res.redirect('/patient/login');
@@ -50,10 +40,9 @@ router.post('/update-profile', async (req, res) => {
         res.redirect('/patient/profile?updated=true');
     } catch (err) {
         console.error(err);
-        res.status(500).send("Update failed. Make sure the database column is long enough!");
+        res.status(500).send("Update failed. Check database column lengths.");
     }
 });
-
 
 router.get('/booking', (req, res) => {
     if (!req.session.patientId) return res.redirect('/patient/login');
@@ -68,7 +57,7 @@ router.post('/book', async (req, res) => {
             [req.session.patientId, doctorId, date, 1, 1] 
         );
         res.redirect('/patient/visits');
-    } catch (err) { res.status(500).send("Booking failed. Ensure Doctor 1 and Office 1 exist."); }
+    } catch (err) { res.status(500).send("Booking failed."); }
 });
 
 router.get('/visits', async (req, res) => {
@@ -99,18 +88,9 @@ router.post('/pay', async (req, res) => {
             [appointmentId, req.session.patientId, amount]
         );
         res.redirect('/patient/visits');
-    } catch (err) {
-        console.error(err);
-        res.status(500).send("Payment failed. Make sure the Appointment ID is correct.");
-    }
+    } catch (err) { res.status(500).send("Payment failed."); }
 });
 
-router.get('/logout', (req, res) => {
-    req.session.destroy((err) => {
-        if (err) {
-            return res.status(500).send("Could not log out.");
-        }
-        res.redirect('/patient/login');
-    });
-});
+router.get('/logout', logout);
+
 module.exports = router;
