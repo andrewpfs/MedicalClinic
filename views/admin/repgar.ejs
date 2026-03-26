@@ -27,7 +27,7 @@ ORDER BY "Appointments";
 <div>
     <h1>General Appointment Report</h1>
     Insert Minimum and Maximum Range for the Dates
-    <form action="/admin/pullgar" method="post">
+    <form action="/pullgar" method="post">
     <label>Minimum:<input type="date" placeholder="YYYY-MM-DD" name="min" value="<%= locals.min %>" required></label>
     <label>Maximum:<input type="date" placeholder="YYYY-MM-DD" name="max" value="<%= locals.max %>" required></label>
     <br><button type="submit">Start</button>

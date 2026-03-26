@@ -1,5 +1,5 @@
 <script>
-const [emp,setEmp] = useState({
+/*const [emp,setEmp] = useState({
     FirstName: "",
     LastName: "",
     Birthdate: "",
@@ -35,66 +35,72 @@ const submit = async e =>{
         await router.post("/addnur", [empid,emp.AssignedDoctorID])
     }
     await router.get("/admin/home");
-}
+}*/
 </script>
 <div ClassName="Employee Form">
     <a href="/admin/home"><button>Back</button></a>
     <h1>Add New Employee</h1>
-    
-    <input type="text" placeholder="First Name" onchange={change} name="FirstName" maxlength="30"/>
-    <input type="text" placeholder="Last Name" onchange={change} name="LastName" maxlength="30"/>
-    Birth Date:<input type="date" placeholder="YYYY-MM-DD" onchange={change} name="Birthdate"/>
-    <!-- Gender:<input type="text" placeholder="Gender" onChange={change} name="gender"/>
-    Race:<input type="text" placeholder="Race" onChange={change} name="race"/>
-    Ethnicity:<input type="text" placeholder="Ethnicity" onChange={change} name="ethnic"/>
-    Role:<input type="text" placeholder="Role" onChange={change} name="Role"/> -->
-    <br><label for="gender">Gender:</label>
-    <select onchange={change} name="GenderCode">
-        <option value="">Select Sex</option>
-        <option value="1">Male</option>
-        <option value="2">Female</option>
-        <option value="3">Other</option>
-    </select>
-    <label>Race:</label>
-    <select onchange={change} name="RaceCode">
-        <option value="">Select Race</option>
-        <option value="1">White</option>
-        <option value="3">African</option>
-        <option value="2">Asian</option>
-        <option value="5">Other</option>
-    </select>
-    <label>Ethnicity:</label>
-    <select onchange={change} name="EthnicityCode">
-        <option value="">Select Ethnicity</option>
-        <option value="1">Hispanic</option>
-        <option value="2">Latin American</option>
-        <option value="3">African</option>
-        <option value="4">Caribbean</option>
-        <option value="5">Indian</option>
-        <option value="6">Melanesian</option>
-        <option value="7">Chinese</option>
-        <option value="8">Japanese</option>
-        <option value="9">Korean</option>
-        <option value="10">Arabic</option>
-        <option value="11">European</option>
-        <option value="12">Other</option>
-    </select>
-    <br><label>Role:</label>
-    <select onchange={change} name="Role">
-        <option value="Admin">Admin</option>
-        <option value="Doctor">Doctor</option>
-        <option value="Nurse">Nurse</option>
-        <option value="Receptionist">Receptionist</option>
-    </select>
-    Department:<input type="text" placeholder="Department" onchange={change} name="Department" maxlength="30"/>
-    <br>Address:<input type="text" placeholder="Address" onchange={change} name="Address" maxlength="100"/>
-    Phone Number:<input type="tel" placeholder="000000000" onchange={change} name="PhoneNumber" minlength="10" maxlength="10"/>
-    <br>Email:<input type="email" placeholder="Email" onchange={change} name="Email"/>
-    Password:<input type="text" placeholder="Password" onchange={change} name="Password"/>
-    <br><br>If a Doctor: <br>
-    Specialty:<input type="text" placeholder="Specialty" onchange={change} name="Specialty" maxlength="20"/>
-    Is PCP(0 for No, 1 for Yes):<input type="text" placeholder="0" onchange={change} name="IsPrimaryCare" minlength="0" maxlength="1"/>
-    <br><br>If a Nurse: <br>
-    Assigned Doctor ID:<input type="text" placeholder="0000" onchange={change} name="AssignedDoctorID"/>
-    <button onClick={submit}>Add Employee</button>
+    <form action="/admin/addemp" method="post">
+        <input type="text" placeholder="First Name" name="FirstName" maxlength="30"/>
+        <input type="text" placeholder="Last Name" name="LastName" maxlength="30"/>
+        Birth Date:<input type="date" placeholder="YYYY-MM-DD" name="Birthdate"/>
+        <br><label>Gender:</label>
+        <select name="GenderCode">
+            <option value="">Select Sex</option>
+            <option value="1">Male</option>
+            <option value="2">Female</option>
+            <option value="3">Other</option>
+        </select>
+        <label>Race:</label>
+        <select name="RaceCode">
+            <option value="">Select Race</option>
+            <option value="1">White</option>
+            <option value="3">African</option>
+            <option value="2">Asian</option>
+            <option value="5">Other</option>
+        </select>
+        <label>Ethnicity:</label>
+        <select name="EthnicityCode">
+            <option value="">Select Ethnicity</option>
+            <option value="1">Hispanic</option>
+            <option value="2">Latin American</option>
+            <option value="3">African</option>
+            <option value="4">Caribbean</option>
+            <option value="5">Indian</option>
+            <option value="6">Melanesian</option>
+            <option value="7">Chinese</option>
+            <option value="8">Japanese</option>
+            <option value="9">Korean</option>
+            <option value="10">Arabic</option>
+            <option value="11">European</option>
+            <option value="12">Other</option>
+        </select>
+        <br><label>Role:</label>
+        <select name="Role">
+            <option value="">Select Role</option>
+            <option value="Admin">Admin</option>
+            <option value="Doctor">Doctor</option>
+            <option value="Nurse">Nurse</option>
+            <option value="Receptionist">Receptionist</option>
+        </select>
+        <label>Department:</label>
+        <select name="DepartmentID">
+            <option value="">Select Department</option>
+            <option value="1">General</option>
+            <option value="2">Optometry</option>
+            <option value="3">Cardiology</option>
+            <option value="4">Orthopedics</option>
+        </select>
+        Department:<input type="text" placeholder="Department" name="Department" maxlength="30"/>
+        <br>Address:<input type="text" placeholder="Address" name="Address" maxlength="100"/>
+        Phone Number:<input type="tel" placeholder="000000000" name="PhoneNumber" minlength="10" maxlength="10"/>
+        <br>Email:<input type="email" placeholder="Email" name="Email"/>
+        Password:<input type="text" placeholder="Password" name="Password"/>
+        <br><br>If a Doctor: <br>
+        Specialty:<input type="text" placeholder="Specialty" name="Specialty" maxlength="20"/>
+        Is PCP(0 for No, 1 for Yes):<input type="text" placeholder="0" name="IsPrimaryCare" minlength="0" maxlength="1"/>
+        <br><br>If a Nurse: <br>
+        Assigned Doctor ID:<input type="text" placeholder="0000" name="AssignedDoctorID"/>
+        <button type="submit">Add Employee</button>
+    </form>
 </div>
