@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+<head><title>Make a Payment</title></head>
+<body>
+    <h2>Payment Portal</h2>
+    <form action="/patient/pay" method="POST">
+        <label>Appointment ID (Check your Visits report for this):</label>
+        <input type="number" name="appointmentId" required><br><br>
+
+        <label>Payment Amount ($):</label>
+        <input type="number" name="amount" required><br><br>
+
+        <button type="submit">Submit Payment</button>
+    </form>
+</body>
+</html>
