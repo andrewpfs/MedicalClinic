@@ -1,0 +1,54 @@
+<script>
+    const express = require('express');
+    const router = express.Router();
+    const db = require('../db');
+
+    const id = 4; //TEMPORARY ID PLEASE CHANGE
+    const First = db.query("SELECT FirstName FROM employee WHERE employeeID="+id);
+    const Last = db.query("SELECT LastName FROM employee WHERE employeeID="+id);
+    const Address = db.query("SELECT FirstName FROM employee WHERE employeeID="+id);
+    const Phone = db.query("SELECT FirstName FROM employee WHERE employeeID="+id);
+</script>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Update Profile</title>
+    <style>
+        body { font-family: sans-serif; margin: 40px; }
+        table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+        th, td { border: 1px solid #ccc; padding: 12px; text-align: left; }
+        th { background-color: #f4f4f4; }
+        .form-section { background: #f9f9f9; padding: 20px; border-radius: 8px; }
+        input, button { padding: 8px; margin: 5px; }
+        button { background-color: #2e4d2e; color: white; border: none; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <div class="form-section">
+        <h1>Update Profile</h1>
+        <form action="/admin/addemp" method="post">
+            <label>First Name:
+                <input type="text" name="FirstName" maxlength="30" required value=<%= First %>/>
+            </label>
+            <label>Last Name:
+                <input type="text" name="LastName" maxlength="30" required value=<%= Last %>/>
+            </label>
+            <label>Address:
+                <input type="text" name="Address" maxlength="100" required value=<%= Address %>/>
+            </label>
+            <label>Phone Number:
+                <input type="tel" placeholder="000000000" name="PhoneNumber"  pattern="[0-9]{10}" required value=<%= Phone %>/>
+            </label><br>
+            <label>Email:
+                <input type="email" placeholder="Email" name="Email" required value=<%= Email %>/>
+            </label>
+            <label>Password:
+                <input type="text" placeholder="Password" name="Password" required value=<%= Pass %>/>
+            </label>
+            <button type="submit">Update</button>
+        </form>
+</body>
+</html>

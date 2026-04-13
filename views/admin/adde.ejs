@@ -1,3 +1,21 @@
+<script>
+    /*function selectRole() {
+        const selectedRole = document.getElementById("Role").value;
+
+        let roleOption = [];
+        if (selectedRole == "Doctor") {
+            roleOption = ['<br><br>If A Doctor:<br><label>Specialty:<input type="text" placeholder="Specialty" name="Specialty" maxlength="20"/></label><label>Is A Primary Care Physician:<select name="IsPrimaryCare"><option value="">Select</option><option value="1">Yes</option><option value="0">No</option></select></label>'];
+        }
+        else if (selectedRole == "Nurse") {
+            roleOption = [''];
+        }
+    }*/
+   const Role = "";
+    function docnur() {
+        Role = document.getElementById("Role").value;
+   }
+</script>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -18,14 +36,14 @@
     <div class="form-section">
         <h1>Add New Employee</h1>
         <form action="/admin/addemp" method="post">
-            <label>First Name:
-                <input type="text" name="FirstName" maxlength="30"/>
+            <label>First Name*:
+                <input type="text" name="FirstName" maxlength="30" required/>
             </label>
-            <label>Last Name:
-                <input type="text" name="LastName" maxlength="30"/>
+            <label>Last Name*:
+                <input type="text" name="LastName" maxlength="30" required/>
             </label>
-            <label>Birth Date:
-                <input type="date" name="Birthdate"/>
+            <label>Birth Date*:
+                <input type="date" name="Birthdate" required/>
             </label><br><br>
             <label>Gender:
                 <select name="GenderCode">
@@ -61,17 +79,17 @@
                     <option value="12">Other</option>
                 </select>
             </label><br><br>
-            <label>Role:
-                <select name="RaceCode">
-                    <option value="">Select Race</option>
-                    <option value="1">White</option>
-                    <option value="3">African</option>
-                    <option value="2">Asian</option>
-                    <option value="5">Other</option>
+            <label>Role*:
+                <select name="Role" onchange="docnur"  required>
+                    <option value="">Select Role</option>
+                    <option value="Doctor">Doctor</option>
+                    <option value="Nurse">Nurse</option>
+                    <option value="Receptionist">Receptionist</option>
+                    <option value="Admin">Admin</option>
                 </select>
             </label>
-            <label>Department:
-                <select name="DepartmentID">
+            <label>Department*:
+                <select name="DepartmentID" required>
                     <option value="">Select Department</option>
                     <option value="1">General</option>
                     <option value="2">Optometry</option>
@@ -83,13 +101,13 @@
                 <input type="text" name="Address" maxlength="100"/>
             </label>
             <label>Phone Number:
-                <input type="tel" placeholder="000000000" name="PhoneNumber" minlength="10" maxlength="10"/>
+                <input type="tel" placeholder="000000000" name="PhoneNumber"  pattern="[0-9]{10}"/>
             </label><br>
-            <label>Email:
-                <input type="email" placeholder="Email" name="Email"/>
+            <label>Email*:
+                <input type="email" placeholder="Email" name="Email" required/>
             </label>
-            <label>Password:
-                <input type="text" placeholder="Password" name="Password"/>
+            <label>Password*:
+                <input type="text" placeholder="Password" name="Password" required/>
             </label>
             <br><br>If A Doctor:<br>
             <label>Specialty:

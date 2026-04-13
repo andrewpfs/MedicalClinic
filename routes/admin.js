@@ -2,9 +2,8 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 
-const id = 1;
 router.get('/profile', async (req, res) => {
-    const id = 1; // Keeping his hardcoded ID for now
+    const id = 4; // Keeping his hardcoded ID for now CHANGE WHEN MERGING
     
     // One big query to join all the relevant tables
     const q = `
@@ -40,6 +39,17 @@ router.get('/profile', async (req, res) => {
         res.status(500).send("Database error loading profile");
     }
 });
+router.get('/updateprofile', async (req, res) => {
+    const id = 4; //TEMPORARY PLEASE CHANGE
+    try {
+        const [rows] = await db.query("SELECT FirstName AS First, LastName AS Last, Address, PhoneNumber AS Phone, Email, Password AS Pass FROM employee WHERE EmployeeID=?",[id]);
+    }catch(err) {
+        console.error(err);
+        res.status(500).send("Database error loading profile");
+    }
+    
+    res.render('admin/updateprofile', rows[0]);
+})
 router.get('/home', async (req, res) => {
     res.render('admin/home');
 });
@@ -71,8 +81,21 @@ router.post('/pulldar', async (req, res) => {
  
         const [rows] = await db.query(q, [min, max, DepartmentName]);
  
- 
-        res.render('admin/repdar', { results: rows });
+        const topE = "";
+        const topA = "";
+        if (rows.length > 0) topE = rows[0].FirstName + " " + rows[0].LastName;
+        if (rows.length > 0) topA = rows[0].Appointments;
+        const [zeros] = await db.query("SELECT E.EmployeeID, E.FirstName, E.LastName FROM doctor AS DO, employee AS E, department AS D WHERE D.DepartmentID=E.DepartmentID AND DO.EmployeeID=E.EmployeeID AND D.DepartmentName=?",req.body.DepartmentName);
+        rows.forEach(tup =>{
+            zeros.forEach(zer => {
+                if (tup.EmployeeID == zer.EmployeeID) {
+                    const index = zeros.indexOf(zer.EmployeeID);
+                    if (index > -1) zeros.splice(index,1);
+                }
+            })
+        });
+
+        res.render('admin/repdar', { results: rows, topE: topA, topA: topA, zeros: zeros });
     } catch (err) {
         console.error(err);
         res.status(500).send("Report Error");
@@ -111,11 +134,52 @@ router.post('/pullgrr', async (req,res) =>{
         res.status(500).send("Report Error");
     }
 });
+router.post("/upprof", async (req,res) =>{
+    const q = "UPDATE employee SET FirstName=?,LastName=?,Address=?,PhoneNumber=?,Email=?,Password=? WHERE EmployeeID=4";
+    const r = [
+        req.body.FirstName,
+        req.body.FirstName,
+        req.body.Address,
+        req.body.PhoneNumber,
+        req.body.Email,
+        req.body.Password,
+    ];
+    try {
+        await db.query(q,r);
+    }catch(err) {
+        console.error(err);
+        res.status(500).send("Update Profile Error");
+    }
+});
 
 router.post("/adddoc", async (req,res) =>{
-    const q = "INSERT INTO doctor (`EmployeeID`,`Specialty`,`IsPrimaryCare`) VALUES (?)";
-    const r = [
-        req.body.EmployeeID,
+    /*const r = [
+            req.body.FirstName,req.body.LastName,req.body.Email,req.body.DepartmentID
+        ];
+        try {
+            const id = await db.query("SELECT EmployeeID FROM employee WHERE FirstName=?,LastName=?,Email=?,DepartmentID=?",[r]);
+        }catch(err) {
+            console.error(err);
+            res.status(500).send("Doctor Search Error");
+        }
+        const special = req.body.Specialty;
+        const pcp = req.body.IsPrimaryCare;
+
+        router.post('/adddoc',{EmployeeID : id,Specialty : special,IsPrimaryCare : pcp});*/
+    
+    const id = null;
+    const q = "SELECT EmployeeID FROM employee WHERE FirstName=?,LastName=?,Email=?,DepartmentID=?";
+    const r = [req.body.FirstName,req.body.LastName,req.body.Email,req.body.DepartmentID];
+    try {
+        id = await db.query(q,r);
+    }catch(err) {
+        console.error(err);
+        res.status(500).send("Doctor Search Error");
+    }
+
+    q = "INSERT INTO doctor (`EmployeeID`,`Specialty`,`IsPrimaryCare`) VALUES (?)";
+    r = [
+        id,
         req.body.Specialty,
         req.body.IsPrimaryCare
     ];
@@ -123,16 +187,26 @@ router.post("/adddoc", async (req,res) =>{
 
         const query = await db.query(q,[r]);
     } catch(err) {
-        console.err(err);
+        console.error(err);
         res.status(500).send("Doctor Error");
     }
     //res.json(query);
 });
 
 router.post("/addnur", async (req,res) =>{
-    const q = "INSERT INTO nurse (`EmployeeID`,`ApprovedDoctorID`) VALUES (?)";
-    const r = [
-        req.body.EmployeeID,
+    const id = null;
+    const q = "SELECT EmployeeID FROM employee WHERE FirstName=?,LastName=?,Email=?,DepartmentID=?";
+    const r = [req.body.FirstName,req.body.LastName,req.body.Email,req.body.DepartmentID];
+    try {
+        id = await db.query(q,r);
+    }catch(err) {
+        console.error(err);
+        res.status(500).send("Nurse Search Error");
+    }
+    
+    q = "INSERT INTO nurse (`EmployeeID`,`ApprovedDoctorID`) VALUES (?)";
+    r = [
+        id,
         req.body.ApprovedDoctorID
     ];
 
@@ -140,7 +214,7 @@ router.post("/addnur", async (req,res) =>{
 
         const query = await db.query(q,[r]);
     } catch(err) {
-        console.err(err);
+        console.error(err);
         res.status(500).send("Nurse Error");
     }
     //res.json(query);
@@ -150,6 +224,7 @@ router.post("/addnur", async (req,res) =>{
 router.post('/addemp', async (req, res) => {
     const q = "INSERT INTO employee (`FirstName`,`LastName`,`Birthdate`,`GenderCode`,`RaceCode`,`EthnicityCode`,`Role`,`Address`,`PhoneNumber`,`Email`,`Password`,`DepartmentID`) VALUES (?)"
     //const q = "INSERT INTO employee (`FirstName`,`DepartmentID`) VALUES (?)";
+    const rol = req.body.Role;
     const r = [
         req.body.FirstName,
         req.body.LastName,
@@ -157,7 +232,8 @@ router.post('/addemp', async (req, res) => {
         req.body.GenderCode,
         req.body.RaceCode,
         req.body.EthnicityCode,
-        req.body.Role,
+        //req.body.Role,
+        rol,
         req.body.Address,
         req.body.PhoneNumber,
         req.body.Email,
@@ -166,20 +242,17 @@ router.post('/addemp', async (req, res) => {
     ];
 
     
-    const row = await db.query(q,[r]);
-
-    if (req.body.Role = "Doctor") {
-        const id = await db.query("SELECT EmployeeID FROM employee WHERE FirstName=?,LastName=?,Email=?,DepartmentID=?",req.body.FirstName,req.body.LastName,req.body.Email,req.body.DepartmentID);
-        const special = req.body.Specialty;
-        const pcp = req.body.IsPrimaryCare;
-
-        router.post('/adddoc',{EmployeeID : id,Specialty : special,IsPrimaryCare : pcp});
+    try {
+        await db.query(q,[r]);    
+    }catch(err) {
+        console.error(err);
+        res.status(500).send("Employee Error");
     }
-    if (req.body.Role = "Nurse") {
-        const id = await db.query("SELECT EmployeeID FROM employee WHERE FirstName=?,LastName=?,Email=?,DepartmentID=?",req.body.FirstName,req.body.LastName,req.body.Email,req.body.DepartmentID);
-        const doc = req.body.ApprovedDoctorID;
-
-        router.post('/addnur',{EmployeeID : id,ApprovedDoctorID : doc});
+    if (rol === "Doctor") {
+        router.post('admin/adddoc',{FirstName:req.body.FirstName,LastName:req.body.LastName,Email:req.body.Email,DepartmentID:req.body.DepartmentID,Specialty:req.body.Specialty,IsPrimaryCare:req.body.IsPrimaryCare});
+    }
+    else if (rol === "Nurse") {
+        router.post('admin/addnur',{FirstName:req.body.FirstName,LastName:req.body.LastName,Email:req.body.Email,DepartmentID:req.body.DepartmentID,ApprovedDoctorID:req.body.ApprovedDoctorID});
     }
     //res.json(row);
 });

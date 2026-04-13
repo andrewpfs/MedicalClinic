@@ -23,6 +23,7 @@ ORDER BY Appointments DESC`;
         button { background-color: #2e4d2e; color: white; border: none; cursor: pointer; }
     </style>
 </head>
+<button><a href="/admin/home">Home</a></button>
 <body>
 
     <div class="form-section">
@@ -69,7 +70,35 @@ ORDER BY Appointments DESC`;
         <% } %>
     </div>
     <hr>
-    <% if (locals.results && results.length > 0) { %>
+    <br>
+    <body>
+    <% if (results.length > 0) { %>
+        
+        The Doctor with the most appointments in <%= results[0].DepartmentName %> is <%= topE %> with <% topA %> Appointments
+        
+    <% } %>
+    <% if (zeros.length > 0) { %>
+        , while 
+        <% if (zeros.length == 1) {%>
+            <%= zeros[0].FirstName %> <%= zeros[0].LastName %> has 
+        <% } %>
+        <% else if (zeros.length == 2) { %>
+            <%= zeros[0].FirstName %> <%= zeros[0].LastName %> and <%= zeros[1].FirstName %> <%= zeros[1].LastName %> have 
+        <% } %>
+        <% else { %>
+            <% for (let i=0; i<zeros.length-2;i++) { %>
+                <%= zeros[i].FirstName %> <%= zeros[i].LastName %>, 
+            <% } %>
+            and <%= zeros[zeros.length-1].FirstName %> <%= zeros[zeros.length-1].LastName %> have 
+        <% } %>
+        0 Appointments.
+    <% }else if (results.length > 1) { %>
+        <% const low = results.length - 1; %>
+        , while the Doctor with the lowest appointments is <%= results[low].FirstName %> <%= results[low].LastName %> with <%= results[low].Appointments %> Appointments.
+    <% } %>
+
+    </body>
+    <!--<% if (locals.results && results.length > 0) { %>
         <h2>Report Results</h2>
         <table>
             <thead>
@@ -90,7 +119,7 @@ ORDER BY Appointments DESC`;
                     </tr>
                 <% }); %>
             </tbody>
-        </table>
+        </table>-->
     <% } else if (locals.results) { %>
         <p><strong>No data found</strong> for those specific dates or department.</p>
     <% } %>
