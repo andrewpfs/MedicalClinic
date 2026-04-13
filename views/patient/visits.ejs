@@ -14,16 +14,21 @@
     <table>
         <thead>
             <tr>
-                <th>ID</th> <th>Date</th>
-                <th>Doctor ID</th>
-                <th>Status</th>
+                <th>ID</th> 
+                <th>Date</th>
+                <th>Doctor</th> <th>Status</th>
             </tr>
         </thead>
         <tbody>
             <% visits.forEach(visit => { %>
                 <tr>
-                    <td><%= visit.AppointmentID %></td> <td><%= new Date(visit.AppointmentDate).toLocaleDateString() %></td>
-                    <td><%= visit.DoctorID %></td>
+                    <td><%= visit.AppointmentID %></td> 
+                    <td><%= new Date(visit.AppointmentDate).toLocaleDateString() %></td>
+                    
+                    <td>
+                        Dr. <%= visit.FirstName %> <%= visit.LastName %>
+                    </td>
+                    
                     <td><strong><%= visit.Status %></strong></td>
                 </tr>
             <% }); %>
