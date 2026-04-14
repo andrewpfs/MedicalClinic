@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const session = require('express-session');
+const path = require('path');
 const app = express();
 
 app.use(express.json());
@@ -20,8 +21,12 @@ app.use(session({
 
 const patientRoutes = require('./routes/patient');
 const homeRoutes = require('./routes/home');
+// const employeeRoutes = require('./routes/employee');
+// const doctorRoutes = require('./routes/doctor');
 
 app.use('/patient', patientRoutes);
+// app.use('/employee', employeeRoutes);
+// app.use('/doctor', doctorRoutes);
 app.use('/', homeRoutes);
 
 app.get('/logout', (req, res) => {
@@ -29,6 +34,8 @@ app.get('/logout', (req, res) => {
         res.redirect('/patient/login');
     });
 });
+
+app.use(express.static(path.join(__dirname, 'client/build')));
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
