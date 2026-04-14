@@ -331,6 +331,60 @@ router.patch('/api/notifications/read-all', async (req, res) => {
     }
 });
 
+// ── API: cancel appointment ───────────────────────────────────────────────────
+router.post('/cancel-appointment', async (req, res) => {
+    if (!req.session.patientId) return res.status(401).json({ error: 'Not logged in' });
+    const { appointmentId } = req.body;
+    try {
+        const [rows] = await db.query(
+            'SELECT * FROM appointment WHERE AppointmentID = ? AND PatientID = ?',
+            [appointmentId, req.session.patientId]
+        );
+        if (rows.length === 0) return res.status(403).json({ error: 'Not authorized' });
+
+        await db.query('UPDATE appointment SET StatusCode = 3 WHERE AppointmentID = ?', [appointmentId]);
+        await db.query("UPDATE transaction SET Status = 'Void' WHERE AppointmentID = ? AND Status = 'Pending'", [appointmentId]);
+        await db.query(
+            `INSERT INTO notification (PatientID, Message, Type, Link) VALUES (?, CONCAT('Your appointment on ', DATE_FORMAT(?, '%M %d, %Y'), ' has been cancelled.'), 'appointment', '/patient/visits')`,
+            [req.session.patientId, rows[0].AppointmentDate]
+        );
+        res.json({ success: true });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Failed to cancel appointment' });
+    }
+});
+
+// ── API: reschedule appointment ───────────────────────────────────────────────
+router.post('/reschedule-appointment', async (req, res) => {
+    if (!req.session.patientId) return res.status(401).json({ error: 'Not logged in' });
+    const { appointmentId, newDate } = req.body;
+    const formattedDate = newDate.replace('T', ' ') + ':00';
+    try {
+        const [rows] = await db.query(
+            'SELECT * FROM appointment WHERE AppointmentID = ? AND PatientID = ?',
+            [appointmentId, req.session.patientId]
+        );
+        if (rows.length === 0) return res.status(403).json({ error: 'Not authorized' });
+
+        const [conflict] = await db.query(
+            `SELECT AppointmentID FROM appointment WHERE DoctorID = ? AND AppointmentDate = ? AND StatusCode != 3 AND AppointmentID != ?`,
+            [rows[0].DoctorID, formattedDate, appointmentId]
+        );
+        if (conflict.length > 0) return res.status(409).json({ error: 'That time slot is already booked. Please choose a different time.' });
+
+        await db.query('UPDATE appointment SET AppointmentDate = ? WHERE AppointmentID = ?', [formattedDate, appointmentId]);
+        await db.query(
+            `INSERT INTO notification (PatientID, Message, Type, Link) VALUES (?, CONCAT('Your appointment has been rescheduled to ', DATE_FORMAT(?, '%M %d, %Y at %h:%i %p'), '.'), 'appointment', '/patient/visits')`,
+            [req.session.patientId, formattedDate]
+        );
+        res.json({ success: true });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Failed to reschedule appointment' });
+    }
+});
+
 router.get('/logout', logout);
 
 module.exports = router;
