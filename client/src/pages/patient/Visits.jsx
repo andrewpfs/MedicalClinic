@@ -114,8 +114,8 @@ export default function Visits() {
         if (!data) return;
         const now = new Date();
         now.setHours(0, 0, 0, 0);
-        const up = data.filter(v => new Date(v.AppointmentDate) >= now && v.Status === 'Scheduled');
-        const pa = data.filter(v => new Date(v.AppointmentDate) < now || v.Status === 'Paid' || v.Status === 'Cancelled');
+        const up = data.filter(v => new Date(v.AppointmentDate) >= now && v.Status !== 'Cancelled');
+        const pa = data.filter(v => new Date(v.AppointmentDate) < now || v.Status === 'Cancelled');
         up.sort((a, b) => new Date(a.AppointmentDate) - new Date(b.AppointmentDate));
         pa.sort((a, b) => new Date(b.AppointmentDate) - new Date(a.AppointmentDate));
         setUpcoming(up);
