@@ -39,7 +39,7 @@ app.get('/logout', (req, res) => {
 
 app.use(express.static(path.join(__dirname, 'client/build')));
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
 });
