@@ -29,7 +29,7 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
 
-        {/* David's pages */}
+        {/* Staff pages */}
         <Route path="/employee" element={<EmployeePage />} />
         <Route path="/doctor" element={<DoctorPage />} />
 

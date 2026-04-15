@@ -34,11 +34,17 @@ router.get('/api/profile', async (req, res) => {
 router.post('/update-profile', async (req, res) => {
     const patientId = getPatientId(req);
     if (!patientId) return res.status(401).json({ error: 'Not logged in' });
-    const { phone, email } = req.body;
+    const { fName, mName, lName, dob, phone, address, genderCode, raceCode, ethnicityCode, hasInsurance } = req.body;
     try {
         await db.query(
-            'UPDATE patient SET PhoneNumber = ?, Email = ? WHERE PatientID = ?',
-            [phone, email, patientId]
+            `UPDATE patient SET
+                FName = ?, MName = ?, LName = ?, Dob = ?,
+                PhoneNumber = ?, Address = ?,
+                GenderCode = ?, RaceCode = ?, EthnicityCode = ?, HasInsurance = ?
+             WHERE PatientID = ?`,
+            [fName, mName || null, lName, dob || null, phone, address,
+             genderCode || null, raceCode || null, ethnicityCode || null,
+             hasInsurance ? 1 : 0, patientId]
         );
         res.json({ success: true });
     } catch (err) {
@@ -60,11 +66,11 @@ router.get('/api/doctors', async (req, res) => {
 router.post('/book', async (req, res) => {
     const patientId = getPatientId(req);
     if (!patientId) return res.status(401).json({ error: 'Not logged in' });
-    const { doctorId, date } = req.body;
+    const { doctorId, date, reason } = req.body;
     const formattedDate = date.replace('T', ' ') + ':00';
     try {
         const [conflict] = await db.query(
-            `SELECT AppointmentID FROM appointment 
+            `SELECT AppointmentID FROM appointment
              WHERE DoctorID = ? AND AppointmentDate = ? AND StatusCode != 3`,
             [doctorId, formattedDate]
         );
@@ -72,8 +78,8 @@ router.post('/book', async (req, res) => {
             return res.status(409).json({ error: 'This doctor already has an appointment at that date and time. Please choose a different time.' });
         }
         await db.query(
-            'INSERT INTO appointment (PatientID, DoctorID, AppointmentDate, StatusCode, OfficeID) VALUES (?, ?, ?, ?, ?)', 
-            [patientId, doctorId, formattedDate, 1, 1] 
+            'INSERT INTO appointment (PatientID, DoctorID, AppointmentDate, StatusCode, OfficeID, ReasonForVisit) VALUES (?, ?, ?, ?, ?, ?)',
+            [patientId, doctorId, formattedDate, 1, 1, reason || null]
         );
         res.json({ success: true });
     } catch (err) { 

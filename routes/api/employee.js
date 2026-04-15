@@ -1,6 +1,19 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../../db');
+const jwt = require('jsonwebtoken');
+
+const STAFF_SECRET = 'staffsecret';
+
+const getStaff = (req) => {
+  try {
+    const token = req.cookies.staffToken;
+    if (!token) return null;
+    return jwt.verify(token, STAFF_SECRET);
+  } catch {
+    return null;
+  }
+};
 
 // ── Staff Login ───────────────────────────────────────────────────────────────
 router.post('/login', async (req, res) => {
@@ -13,15 +26,34 @@ router.post('/login', async (req, res) => {
     if (rows.length === 0) return res.status(404).json({ error: 'Employee not found.' });
     if (rows[0].Password !== password) return res.status(400).json({ error: 'Wrong password.' });
 
-    res.json({ success: true, role: rows[0].Role, name: rows[0].FirstName });
+    const token = jwt.sign(
+      { id: rows[0].EmployeeID, role: rows[0].Role, name: rows[0].FirstName },
+      STAFF_SECRET,
+      { expiresIn: '24h' }
+    );
+    res.cookie('staffToken', token, { httpOnly: true })
+       .json({ success: true, role: rows[0].Role, name: rows[0].FirstName });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server error.' });
   }
 });
 
+// ── Staff Session ─────────────────────────────────────────────────────────────
+router.get('/session', (req, res) => {
+  const staff = getStaff(req);
+  if (!staff) return res.json({ isLoggedIn: false });
+  res.json({ isLoggedIn: true, role: staff.role, name: staff.name });
+});
+
+// ── Staff Logout ──────────────────────────────────────────────────────────────
+router.get('/logout', (req, res) => {
+  res.clearCookie('staffToken').json({ success: true });
+});
+
 // ── Get all data ──────────────────────────────────────────────────────────────
 router.get('/', async (req, res) => {
+  if (!getStaff(req)) return res.status(401).json({ success: false, error: 'Not logged in' });
   try {
     const [patients] = await db.query(`
       SELECT PatientID, FName AS FirstName, LName AS LastName
@@ -82,6 +114,7 @@ router.get('/', async (req, res) => {
 });
 
 router.post('/book', async (req, res) => {
+  if (!getStaff(req)) return res.status(401).json({ success: false, error: 'Not logged in' });
   try {
     const { patientId, doctorId, appointmentDate, officeId, reasonForVisit } = req.body;
     if (!patientId || !doctorId || !appointmentDate || !officeId) {
@@ -105,6 +138,7 @@ router.post('/book', async (req, res) => {
 });
 
 router.post('/payment', async (req, res) => {
+  if (!getStaff(req)) return res.status(401).json({ success: false, error: 'Not logged in' });
   try {
     const { appointmentId, patientId, paymentCode, amount, status } = req.body;
     if (!appointmentId || !patientId || !amount) {
@@ -122,6 +156,7 @@ router.post('/payment', async (req, res) => {
 });
 
 router.post('/availability', async (req, res) => {
+  if (!getStaff(req)) return res.status(401).json({ success: false, error: 'Not logged in' });
   try {
     const { employeeId, officeId, shiftDate, startTime, endTime } = req.body;
     if (!employeeId || !officeId || !shiftDate || !startTime || !endTime) {

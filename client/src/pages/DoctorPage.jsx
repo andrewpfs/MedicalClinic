@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const API_BASE = '/api/doctor';
 const styles = {
@@ -103,6 +104,8 @@ const styles = {
 };
 
 export default function DoctorPage() {
+  const navigate = useNavigate();
+  const [staffName, setStaffName] = useState('');
   const [data, setData] = useState({
     upcomingAppointments: [],
     patientAppointmentInfo: [],
@@ -135,8 +138,23 @@ export default function DoctorPage() {
   };
 
   useEffect(() => {
-    loadData();
-  }, []);
+    fetch('/api/employee/session', { credentials: 'include' })
+      .then(res => res.json())
+      .then(data => {
+        if (!data.isLoggedIn || data.role !== 'Doctor') {
+          navigate('/staff-login');
+        } else {
+          setStaffName(data.name);
+          loadData();
+        }
+      })
+      .catch(() => navigate('/staff-login'));
+  }, [navigate]);
+
+  const handleLogout = async () => {
+    await fetch('/api/employee/logout', { credentials: 'include' });
+    navigate('/staff-login');
+  };
 
   const handleVisitSubmit = async (e) => {
     e.preventDefault();
@@ -173,9 +191,10 @@ export default function DoctorPage() {
       <div style={styles.navbar}>
         <div><strong>Medical Clinic</strong> — Doctor Dashboard</div>
         <div style={styles.navLinks}>
-          <a href="/" style={{ color: 'white', textDecoration: 'none' }}>Home</a>
-          <a href="/doctor" style={{ color: 'white', textDecoration: 'none' }}>Doctor</a>
-          <a href="/employee" style={{ color: 'white', textDecoration: 'none' }}>Employee</a>
+          {staffName && <span style={{ color: 'rgba(255,255,255,0.75)', fontSize: '14px' }}>Dr. {staffName}</span>}
+          <button onClick={handleLogout} style={{ background: 'none', border: '1px solid rgba(255,255,255,0.4)', color: 'white', padding: '6px 14px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px' }}>
+            Log Out
+          </button>
         </div>
       </div>
 

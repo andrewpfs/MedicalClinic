@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const API_BASE = '/api/employee';
 
@@ -94,6 +95,9 @@ const styles = {
 };
 
 export default function EmployeePage() {
+  const navigate = useNavigate();
+  const [staffName, setStaffName] = useState('');
+  const [staffRole, setStaffRole] = useState('');
   const [data, setData] = useState({
     patients: [],
     doctors: [],
@@ -146,8 +150,24 @@ export default function EmployeePage() {
   };
 
   useEffect(() => {
-    loadData();
-  }, []);
+    fetch('/api/employee/session', { credentials: 'include' })
+      .then(res => res.json())
+      .then(session => {
+        if (!session.isLoggedIn || session.role === 'Doctor') {
+          navigate('/staff-login');
+        } else {
+          setStaffName(session.name);
+          setStaffRole(session.role);
+          loadData();
+        }
+      })
+      .catch(() => navigate('/staff-login'));
+  }, [navigate]);
+
+  const handleLogout = async () => {
+    await fetch('/api/employee/logout', { credentials: 'include' });
+    navigate('/staff-login');
+  };
 
   const postJson = async (url, payload) => {
     const res = await fetch(url, {
@@ -221,11 +241,12 @@ export default function EmployeePage() {
   return (
     <div style={styles.page}>
       <div style={styles.navbar}>
-        <div><strong>Medical Clinic</strong> — Employee Dashboard</div>
+        <div><strong>Medical Clinic</strong> — {staffRole || 'Employee'} Dashboard</div>
         <div style={styles.navLinks}>
-          <a href="/" style={{ color: 'white', textDecoration: 'none' }}>Home</a>
-          <a href="/doctor" style={{ color: 'white', textDecoration: 'none' }}>Doctor</a>
-          <a href="/employee" style={{ color: 'white', textDecoration: 'none' }}>Employee</a>
+          {staffName && <span style={{ color: 'rgba(255,255,255,0.75)', fontSize: '14px' }}>{staffName}</span>}
+          <button onClick={handleLogout} style={{ background: 'none', border: '1px solid rgba(255,255,255,0.4)', color: 'white', padding: '6px 14px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px' }}>
+            Log Out
+          </button>
         </div>
       </div>
 

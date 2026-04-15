@@ -141,7 +141,7 @@ export default function Booking() {
     const res = await fetch('/patient/book', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ doctorId: selectedDoctor, date: datetime }),
+      body: JSON.stringify({ doctorId: selectedDoctor, date: datetime, reason }),
       credentials: 'include',
     });
     setLoading(false);
@@ -274,9 +274,21 @@ export default function Booking() {
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
           <div style={{ background: 'white', borderRadius: '12px', padding: '2rem', maxWidth: '420px', width: '90%', boxShadow: '0 4px 24px rgba(0,0,0,0.12)' }}>
             <h3 style={{ fontSize: '18px', fontWeight: 500, marginBottom: '0.75rem', color: '#1e2b1b' }}>Confirm appointment</h3>
-            <p style={{ fontSize: '14px', color: '#6b7280', marginBottom: '1.5rem', lineHeight: 1.6 }}>
+            <p style={{ fontSize: '14px', color: '#6b7280', marginBottom: '1.25rem', lineHeight: 1.6 }}>
               Please confirm you would like to book an appointment with <strong>{confirmData.doctorName}</strong> on <strong>{confirmData.date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</strong> at <strong>{formatHour(confirmData.hour)}</strong>.
             </p>
+            <div style={{ marginBottom: '1.25rem' }}>
+              <label style={{ fontSize: '13px', fontWeight: 500, color: '#374151', display: 'block', marginBottom: '6px' }}>
+                Reason for visit <span style={{ color: '#9ca3af', fontWeight: 400 }}>(optional)</span>
+              </label>
+              <textarea
+                value={reason}
+                onChange={e => setReason(e.target.value)}
+                placeholder="e.g. Annual checkup, back pain, follow-up..."
+                rows={3}
+                style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #d1d5db', fontSize: '13px', fontFamily: 'Poppins, sans-serif', resize: 'vertical', boxSizing: 'border-box', color: '#111' }}
+              />
+            </div>
             <div style={{ display: 'flex', gap: '10px' }}>
               <button
                 onClick={handleConfirmBooking}
@@ -285,7 +297,7 @@ export default function Booking() {
                 Confirm booking
               </button>
               <button
-                onClick={() => setConfirmData(null)}
+                onClick={() => { setConfirmData(null); setReason(''); }}
                 style={{ flex: 1, padding: '10px', background: 'white', color: '#374151', border: '1px solid #d1d5db', borderRadius: '8px', fontSize: '14px', cursor: 'pointer', width: 'auto' }}
               >
                 Cancel
