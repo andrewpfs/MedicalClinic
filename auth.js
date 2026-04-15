@@ -1,14 +1,14 @@
 const db = require("./db");
 const bcrypt = require("bcryptjs");
-const jwt = require('jsonwebtoken');
+const jwt = require('jsonwebtoken')
 
 const register = async (req, res) => {
   try {
-    const query = 'SELECT * FROM patient WHERE email = ?';
-    const [data] = await db.query(query, [req.body.Email]);
+    const query = `SELECT * FROM patient where email = '${req.body.Email}'`;
+    const [data] = await db.query(query)
+
 
     if (data.length) return res.status(409).json("User already exists!");
-
     const salt = bcrypt.genSaltSync(10);
     const hashedPassword = bcrypt.hashSync(req.body.Password, salt);
 
@@ -26,41 +26,39 @@ const register = async (req, res) => {
       req.body.Email,
       hashedPassword,
     ];
-
+    console.log(values)
     const creationQuery = "INSERT INTO patient (FName, MName, LName, Dob, Address, PhoneNumber, GenderCode, RaceCode, EthnicityCode, HasInsurance, Email, Password) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-    await db.query(creationQuery, values);
-    res.json({ success: true, message: "User created!" });
+    await db.query(creationQuery, values) ;
+    res.json("user created!")
+    }
+  catch(err){ res.status(500).json(err)}
 
-  } catch (err) {
-    res.status(500).json(err);
-  }
 };
 
 const login = async (req, res) => {
-  try {
-    const [data] = await db.query('SELECT * FROM patient WHERE Email = ?', [req.body.Email]);
-    if (data.length === 0) return res.status(404).json("User not found!");
+    try{
+        const query = `SELECT * FROM PATIENT WHERE Email = '${req.body.Email}'`
+        const [data] = await db.query(query)
+        if(data.length === 0) return res.status(404).json("User not found!")
 
-    const checkPassword = bcrypt.compareSync(req.body.Password, data[0].Password);
-    if (!checkPassword) return res.status(400).json("Wrong password or username");
+        const checkPassword = bcrypt.compareSync(req.body.Password,data[0].Password)
 
-    req.session.patientId = data[0].PatientID;
+        if(!checkPassword) return res.status(400).json("wrong password or username")
+        
+        const{Password, ...other} = data[0]
 
-    const token = jwt.sign({ id: data[0].PatientID }, "secretkey", { expiresIn: "24h" });
+        const token = jwt.sign({id:data[0].PatientID}, "secretkey",{expiresIn: "24h"})
 
-    res.cookie("accessToken", token, { httpOnly: true })
-       .json({ success: true });
-
-  } catch (err) {
-    console.error(err);
-    res.status(500).json(err);
-  }
-};
-
+        res.cookie("accessToken", token, {
+            httpOnly: true,
+        }).json({success : true})
+    }catch(err){
+        res.status(500).json(err)
+        console.log(err)
+    }
+}
 const logout = (req, res) => {
-  req.session.destroy(() => {
-    res.clearCookie("accessToken").json({ success: true });
-  });
-};
+     res.clearCookie("accessToken").json({success: true})
+}
 
 module.exports = { register, login, logout };

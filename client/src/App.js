@@ -5,16 +5,21 @@ import Booking from './pages/patient/booking.jsx';
 import Visits from './pages/patient/Visits.jsx';
 import Payments from './pages/patient/Payments.jsx';
 import UpdateProfile from './pages/patient/UpdateProfile.jsx';
-import Login from './pages/patient/Login.jsx';
+import Login from './pages/Login.jsx';
+import Home from './pages/Home.jsx';
+import Register from './pages/patient/Register.jsx';
 import Billing from './pages/patient/Billing.jsx';
 import BillingBalance from './pages/patient/BillingBalance.jsx';
 import BillingMethods from './pages/patient/BillingMethods.jsx';
+
 
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/patient/login" element={<Login />} />
+        <Route path="/" element={<Home/>} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register/>} />
         <Route path="/patient/profile" element={<Profile />} />
         <Route path="/patient/booking" element={<Booking />} />
         <Route path="/patient/visits" element={<Visits />} />
