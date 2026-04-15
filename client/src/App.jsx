@@ -9,11 +9,13 @@ import Register from './pages/patient/Register';
 import EmployeePage from './pages/EmployeePage';
 import DoctorPage from './pages/DoctorPage';
 
-// Your patient pages
-import PatientProfile from './pages/patient/Profile';
-import PatientVisits from './pages/patient/Visits';
-import PatientBilling from './pages/patient/Billing';
-import PatientBooking from './pages/patient/booking';
+// Patient pages
+import Profile from './pages/patient/Profile';
+import Booking from './pages/patient/booking';
+import Visits from './pages/patient/Visits';
+import Billing from './pages/patient/Billing';
+import BillingBalance from './pages/patient/BillingBalance';
+import BillingMethods from './pages/patient/BillingMethods';
 import UpdateProfile from './pages/patient/UpdateProfile';
 
 export default function App() {
@@ -29,11 +31,13 @@ export default function App() {
         <Route path="/employee" element={<EmployeePage />} />
         <Route path="/doctor" element={<DoctorPage />} />
 
-        {/* Your patient portal */}
-        <Route path="/patient/profile" element={<PatientProfile />} />
-        <Route path="/patient/visits" element={<PatientVisits />} />
-        <Route path="/patient/billing" element={<PatientBilling />} />
-        <Route path="/patient/booking" element={<PatientBooking />} />
+        {/* Patient portal */}
+        <Route path="/patient/profile" element={<Profile />} />
+        <Route path="/patient/booking" element={<Booking />} />
+        <Route path="/patient/visits" element={<Visits />} />
+        <Route path="/patient/billing" element={<Billing />} />
+        <Route path="/patient/billing/balance" element={<BillingBalance />} />
+        <Route path="/patient/billing/methods" element={<BillingMethods />} />
         <Route path="/patient/update-profile" element={<UpdateProfile />} />
       </Routes>
     </BrowserRouter>

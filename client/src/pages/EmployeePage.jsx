@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 
-const API_BASE = 'http://localhost:3000/api/employee';
+const API_BASE = '/api/employee';
 
 const styles = {
   page: {

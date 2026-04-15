@@ -19,7 +19,10 @@ app.use(session({
     secret: 'medical_clinic_secret',
     resave: false,
     saveUninitialized: true,
-    cookie: { secure: false }
+    cookie: { 
+        secure: false,
+        sameSite: 'lax'
+    }
 }));
 
 const patientRoutes = require('./routes/patient');

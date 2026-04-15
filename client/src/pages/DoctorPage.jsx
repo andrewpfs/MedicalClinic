@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 
-const API_BASE = 'http://localhost:3000/api/doctor';
-
+const API_BASE = '/api/doctor';
 const styles = {
   page: {
     margin: 0,
