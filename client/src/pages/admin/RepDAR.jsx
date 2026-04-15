@@ -5,6 +5,7 @@ import DataTable from 'react-data-table-component'
 
 function RepDAR() {
     const [stuff, setStuff] = useState([])
+    const [data,setData] = useState([])
     const [loading, setLoading] = useState(false)
     const [rep, setRep] = useState({
         DepartmentName: "",
@@ -45,6 +46,7 @@ function RepDAR() {
             })
             const data = await response.json()
             setStuff(data)
+            setData(stuff.rows)
         } catch (err) {
             console.error(err)
         } finally {
@@ -72,7 +74,7 @@ function RepDAR() {
                 <DataTable
                     title="Department Appointment Report"
                     columns={columns}
-                    data={stuff}
+                    data={data}
                     progressPending={loading}
                     fixedHeader />
             </div>

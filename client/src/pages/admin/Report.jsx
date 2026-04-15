@@ -25,7 +25,8 @@ function Report() {
             {/* Conditionally render the selected report component */}
             {type === "RepDAR" && <RepDAR />}
             {type === "RepGAR" && <RepGAR />}
-            {type === "RepGRR" && <RepGRR />}        </div>
+            {type === "RepGRR" && <RepGRR />}
+        </div>
     );
 };
 

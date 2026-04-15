@@ -140,7 +140,7 @@ router.get('/api/pulldar', async (req,res) => {
  
         const [rows] = await db.query(q, [min, max, DepartmentName]);
  
-        
+
         if (rows.length > 0) topE = rows[0].FirstName + " " + rows[0].LastName;
         if (rows.length > 0) topA = rows[0].Appointments;
         const [zeros] = await db.query("SELECT E.EmployeeID, E.FirstName, E.LastName FROM doctor AS DO, employee AS E, department AS D WHERE D.DepartmentID=E.DepartmentID AND DO.EmployeeID=E.EmployeeID AND D.DepartmentName=?",req.body.DepartmentName);
@@ -153,7 +153,7 @@ router.get('/api/pulldar', async (req,res) => {
             })
         });
 
-        res.render('admin/repdar', { results: rows, topE: topA, topA: topA, zeros: zeros });
+        res.json({ results: rows, topE: topA, topA: topA, zeros: zeros });
     } catch (err) {
         console.error(err);
         res.status(500).send("Report Error");
