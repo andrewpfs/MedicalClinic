@@ -98,3 +98,5 @@ function EmployeeTable(data) {
         </div>
     );
 };
+
+export default EmployeeTable;

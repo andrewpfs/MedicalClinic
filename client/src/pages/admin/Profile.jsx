@@ -1,11 +1,14 @@
 import React from 'react'
+import { useState,useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 
-function AdminProfile({First,Last,Role,Depart,Birth,Gender,Race,Ethnic,Address,Phone}) {
+
+function AdminProfile() {
     const [info, setInfo] = useState(null);
     const [error, setError] = useState('');
     const navigate = useNavigate();
-
+/*
     useEffect(() => {
     fetch('/admin/api/profile', { credentials: 'include' })
         .then(res => {
@@ -15,33 +18,22 @@ function AdminProfile({First,Last,Role,Depart,Birth,Gender,Race,Ethnic,Address,P
         .then(data => { if (data) setInfo(data); })
         .catch(() => setError('Failed to load profile.'));
     }, [navigate]);
-
+*/
+    useEffect(() => {
+        setInfo(fetch('/admin/api/profile',))
+    })
     if (error) return <p style={{ padding: '20px', color: 'red' }}>{error}</p>;
     if (!info) return <p style={{ padding: '20px' }}>Loading...</p>;
     
-    const [updated,setUpdated] = useState({
-        FirstName: info.First,
-        LastName: info.Last,
-        GenderCode: null,
-        RaceCode: null,
-        EthnicityCode: null,
-        Department: null,
-        Address: info.Address,
-        PhoneNumber: info.Phone,
-        Email: info.Email,
-        Password: info.Pass,
-    });
+    
 
-    const [passes,setPasses] = useState({
-        OldPassword: "",
-        NewPassword: ""
-    })
     
     
+    // button  style="text-decoration: none; color: black;"
     
     return (
         <div>
-            <button><a href="/admin/home" style="text-decoration: none; color: black;">Home</a></button>
+            <button><a href="/admin/home">Home</a></button>
             <h1> Name: {info.First} {info.Last}</h1>
             <h1>Role: {info.Role}</h1>
             <h1>Department: {info.Depart}</h1>
@@ -53,59 +45,68 @@ function AdminProfile({First,Last,Role,Depart,Birth,Gender,Race,Ethnic,Address,P
             <h1>Phone Number: {info.Phone}</h1>
             <h1>Email: {info.Email}</h1>
             <br /><br />
+            <UpdateProfile />
+        </div>
+
+    );
+};
+
+function UpdateProfile(info) {
+    const navigate = useNavigate();
+    const [updated,setUpdated] = useState({
+        FirstName: info.First,
+        LastName: info.Last,
+        Address: info.Address,
+        PhoneNumber: info.Phone,
+        Email: info.Email,
+        Password: info.Pass,
+    });
+
+    const [passes,setPasses] = useState({
+        OldPassword: "",
+        NewPassword: ""
+    })
+
+    const handleChange = (e) => {
+        setUpdated(prev=>({...prev,[e.target.name] : e.target.value}));
+    };
+
+    const handleChangePassword = (e) => {
+        setPasses(prev=>({...prev,[e.target.name] : e.target.value}));
+    };
+
+    const handleUpdate = async e => {
+        e.preventDefault()
+        try {
+            await fetch("/admin/api/updateprofile", updated) //Need to figure out how to connect and make post request
+            navigate("/admin/Employees") //IDK PLEASE SEND HELP
+        }catch(err){
+            console.error(err)
+        }
+    };
+
+    const handlePassword = async e => {
+        e.preventDefault()
+        if (passes.OldPassword == info.Pass) {
+        try {
+            await fetch("/admin/api/updatepassword", {Password:passes.NewPassword,ID:info.id} ) //Need to figure out how to connect and make post request
+            navigate("/admin/Employees") //IDK PLEASE SEND HELP
+        }catch(err){
+            console.error(err)
+        }}else {
+            return <div>Incorrect Password. Please Try Again.</div>
+        }
+    };
+
+    return (
+        <div>
             <form>Update Profile
-                <label>First Name*:
+                <label>First Name:
                 <input type="text" name="FirstName" onChange={handleChange} maxlength="30" required/>
                 </label>
-                <label>Last Name*:
+                <label>Last Name:
                     <input type="text" name="LastName" onChange={handleChange} maxlength="30" required/>
-                </label>
-                <label>Birth Date*:
-                    <input type="date" name="Birthdate" onChange={handleChange} required/>
                 </label><br /><br />
-                <label>Gender:
-                    <select name="GenderCode" onChange={handleChange}>
-                        <option value="">Select Gender</option>
-                        <option value="1">Male</option>
-                        <option value="2">Female</option>
-                        <option value="3">Other</option>
-                    </select>
-                </label>
-                <label>Race:
-                    <select name="RaceCode" onChange={handleChange}>
-                        <option value="">Select Race</option>
-                        <option value="1">White</option>
-                        <option value="3">African</option>
-                        <option value="2">Asian</option>
-                        <option value="5">Other</option>
-                    </select>
-                </label>
-                <label>Ethnicity:
-                    <select name="EthnicityCode" onChange={handleChange}>
-                        <option value="">Select Ethnicity</option>
-                        <option value="1">Hispanic</option>
-                        <option value="2">Latin American</option>
-                        <option value="3">African</option>
-                        <option value="4">Caribbean</option>
-                        <option value="5">Indian</option>
-                        <option value="6">Melanesian</option>
-                        <option value="7">Chinese</option>
-                        <option value="8">Japanese</option>
-                        <option value="9">Korean</option>
-                        <option value="10">Arabic</option>
-                        <option value="11">European</option>
-                        <option value="12">Other</option>
-                    </select>
-                </label><br /><br />
-                <label>Department*:
-                    <select name="DepartmentID" onChange={handleChange} required>
-                        <option value="">Select Department</option>
-                        <option value="1">General</option>
-                        <option value="2">Optometry</option>
-                        <option value="3">Cardiology</option>
-                        <option value="4">Orthopedics</option>
-                    </select>
-                </label><br />
                 <label>Address:
                     <input type="text" name="Address" onChange={handleChange} maxlength="100"/>
                 </label>
@@ -115,16 +116,20 @@ function AdminProfile({First,Last,Role,Depart,Birth,Gender,Race,Ethnic,Address,P
                 <label>Email:
                     <input type="email" placeholder="example@example.com" name="Email" onChange={handleChange} required/>
                 </label>
+                <button onClick={handleUpdate}>Submit</button>
             </form>
             <form>
                 <label>Old Password:
-                    <input type="text" placeholder="Password" name="OldPassword" onChange={handleChange} required/>
+                    <input type="text" placeholder="Password" name="OldPassword" onChange={handleChangePassword}/>
                 </label>
                 <label>New Password:
-                    <input type="text" placeholder="Password" name="NewPassword" onChange={handleChange} required/>
+                    <input type="text" placeholder="Password" name="NewPassword" onChange={handleChangePassword}/>
                 </label>
+                <button onClick={handlePassword}>Submit</button>
             </form>
         </div>
+    )
+}
 
-    );
-};
+
+export default AdminProfile;

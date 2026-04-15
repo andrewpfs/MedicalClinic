@@ -2,6 +2,7 @@ import React from 'react'
 import {useState} from 'react'
 import {createRoot} from 'react'
 import {useNavigate} from 'react-router-dom'
+import DataTable from 'react-data-table-component'
 
 function RepDAR() {
     const [stuff,setStuff] = useState([])
@@ -41,9 +42,7 @@ function RepDAR() {
         </div>
         <div className="report-table">
             <DataTable 
-                title="Report" 
-                columns={columns} 
-                data={data} 
+                title="Report"  
                 progressPending={loading}
                 fixedHeader/>
         </div>

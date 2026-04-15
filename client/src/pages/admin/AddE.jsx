@@ -3,12 +3,10 @@ import {useState} from 'react'
 import {createRoot} from 'react'
 import {useNavigate} from 'react-router-dom'
 
-const navigate = useNavigate();
-
-const API_BASE = 'http://localhost:3000/admin/api';
 
 const AddE = () => {
-    
+    const navigate = useNavigate();
+
     const [emp,setEmp] = useState({
         FirstName: "",
         LastName: "",
@@ -35,16 +33,24 @@ const AddE = () => {
     const handleChange = (e) => {
         setEmp(prev=>({...prev,[e.target.name] : e.target.value}));
     };
-    /*
+    
     const handleClick = async e => {
         e.preventDefault()
         try {
-            await fetch(`${API_BASE}/addemp`, emp) //Need to figure out how to connect and make post request
-            
-            if(emp.Role == 'Doctor') {
-                const id = await fetch(`${API_BASE}/`,emp)
-                
+            await fetch(`/api/addemployee`, emp) //Need to figure out how to connect and make post request
+            console.log("Employee Created")
 
+            if (emp.Role == 'Doctor') {
+                const id = await fetch(`/api/getID`,emp)
+                
+                await fetch(`/api/adddoctor`,{EmployeeID:id,Specialty:emp.Specialty,IsPrimaryCare:emp.IsPrimaryCare})
+                console.log("Doctor Created")
+            }
+            else if (emp.Role == 'Nurse') {
+                const id = await fetch(`/api/getID`,emp)
+
+                await fetch(`/api/addnurse`,{EmployeeID:id,AssignedDoctorID:emp.AssignedDoctorID})
+                console.log("Nurse Created")
             }
             
             
@@ -52,7 +58,7 @@ const AddE = () => {
         }catch(err){
             console.error(err)
         }
-    };*/
+    };
 
     const handleDisplay = (e) => {
         if (e.target.value == 'Doctor') {
@@ -165,3 +171,6 @@ const AddE = () => {
     </div>
     );
 };
+
+
+export default AddE;

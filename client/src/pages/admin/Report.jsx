@@ -2,14 +2,14 @@ import React from 'react'
 import {useState} from 'react'
 import {createRoot} from 'react'
 import {useNavigate} from 'react-router-dom'
-import {RepGAR} from '/RepGAR'
-import {RepGRR} from '/RepGRR'
-import {RepDAR} from '/RepDAR'
+import {RepGAR} from './RepGAR'
+import {RepGRR} from './RepGRR'
+import {RepDAR} from './RepDAR'
 
 function Report() {
-    const reportType = "";
+    const [type,setType] = useState("RepDAR")
     const handleReport = (e) => {
-        reportType = e.target.value;
+        setType(e.target.value)
     };
 
     return (
@@ -21,7 +21,10 @@ function Report() {
                     <option value="RepGRR">General Revenue</option>
                 </select>
             </label>
-            {/*{reportType} <RepDAR /> */}
+            
+            {/*{type} <RepDAR /> */}
         </div>
     );
 };
+
+export default Report;

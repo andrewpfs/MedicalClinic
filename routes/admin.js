@@ -29,7 +29,7 @@ router.get('/api/profile', async (req,res) => {
         WHERE E.EmployeeID = ?`;
 
     try {
-        const [rows] = await db.query(q, [id]);
+        const [rows] = await db.query(q, id);
         res.json(rows[0]);
     } catch (err) { res.status(500).json({ error: 'Error loading profile' }); }
 })
@@ -63,31 +63,35 @@ router.post('/api/updatepassword', async (req,res) => {
 })
 
 router.post('/api/addnurse', async (req,res) => {
-    const q = "INSERT INTO nurse ('EmployeeID','ApprovedDoctorID')VALUES (?)";
+    const q = "INSERT INTO nurse ('EmployeeID','ApprovedDoctorID')VALUES (?,?)";
 
     const r = [req.body.EmployeeID,req.body.ApprovedDoctorID];
 
     try {
-        await db.query(q,[r])
+        await db.query(q,r)
+
+        res.status(200).json({message: "Nurse Created"})
     }catch(err){
         res.status(500).json({error: 'Error inserting nurse'})
     }
 })
 
 router.post('/api/adddoctor', async (req,res) => {
-    const q = "INSERT INTO doctor ('EmployeeID','Specialty','isPrimaryCare')VALUES (?)";
+    const q = "INSERT INTO doctor (EmployeeID,Specialty,isPrimaryCare)VALUES (?,?,?)";
 
     const r = [req.body.EmployeeID,req.body.Specialty,req.body.IsPrimaryCare];
 
     try {
-        await db.query(q,[r])
+        await db.query(q,r)
+
+        res.status(200).json({message: "Doctor Created"})
     }catch(err){
         res.status(500).json({error: 'Error creating doctor'})
     }
 })
 
 router.post('/api/addemployee', async (req,res) => {
-    const q = "INSERT INTO employee (`FirstName`,`LastName`,`Birthdate`,`GenderCode`,`RaceCode`,`EthnicityCode`,`Role`,`Address`,`PhoneNumber`,`Email`,`Password`,`DepartmentID`) VALUES (?)";
+    const q = "INSERT INTO employee (`FirstName`,`LastName`,`Birthdate`,`GenderCode`,`RaceCode`,`EthnicityCode`,`Role`,`Address`,`PhoneNumber`,`Email`,`Password`,`DepartmentID`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)";
 
     const r = [
         req.body.FirstName,
@@ -105,13 +109,26 @@ router.post('/api/addemployee', async (req,res) => {
     ];
 
     try {
-        await db.query(q,[r])
+        await db.query(q,r)
+
+        res.status(200).json({message: 'Employee Created'})
     }catch(err){
         res.status(500).json({error: 'Error creating employee'})
     }
 })
 
+router.get('/api/getID', async (req,res) => {
+    const q = 'SELECT EmployeeID FROM employee WHERE FirstName=? AND LastName=? AND Email=?';
+    const r = [req.body.FirstName,req.body.LastName,req.body.Email]
 
+    try {
+        const [rows] = await db.query(q,r)
+
+        return rows[0].EmployeeID
+    }catch(err){
+        res.status(500).json({error: 'Error creating employee'})
+    }
+})
 
 
 

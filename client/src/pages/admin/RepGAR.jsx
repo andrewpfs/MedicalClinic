@@ -4,7 +4,8 @@ import {createRoot} from 'react'
 import {useNavigate} from 'react-router-dom'
 
 function RepGAR() {
-
+    const navigate = useNavigate();
+    
     const [rep,setRep] = useState({
         DepartmentName: "",
         min: "",
@@ -18,7 +19,7 @@ function RepGAR() {
     const handleClick = async e => {
         e.preventDefault()
         try {
-            await axios.post("/admin/addemp", rep) //Need to figure out how to connect and make post request
+            await fetch("/admin/addemp", rep) //Need to figure out how to connect and make post request
             navigate("/admin/home") //IDK PLEASE SEND HELP
         }catch(err){
             console.error(err)

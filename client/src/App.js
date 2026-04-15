@@ -9,6 +9,17 @@ import Login from './pages/patient/Login.jsx';
 import Billing from './pages/patient/Billing.jsx';
 import BillingBalance from './pages/patient/BillingBalance.jsx';
 import BillingMethods from './pages/patient/BillingMethods.jsx';
+import AdminHome from './pages/admin/Home.jsx';
+import AddE from './pages/admin/AddE.jsx';
+import AdminProfile from './pages/admin/Profile.jsx';
+import AdminUpdateProfile from './pages/admin/Profile.jsx';
+import Report from './pages/admin/Report.jsx';
+import RepDAR from './pages/admin/RepDAR.jsx';
+import RepGAR from './pages/admin/RepGAR.jsx';
+import RepGRR from './pages/admin/RepGRR.jsx';
+import ReportTable from './pages/admin/ReportTable.jsx';
+import Employees from './pages/admin/Employees.jsx';
+import EmployeeTable from './pages/admin/EmployeeTable.jsx';
 
 export default function App() {
   return (

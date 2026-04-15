@@ -15,3 +15,5 @@ function AdminHome() {
         </div>
     );
 };
+
+export default AdminHome;

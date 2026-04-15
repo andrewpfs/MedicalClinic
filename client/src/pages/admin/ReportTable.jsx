@@ -7,6 +7,7 @@ function ReportTable(type, data) {
     const [loading,setLoading] = useState(false)
     const [perPage,setPerPage] = useState(10)
 
+    
     const columns = []
     if (type == "RepDAR") {
         columns = [
@@ -84,3 +85,6 @@ function ReportTable(type, data) {
         </div>
     )
 }
+
+
+export default ReportTable;
