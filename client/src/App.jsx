@@ -10,6 +10,16 @@ import RoleSelect from './pages/RoleSelect';
 import EmployeePage from './pages/EmployeePage';
 import DoctorPage from './pages/DoctorPage';
 import StaffLogin from './pages/StaffLogin';
+// Admin pages
+import AdminHome from './pages/admin/Home';
+import AddE from './pages/admin/AddE';
+import AdminProfile from './pages/admin/Profile';
+import AdminEmployees from './pages/admin/Employees';
+import Report from './pages/admin/Report';
+import RepDAR from './pages/admin/RepDAR';
+import RepGAR from './pages/admin/RepGAR';
+import RepGRR from './pages/admin/RepGRR';
+import ReportTable from './pages/admin/ReportTable';
 // Patient pages
 import Profile from './pages/patient/Profile';
 import Booking from './pages/patient/booking';
@@ -43,6 +53,18 @@ export default function App() {
         <Route path="/patient/update-profile" element={<UpdateProfile />} />
         <Route path="/select-role" element={<RoleSelect />} />
         <Route path="/staff-login" element={<StaffLogin />} />
+
+        {/* Admin portal */}
+        <Route path="/admin" element={<AdminHome />} />
+        <Route path="/admin/home" element={<AdminHome />} />
+        <Route path="/admin/add-employee" element={<AddE />} />
+        <Route path="/admin/profile" element={<AdminProfile />} />
+        <Route path="/admin/employees" element={<AdminEmployees />} />
+        <Route path="/admin/report" element={<Report />} />
+        <Route path="/admin/report/dar" element={<RepDAR />} />
+        <Route path="/admin/report/gar" element={<RepGAR />} />
+        <Route path="/admin/report/grr" element={<RepGRR />} />
+        <Route path="/admin/report/table" element={<ReportTable />} />
       </Routes>
     </BrowserRouter>
   );
