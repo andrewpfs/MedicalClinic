@@ -7,7 +7,10 @@ const app = express();
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(cors());
+app.use(cors({
+    origin: 'http://localhost:3000',
+    credentials: true
+}));
 app.use(cookieParser());
 app.set('view engine', 'ejs');
 app.use(express.static('public'));
@@ -28,12 +31,6 @@ app.use('/patient', patientRoutes);
 app.use('/api/employee', employeeApiRoutes);
 app.use('/api/doctor', doctorApiRoutes);
 app.use('/', homeRoutes);
-
-app.get('/logout', (req, res) => {
-    req.session.destroy(() => {
-        res.redirect('/patient/login');
-    });
-});
 
 app.use(express.static(path.join(__dirname, 'client/build')));
 

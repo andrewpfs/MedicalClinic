@@ -7,9 +7,9 @@ export default function UpdateProfile() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetch('/api/patient/profile')
+    fetch('/patient/api/profile', { credentials: 'include' })
       .then(res => {
-        if (res.status === 401) { navigate('/patient/login'); return null; }
+        if (res.status === 401) { navigate('/login'); return null; }
         return res.json();
       })
       .then(data => {
@@ -23,6 +23,7 @@ export default function UpdateProfile() {
     const res = await fetch('/patient/update-profile', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify(form),
     });
     if (res.ok) {
@@ -61,13 +62,15 @@ export default function UpdateProfile() {
         </div>
         <button
           type="submit"
-          style={{ padding: '10px 20px', backgroundColor: '#007bff', color: 'white', border: 'none', cursor: 'pointer', width: 'auto' }}
+          style={{ padding: '10px 20px', backgroundColor: '#007bff', color: 'white', border: 'none', cursor: 'pointer' }}
         >
           Save Changes
         </button>
       </form>
       <br />
-      <a href="/patient/profile">Cancel and Go Back</a>
+      <button onClick={() => navigate('/patient/profile')} style={{ background: 'none', border: 'none', color: '#007bff', cursor: 'pointer' }}>
+        Cancel and Go Back
+      </button>
     </div>
   );
 }

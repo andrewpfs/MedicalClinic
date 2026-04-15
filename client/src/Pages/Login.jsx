@@ -4,19 +4,28 @@ import { Link, useNavigate } from "react-router-dom"
 function Login() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [error, setError] = useState("")
   const navigate = useNavigate()
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    const res = await fetch("/patient/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({ Email: email, Password: password })
-    })
+    setError("")
+    try {
+      const res = await fetch("/patient/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ Email: email, Password: password })
+      })
 
-    if (res.ok) {
-      navigate("/")
+      if (res.ok) {
+        navigate("/patient/profile")
+      } else {
+        const msg = await res.json()
+        setError(typeof msg === "string" ? msg : "Login failed.")
+      }
+    } catch {
+      setError("Could not connect to server.")
     }
   }
 
@@ -27,6 +36,8 @@ function Login() {
           <h2>Welcome back</h2>
           <p>Sign in to your patient account</p>
         </div>
+
+        {error && <p style={{ color: "red", marginBottom: "12px" }}>{error}</p>}
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
@@ -59,7 +70,7 @@ function Login() {
         </form>
 
         <p className="register-link">
-          Don't have an account? <Link to="/patient/register">Create one</Link>
+          Don't have an account? <Link to="/register">Create one</Link>
         </p>
       </div>
     </div>
