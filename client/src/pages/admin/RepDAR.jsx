@@ -4,7 +4,7 @@ import { useState } from 'react'
 import DataTable from 'react-data-table-component'
 
 function RepDAR() {
-    const [stuff, setStuff] = useState([])
+    const [apps, setApps] = useState([])
     const [data,setData] = useState([])
     const [loading, setLoading] = useState(false)
     const [rep, setRep] = useState({
@@ -51,6 +51,7 @@ function RepDAR() {
             const resData = await response.json();
             console.log(resData);
             setData(resData.results);
+            setApps(resData.appointments);
         } catch (err) {
             console.error(err);
         } finally {

@@ -1,7 +1,4 @@
-import React from 'react'
 import {useState} from 'react'
-import {createRoot} from 'react'
-import {useNavigate} from 'react-router-dom'
 import RepDAR from './RepDAR'
 import RepGAR from './RepGAR'
 import RepGRR from './RepGRR'
@@ -14,6 +11,7 @@ function Report() {
 
     return (
         <div>
+            <button><a href="/admin/home">Home</a></button><br />
             <label>Reports:
                 <select name="ReportType" onChange={handleReport}>
                     <option value="RepDAR">Department Appointment</option>

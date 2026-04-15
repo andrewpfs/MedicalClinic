@@ -1,12 +1,12 @@
 import React from 'react'
-import {useState} from 'react'
+import {useState,useEffect} from 'react'
 //import {createRoot} from 'react'
 import {useNavigate} from 'react-router-dom'
 
 
 const AddE = () => {
     const navigate = useNavigate();
-
+    const [department,setDepartment] = useState([])
     const [emp,setEmp] = useState({
         FirstName: "",
         LastName: "",
@@ -30,6 +30,20 @@ const AddE = () => {
         Nurse:false
     })
     
+    async function getDepart() {
+        try {
+            const deps = await fetch('/admin/api/getdepartments').then(res => res.json())
+
+
+            setDepartment(deps)
+        }catch(err) {
+            console.error(err)
+        }
+    }
+
+    useEffect(() => {
+        getDepart()
+    },[])
     const handleChange = (e) => {
         setEmp(prev=>({...prev,[e.target.name] : e.target.value}));
     };
@@ -156,13 +170,13 @@ const AddE = () => {
                 </select>
             </label>
             <label>Department*:
-                <select name="DepartmentID" onChange={handleChange} required>
-                    <option value="">Select Department</option>
-                    <option value="1">General</option>
-                    <option value="2">Optometry</option>
-                    <option value="3">Cardiology</option>
-                    <option value="4">Orthopedics</option>
-                </select>
+                <select name="DepartmentName" onChange={handleChange}>
+            {department.map(department => (
+                <option key={department.DepartmentID} value={department.DepartmentID}>
+                    {department.DepartmentName}
+                </option>
+            ))}
+        </select>
             </label><br />
             <label>Address:
                 <input type="text" name="Address" onChange={handleChange} maxlength="100"/>

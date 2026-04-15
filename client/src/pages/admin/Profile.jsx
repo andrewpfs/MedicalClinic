@@ -21,7 +21,7 @@ function AdminProfile() {
 */
     useEffect(() => {
         setInfo(fetch('/admin/api/profile',))
-    })
+    },[])
     if (error) return <p style={{ padding: '20px', color: 'red' }}>{error}</p>;
     if (!info) return <p style={{ padding: '20px' }}>Loading...</p>;
     
