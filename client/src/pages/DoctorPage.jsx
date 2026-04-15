@@ -111,6 +111,22 @@ const styles = {
   }
 };
 
+function formatDate(dateValue) {
+  if (!dateValue) return '';
+  const d = new Date(dateValue);
+  if (Number.isNaN(d.getTime())) return String(dateValue);
+  return d.toLocaleDateString();
+}
+
+function formatTime(timeValue) {
+  if (!timeValue) return '';
+  const raw = String(timeValue).slice(0, 8);
+  const [hours = '00', minutes = '00'] = raw.split(':');
+  const temp = new Date();
+  temp.setHours(Number(hours), Number(minutes), 0, 0);
+  return temp.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+}
+
 export default function DoctorPage() {
   const navigate = useNavigate();
 
@@ -209,7 +225,7 @@ export default function DoctorPage() {
 
       <div style={styles.hero}>
         <h1>Doctor Responsibilities</h1>
-        <p>Review patient appointment information, see visit logs, view upcoming appointments, and enter visit data.</p>
+        <p>Review your appointments, your patients, and your visit logs.</p>
       </div>
 
       {message.text && (
@@ -237,7 +253,7 @@ export default function DoctorPage() {
               <option value="">Select appointment</option>
               {data.appointmentOptions.map((row) => (
                 <option key={row.AppointmentID} value={row.AppointmentID}>
-                  Appt {row.AppointmentID} - {row.PatientLastName}, {row.PatientFirstName} with Dr. {row.DoctorLastName} on {row.AppointmentDate}
+                  Appt {row.AppointmentID} - {row.PatientLastName}, {row.PatientFirstName} on {formatDate(row.AppointmentDate)} at {formatTime(row.AppointmentTime)}
                 </option>
               ))}
             </select>
@@ -279,7 +295,6 @@ export default function DoctorPage() {
                 <tr>
                   <th style={styles.th}>Appointment ID</th>
                   <th style={styles.th}>Patient</th>
-                  <th style={styles.th}>Doctor</th>
                   <th style={styles.th}>Date</th>
                   <th style={styles.th}>Time</th>
                   <th style={styles.th}>Status</th>
@@ -290,10 +305,9 @@ export default function DoctorPage() {
                   <tr key={row.AppointmentID}>
                     <td style={styles.td}>{row.AppointmentID}</td>
                     <td style={styles.td}>{row.PatientLastName}, {row.PatientFirstName}</td>
-                    <td style={styles.td}>{row.DoctorLastName}, {row.DoctorFirstName}</td>
-                    <td style={styles.td}>{row.AppointmentDate}</td>
-                    <td style={styles.td}>{row.AppointmentTime || ''}</td>
-                    <td style={styles.td}>{row.StatusText || row.StatusCode}</td>
+                    <td style={styles.td}>{formatDate(row.AppointmentDate)}</td>
+                    <td style={styles.td}>{formatTime(row.AppointmentTime)}</td>
+                    <td style={styles.td}>{row.StatusText || 'Booked'}</td>
                   </tr>
                 ))}
               </tbody>
@@ -312,7 +326,6 @@ export default function DoctorPage() {
                   <th style={styles.th}>Patient Name</th>
                   <th style={styles.th}>Doctor ID</th>
                   <th style={styles.th}>Doctor Name</th>
-                  <th style={styles.th}>Reason</th>
                   <th style={styles.th}>Office</th>
                 </tr>
               </thead>
@@ -324,7 +337,6 @@ export default function DoctorPage() {
                     <td style={styles.td}>{row.PatientLastName}, {row.PatientFirstName}</td>
                     <td style={styles.td}>{row.DoctorID}</td>
                     <td style={styles.td}>{row.DoctorLastName}, {row.DoctorFirstName}</td>
-                    <td style={styles.td}>{row.ReasonForVisit || ''}</td>
                     <td style={styles.td}>{row.OfficeID}</td>
                   </tr>
                 ))}
@@ -357,7 +369,7 @@ export default function DoctorPage() {
                     <td style={styles.td}>{row.DoctorLastName}, {row.DoctorFirstName}</td>
                     <td style={styles.td}>{row.Symptoms || ''}</td>
                     <td style={styles.td}>{row.Notes || ''}</td>
-                    <td style={styles.td}>{row.DateTime || ''}</td>
+                    <td style={styles.td}>{formatDate(row.DateTime)} {formatTime(row.DateTime)}</td>
                   </tr>
                 ))}
               </tbody>
