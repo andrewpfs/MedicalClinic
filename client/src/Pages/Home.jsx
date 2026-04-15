@@ -37,7 +37,7 @@ function Home() {
             </>
           ) : (
             <>
-              <Link to="/login">
+              <Link to="/select-role">
                 <button className="nav-btn">Log In</button>
               </Link>
               <Link to="/register">
