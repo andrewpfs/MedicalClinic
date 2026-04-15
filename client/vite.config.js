@@ -7,6 +7,7 @@ export default defineConfig({
     port: 3000,
     proxy: {
       '/api': { target: 'http://localhost:3001', changeOrigin: true },
+      '/admin/api': { target: 'http://localhost:3001', changeOrigin: true },
       '/patient/login': { target: 'http://localhost:3001', changeOrigin: true },
       '/patient/logout': { target: 'http://localhost:3001', changeOrigin: true },
       '/patient/register': { target: 'http://localhost:3001', changeOrigin: true },
