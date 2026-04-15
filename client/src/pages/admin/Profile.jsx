@@ -1,8 +1,10 @@
 import React from 'react'
 import { useState,useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { useStaffAuth } from '../../hooks/useStaffAuth';
 
 function AdminProfile() {
+    useStaffAuth('Admin');
     const [info, setInfo] = useState(null);
     const [error, setError] = useState('');
     const navigate = useNavigate();

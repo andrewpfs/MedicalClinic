@@ -153,8 +153,12 @@ export default function EmployeePage() {
     fetch('/api/employee/session', { credentials: 'include' })
       .then(res => res.json())
       .then(session => {
-        if (!session.isLoggedIn || session.role === 'Doctor') {
+        if (!session.isLoggedIn) {
           navigate('/staff-login');
+        } else if (session.role === 'Doctor') {
+          navigate('/doctor');
+        } else if (session.role === 'Admin') {
+          navigate('/admin');
         } else {
           setStaffName(session.name);
           setStaffRole(session.role);

@@ -1,15 +1,17 @@
 import { useState, useEffect } from 'react'
 import DataTable from 'react-data-table-component'
-import { useStaffAuth } from '../../hooks/useStaffAuth'
 
 const columns = [
-    { name: 'Doctor',     selector: r => `${r.FirstName} ${r.LastName}`, sortable: true },
-    { name: 'Department', selector: r => r.DepartmentName, sortable: true },
-    { name: 'Appointments', selector: r => r.Appointments, sortable: true },
+    { name: 'ID',         selector: r => r.TransactionID, sortable: true, width: '70px' },
+    { name: 'Patient',    selector: r => `${r.FName} ${r.LName}`, sortable: true },
+    { name: 'Doctor',     selector: r => `Dr. ${r.DoctorFirst} ${r.DoctorLast}`, sortable: true },
+    { name: 'Department', selector: r => r.DepartmentName || '—', sortable: true },
+    { name: 'Appt Date',  selector: r => r.AppointmentDate ? new Date(r.AppointmentDate).toLocaleDateString() : '—', sortable: true },
+    { name: 'Amount',     selector: r => r.Amount != null ? `$${parseFloat(r.Amount).toFixed(2)}` : '—', sortable: true },
+    { name: 'Status',     selector: r => r.Status || '—', sortable: true },
 ];
 
-function RepDAR() {
-    useStaffAuth('Admin');
+function RepAllTrans() {
     const [data, setData]           = useState([]);
     const [departments, setDepts]   = useState([]);
     const [loading, setLoading]     = useState(false);
@@ -27,10 +29,9 @@ function RepDAR() {
         setLoading(true);
         try {
             const params = new URLSearchParams(f);
-            const res = await fetch(`/admin/api/pulldar?${params}`, { credentials: 'include' });
+            const res = await fetch(`/admin/api/transactions?${params}`, { credentials: 'include' });
             if (!res.ok) throw new Error('Failed');
-            const json = await res.json();
-            setData(json.results || json);
+            setData(await res.json());
         } catch (err) { console.error(err); }
         finally { setLoading(false); }
     };
@@ -57,7 +58,7 @@ function RepDAR() {
             </div>
             <div className="report-table">
                 <DataTable
-                    title="Department Appointment Report"
+                    title="All Transactions"
                     columns={columns}
                     data={data}
                     progressPending={loading}
@@ -69,4 +70,4 @@ function RepDAR() {
     );
 }
 
-export default RepDAR;
+export default RepAllTrans;

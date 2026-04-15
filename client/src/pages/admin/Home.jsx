@@ -1,7 +1,9 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
+import { useStaffAuth } from '../../hooks/useStaffAuth'
 
 function AdminHome() {
+    useStaffAuth('Admin');
 
     return (
         <div>

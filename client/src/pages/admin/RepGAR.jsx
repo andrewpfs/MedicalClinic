@@ -1,87 +1,57 @@
-import React from 'react'
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
 import DataTable from 'react-data-table-component'
+import { useStaffAuth } from '../../hooks/useStaffAuth'
+
+const columns = [
+    { name: 'Department',        selector: r => r.DepartmentName, sortable: true },
+    { name: 'Office',            selector: r => r.OfficeName, sortable: true },
+    { name: 'Total Appointments',selector: r => r.Appointments, sortable: true },
+];
 
 function RepGAR() {
-    const [stuff, setStuff] = useState([])
-    const [loading, setLoading] = useState(false)
-    const [rep, setRep] = useState({
-        DepartmentName: "",
-        min: "",
-        max: ""
-    });
+    useStaffAuth('Admin');
+    const [data, setData]       = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [filters, setFilters] = useState({ min: '', max: '' });
 
-    const columns = [
-        {
-            name: "Department",
-            selector: (row) => row.DepartmentName,
-            sortable: true
-        },
-        {
-            name: "Office",
-            selector: (row) => row.OfficeName,
-            sortable: true
-        },
-        {
-            name: "Total Appointments",
-            selector: (row) => row.Appointments,
-            sortable: true
-        },
-    ];
+    useEffect(() => { runReport({ min: '', max: '' }); }, []);
 
-    const handleChange = (e) => {
-        setRep(prev => ({ ...prev, [e.target.name]: e.target.value }));
-    };
-
-    const handleClick = async (e) => {
-        e.preventDefault();
+    const runReport = async (f) => {
         setLoading(true);
         try {
-            // 1. Convert your report state into URL parameters
-            const params = new URLSearchParams(rep);
-            
-            // 2. Change method from POST to GET to match the working DAR style
-            const response = await fetch(`/admin/api/pullgar?${params}`, { 
-                method: "GET",
-                headers: { "Content-Type": "application/json" }
-            });
-
-            if (!response.ok) throw new Error("Report failed to load");
-            
-            const data = await response.json();
-            // 3. Ensure you access .results if your API wraps the array
-            setStuff(data.results || data); 
-        } catch (err) {
-            console.error(err);
-        } finally {
-            setLoading(false);
-        }
+            const params = new URLSearchParams(f);
+            const res = await fetch(`/admin/api/pullgar?${params}`, { credentials: 'include' });
+            if (!res.ok) throw new Error('Failed');
+            const json = await res.json();
+            setData(json.results || json);
+        } catch (err) { console.error(err); }
+        finally { setLoading(false); }
     };
+
+    const handleChange = e => setFilters(p => ({ ...p, [e.target.name]: e.target.value }));
+    const handleSubmit = e => { e.preventDefault(); runReport(filters); };
 
     return (
         <>
-            <div className='report-form'>
-                <form>
-                    <label>Minimum:
-                        <input type="date" name="min" onChange={handleChange} required />
-                    </label>
-                    <label>Maximum:
-                        <input type="date" name="max" onChange={handleChange} required />
-                    </label>
-                    <button onClick={handleClick}>Generate Report</button>
+            <div className="report-form">
+                <form onSubmit={handleSubmit}>
+                    <label>From: <input type="date" name="min" value={filters.min} onChange={handleChange} /></label>
+                    <label>To: <input type="date" name="max" value={filters.max} onChange={handleChange} /></label>
+                    <button type="submit">Generate Report</button>
                 </form>
             </div>
             <div className="report-table">
                 <DataTable
                     title="General Appointment Report"
                     columns={columns}
-                    data={stuff}
+                    data={data}
                     progressPending={loading}
-                    fixedHeader />
+                    pagination
+                    fixedHeader
+                />
             </div>
         </>
     );
-};
+}
 
 export default RepGAR;

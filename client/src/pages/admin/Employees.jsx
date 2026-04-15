@@ -1,7 +1,9 @@
 import AddE from './AddE'
 import EmployeeTable from './EmployeeTable'
+import { useStaffAuth } from '../../hooks/useStaffAuth'
 
 function Employees(list) {
+    useStaffAuth('Admin');
 
 
     return (

@@ -1,10 +1,10 @@
 import React from 'react'
 import {useState,useEffect} from 'react'
-//import {createRoot} from 'react'
 import {useNavigate} from 'react-router-dom'
-
+import { useStaffAuth } from '../../hooks/useStaffAuth'
 
 const AddE = () => {
+    useStaffAuth('Admin');
     const navigate = useNavigate();
     const [department,setDepartment] = useState([])
     const [emp,setEmp] = useState({

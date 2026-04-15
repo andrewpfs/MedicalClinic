@@ -1,6 +1,21 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
+const jwt = require('jsonwebtoken');
+
+const getStaff = (req) => {
+    try {
+        const token = req.cookies.staffToken;
+        if (!token) return null;
+        return jwt.verify(token, 'staffsecret');
+    } catch { return null; }
+};
+
+const requireAdmin = (req, res, next) => {
+    const staff = getStaff(req);
+    if (!staff || staff.role !== 'Admin') return res.status(401).json({ error: 'Not authorized' });
+    next();
+};
 
 router.get('/api/profile', async (req,res) => {
     const id = 4; //CHANGE WHEN MERGE WORKS
@@ -130,26 +145,29 @@ router.get('/api/getID', async (req,res) => {
     }
 })
 
-router.get('/api/pulldar', async (req,res) => {
-    const q1 = `
-        SELECT E.EmployeeID, E.FirstName, E.LastName, D.DepartmentName, COUNT(A.AppointmentID) AS Appointments FROM department AS D, appointment AS A, employee as E WHERE A.DoctorID = E.EmployeeID AND E.DepartmentID = D.DepartmentID AND A.AppointmentDate >= ? AND A.AppointmentDate <= ? AND D.DepartmentName = ? GROUP BY E.EmployeeID ORDER BY Appointments DESC`;
-
-    const q2 = `
-        SELECT E.EmployeeID,A.AppointmentID FROM department AS D, appointment AS A, employee as E WHERE A.DoctorID = E.EmployeeID AND E.DepartmentID = D.DepartmentID AND A.AppointmentDate >= ? AND A.AppointmentDate <= ? AND D.DepartmentName = ? GROUP BY E.EmployeeID ORDER BY Appointments DESC`;
+router.get('/api/pulldar', requireAdmin, async (req,res) => {
     const { min, max, DepartmentName } = req.query;
- 
+    const start = min || '2000-01-01';
+    const end   = max || '2099-12-31';
+    let q = `SELECT E.EmployeeID, E.FirstName, E.LastName, D.DepartmentName,
+                    COUNT(A.AppointmentID) AS Appointments
+             FROM department AS D
+             JOIN employee AS E ON E.DepartmentID = D.DepartmentID
+             JOIN appointment AS A ON A.DoctorID = E.EmployeeID
+             WHERE A.AppointmentDate >= ? AND A.AppointmentDate <= ?`;
+    const params = [start, end];
+    if (DepartmentName) { q += ' AND D.DepartmentName = ?'; params.push(DepartmentName); }
+    q += ' GROUP BY E.EmployeeID ORDER BY Appointments DESC';
     try {
- 
-        const [rows] = await db.query(q1, [min, max, DepartmentName]);
-        //const [appointments] = await db.query(q2, [min,max,DepartmentName]);
-        return res.json({ results: rows})//,appointments:appointments});
+        const [rows] = await db.query(q, params);
+        return res.json({ results: rows });
     } catch (err) {
         console.error(err);
         res.status(500).send("Report Error");
     }
 })
 
-router.get('/api/pullgar', async (req,res) => {
+router.get('/api/pullgar', requireAdmin, async (req,res) => {
     const q = "SELECT D.DepartmentName,O.OfficeName,COUNT(A.AppointmentID) AS 'Appointments' FROM department AS D,appointment AS A,employee AS E,office AS O WHERE A.DoctorID=E.EmployeeID AND D.DepartmentID=E.DepartmentID AND D.OfficeID=O.OfficeID AND A.AppointmentDate >= ? AND A.AppointmentDate <= ? GROUP BY D.DepartmentID ORDER BY Appointments DESC";
     const {min, max} = req.query;
 
@@ -162,7 +180,7 @@ router.get('/api/pullgar', async (req,res) => {
     }
 })
 
-router.get('/api/pullgrr', async (req,res) => {
+router.get('/api/pullgrr', requireAdmin, async (req,res) => {
     const q = "SELECT D.DepartmentName,O.OfficeName,SUM(T.Amount) AS 'Revenue' FROM department AS D,appointment AS A,employee AS E,transaction as T,office AS O WHERE A.DoctorID=E.EmployeeID AND D.DepartmentID=E.DepartmentID AND D.OfficeID=O.OfficeID AND T.AppointmentID=A.AppointmentID AND A.AppointmentDate >= ? AND A.AppointmentDate <= ? GROUP BY D.DepartmentID ORDER BY Revenue DESC";
     const {min, max} = req.query;
 
@@ -472,6 +490,62 @@ router.post('/addemp', async (req, res) => {
         router.post('admin/addnur',{FirstName:req.body.FirstName,LastName:req.body.LastName,Email:req.body.Email,DepartmentID:req.body.DepartmentID,ApprovedDoctorID:req.body.ApprovedDoctorID});
     }
     //res.json(row);
+});
+
+// ── Individual Appointments Report ───────────────────────────────────────────
+router.get('/api/appointments', requireAdmin, async (req, res) => {
+    const { min, max, DepartmentName } = req.query;
+    const start = min || '2000-01-01';
+    const end   = max || '2099-12-31';
+    let q = `
+        SELECT A.AppointmentID, P.FName, P.LName,
+               E.FirstName AS DoctorFirst, E.LastName AS DoctorLast,
+               A.AppointmentDate, A.ReasonForVisit,
+               S.AppointmentText AS Status, D.DepartmentName
+        FROM appointment A
+        JOIN patient P ON A.PatientID = P.PatientID
+        JOIN employee E ON A.DoctorID = E.EmployeeID
+        LEFT JOIN appointmentstatus S ON A.StatusCode = S.AppointmentCode
+        LEFT JOIN department D ON E.DepartmentID = D.DepartmentID
+        WHERE DATE(A.AppointmentDate) BETWEEN ? AND ?`;
+    const params = [start, end];
+    if (DepartmentName) { q += ' AND D.DepartmentName = ?'; params.push(DepartmentName); }
+    q += ' ORDER BY A.AppointmentDate DESC';
+    try {
+        const [rows] = await db.query(q, params);
+        res.json(rows);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Error fetching appointments' });
+    }
+});
+
+// ── Individual Transactions Report ────────────────────────────────────────────
+router.get('/api/transactions', requireAdmin, async (req, res) => {
+    const { min, max, DepartmentName } = req.query;
+    const start = min || '2000-01-01';
+    const end   = max || '2099-12-31';
+    let q = `
+        SELECT T.TransactionID, P.FName, P.LName, T.Amount, T.Status,
+               T.TransactionDateTime,
+               E.FirstName AS DoctorFirst, E.LastName AS DoctorLast,
+               A.AppointmentDate, D.DepartmentName
+        FROM transaction T
+        JOIN patient P ON T.PatientID = P.PatientID
+        JOIN appointment A ON T.AppointmentID = A.AppointmentID
+        JOIN employee E ON A.DoctorID = E.EmployeeID
+        LEFT JOIN department D ON E.DepartmentID = D.DepartmentID
+        WHERE DATE(A.AppointmentDate) BETWEEN ? AND ?`;
+    const params = [start, end];
+    if (DepartmentName) { q += ' AND D.DepartmentName = ?'; params.push(DepartmentName); }
+    q += ' ORDER BY T.TransactionDateTime DESC';
+    try {
+        const [rows] = await db.query(q, params);
+        res.json(rows);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Error fetching transactions' });
+    }
 });
 
 module.exports = router;
