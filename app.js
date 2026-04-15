@@ -35,6 +35,24 @@ app.use('/api/employee', employeeApiRoutes);
 app.use('/api/doctor', doctorApiRoutes);
 app.use('/', homeRoutes);
 
+app.post('/api/logout', (req, res) => {
+    req.session.destroy((err) => {
+        if (err) {
+            return res.status(500).json({
+                success: false,
+                error: 'Failed to log out'
+            });
+        }
+
+        res.clearCookie('connect.sid');
+
+        res.json({
+            success: true,
+            message: 'Logged out successfully'
+        });
+    });
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
