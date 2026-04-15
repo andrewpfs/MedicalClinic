@@ -4,11 +4,11 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/patient/Register';
-
+import RoleSelect from './pages/RoleSelect';
 // David's pages
 import EmployeePage from './pages/EmployeePage';
 import DoctorPage from './pages/DoctorPage';
-
+import StaffLogin from './pages/StaffLogin';
 // Patient pages
 import Profile from './pages/patient/Profile';
 import Booking from './pages/patient/booking';
@@ -39,6 +39,9 @@ export default function App() {
         <Route path="/patient/billing/balance" element={<BillingBalance />} />
         <Route path="/patient/billing/methods" element={<BillingMethods />} />
         <Route path="/patient/update-profile" element={<UpdateProfile />} />
+        <Route path="/patient-login" element={<Login />} />
+        <Route path="/select-role" element={<RoleSelect />} />
+        <Route path="/staff-login" element={<StaffLogin />} />
       </Routes>
     </BrowserRouter>
   );

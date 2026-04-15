@@ -17,6 +17,7 @@ export default defineConfig({
       '/patient/reschedule-appointment': { target: 'http://localhost:3001', changeOrigin: true },
       '/patient/update-profile': { target: 'http://localhost:3001', changeOrigin: true },
       '/patient/update-profile': { target: 'http://localhost:3001', changeOrigin: true },
+      '/api/employee': { target: 'http://localhost:3001', changeOrigin: true },
     }
   }
 })
