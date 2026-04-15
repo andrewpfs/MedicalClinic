@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
+import "../styles.css"
 
 function Login() {
   const [email, setEmail] = useState("")
@@ -19,7 +20,7 @@ function Login() {
       })
 
       if (res.ok) {
-        navigate("/patient/profile")
+        navigate("/")
       } else {
         const msg = await res.json()
         setError(typeof msg === "string" ? msg : "Login failed.")

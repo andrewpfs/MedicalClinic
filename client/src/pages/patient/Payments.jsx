@@ -10,7 +10,7 @@ export default function Payments() {
   useEffect(() => {
     fetch('/patient/api/payments', { credentials: 'include' })
       .then(res => {
-        if (res.status === 401) { navigate('/patient/login'); return null; }
+        if (res.status === 401) { navigate('/login'); return null; }
         return res.json();
       })
       .then(data => { if (data) setInvoices(data); })
@@ -33,7 +33,7 @@ export default function Payments() {
   };
 
   return (
-    <div style={{ fontFamily: 'sans-serif', padding: '20px' }}>
+    <div style={{ fontFamily: 'Poppins, sans-serif', padding: '20px' }}>
       <h2>Payment Portal</h2>
       {error && <p style={{ color: 'red' }}>{error}</p>}
       <form onSubmit={handleSubmit}>

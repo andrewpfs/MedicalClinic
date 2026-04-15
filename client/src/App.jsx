@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 
 // Andrew's pages
 import Home from './pages/Home';
+import About from './pages/About';
 import Login from './pages/Login';
 import Register from './pages/patient/Register';
 import RoleSelect from './pages/RoleSelect';
@@ -24,6 +25,7 @@ export default function App() {
       <Routes>
         {/* Home & auth */}
         <Route path="/" element={<Home />} />
+        <Route path="/about" element={<About />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
 
@@ -39,7 +41,6 @@ export default function App() {
         <Route path="/patient/billing/balance" element={<BillingBalance />} />
         <Route path="/patient/billing/methods" element={<BillingMethods />} />
         <Route path="/patient/update-profile" element={<UpdateProfile />} />
-        <Route path="/patient-login" element={<Login />} />
         <Route path="/select-role" element={<RoleSelect />} />
         <Route path="/staff-login" element={<StaffLogin />} />
       </Routes>

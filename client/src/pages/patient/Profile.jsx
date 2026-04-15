@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import NotificationBell from '../../components/NotificationBell.jsx';
+import Navbar from '../../components/Navbar';
 
 export default function Profile() {
   const [patient, setPatient] = useState(null);
@@ -27,12 +27,10 @@ export default function Profile() {
 
   return (
     <div style={{ backgroundColor: '#f4f7f6', minHeight: '100vh' }}>
+      <Navbar />
       <div className="container" style={{ maxWidth: '900px', margin: '0 auto', padding: '20px' }}>
 
-        <div style={{ textAlign: 'center', marginBottom: '30px', padding: '20px 0', position: 'relative' }}>
-          <div style={{ position: 'absolute', top: '20px', right: '0' }}>
-            <NotificationBell />
-          </div>
+        <div style={{ textAlign: 'center', marginBottom: '30px', padding: '20px 0' }}>
           <h1 style={{ fontSize: '2.2em', fontWeight: 300, margin: 0 }}>
             Welcome, {patient.FName}!
           </h1>

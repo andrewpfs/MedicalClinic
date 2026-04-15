@@ -1,12 +1,28 @@
-html,
-body,
-#root {
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
   margin: 0;
-  min-height: 100%;
+  padding: 0;
+  width: 100%;
+  overflow-x: hidden;
 }
 
 body {
-  font-family: Arial, sans-serif;
-  background: #f4f1eb;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  font-family: "Poppins", Arial, sans-serif;
+  background: #f5f0e8;
   color: #222;
+  overflow-x: hidden;
+}
+
+#root {
+  margin: 0;
+  padding: 0;
+  width: 100%;
 }

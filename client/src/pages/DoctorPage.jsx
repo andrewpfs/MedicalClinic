@@ -4,7 +4,7 @@ const API_BASE = '/api/doctor';
 const styles = {
   page: {
     margin: 0,
-    fontFamily: 'Arial, sans-serif',
+    fontFamily: 'Poppins, sans-serif',
     background: '#f4f1eb',
     color: '#222',
     minHeight: '100vh'

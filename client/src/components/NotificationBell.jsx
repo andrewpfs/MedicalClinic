@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-export default function NotificationBell() {
+export default function NotificationBell({ iconColor = '#374151', hoverBg = '#f3f4f6' }) {
   const [notifications, setNotifications] = useState([]);
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
@@ -66,10 +66,10 @@ export default function NotificationBell() {
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           transition: 'background 0.15s', width: 'auto',
         }}
-        onMouseEnter={e => e.currentTarget.style.background = '#f3f4f6'}
+        onMouseEnter={e => e.currentTarget.style.background = hoverBg}
         onMouseLeave={e => e.currentTarget.style.background = 'none'}
       >
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#374151" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={iconColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
           <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
         </svg>
