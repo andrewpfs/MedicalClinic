@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import DataTable from 'react-data-table-component'
 import { useStaffAuth } from '../../hooks/useStaffAuth'
+import { tableCustomStyles, filterCard, filterRow, filterGroup, filterLabel, filterInput, primaryBtn, sectionLabel } from './adminStyles'
 
 const columns = [
     { name: 'Department',        selector: r => r.DepartmentName, sortable: true },
@@ -32,26 +33,32 @@ function RepGAR() {
     const handleSubmit = e => { e.preventDefault(); runReport(filters); };
 
     return (
-        <>
-            <div className="report-form">
-                <form onSubmit={handleSubmit}>
-                    <label>From: <input type="date" name="min" value={filters.min} onChange={handleChange} /></label>
-                    <label>To: <input type="date" name="max" value={filters.max} onChange={handleChange} /></label>
-                    <button type="submit">Generate Report</button>
-                </form>
+    <>
+        <div style={filterCard}>
+        <p style={sectionLabel}>Filters</p>
+        <div style={filterRow}>
+            <div style={filterGroup}>
+            <label style={filterLabel}>From</label>
+            <input type="date" name="min" value={filters.min} onChange={handleChange} style={filterInput} />
             </div>
-            <div className="report-table">
-                <DataTable
-                    title="General Appointment Report"
-                    columns={columns}
-                    data={data}
-                    progressPending={loading}
-                    pagination
-                    fixedHeader
-                />
+            <div style={filterGroup}>
+            <label style={filterLabel}>To</label>
+            <input type="date" name="max" value={filters.max} onChange={handleChange} style={filterInput} />
             </div>
-        </>
-    );
+            <button type="button" onClick={handleSubmit} style={primaryBtn}>Generate report</button>
+        </div>
+        </div>
+
+        <DataTable
+        columns={columns}
+        data={data}
+        progressPending={loading}
+        pagination
+        highlightOnHover
+        customStyles={tableCustomStyles}
+        />
+    </>
+    )
 }
 
 export default RepGAR;

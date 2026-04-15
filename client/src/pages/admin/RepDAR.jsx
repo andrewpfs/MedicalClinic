@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import DataTable from 'react-data-table-component'
 import { useStaffAuth } from '../../hooks/useStaffAuth'
+import { tableCustomStyles, filterCard, filterRow, filterGroup, filterLabel, filterInput, primaryBtn, sectionLabel } from './adminStyles'
 
 const columns = [
     { name: 'Doctor',     selector: r => `${r.FirstName} ${r.LastName}`, sortable: true },
@@ -39,34 +40,40 @@ function RepDAR() {
     const handleSubmit = e => { e.preventDefault(); runReport(filters); };
 
     return (
-        <>
-            <div className="report-form">
-                <form onSubmit={handleSubmit}>
-                    <label>Department:
-                        <select name="DepartmentName" value={filters.DepartmentName} onChange={handleChange}>
-                            <option value="">All Departments</option>
-                            {departments.map(d => (
-                                <option key={d.DepartmentID} value={d.DepartmentName}>{d.DepartmentName}</option>
-                            ))}
-                        </select>
-                    </label>
-                    <label>From: <input type="date" name="min" value={filters.min} onChange={handleChange} /></label>
-                    <label>To: <input type="date" name="max" value={filters.max} onChange={handleChange} /></label>
-                    <button type="submit">Generate Report</button>
-                </form>
+    <>
+        <div style={filterCard}>
+        <p style={sectionLabel}>Filters</p>
+        <div style={filterRow}>
+            <div style={filterGroup}>
+            <label style={filterLabel}>Department</label>
+            <select name="DepartmentName" value={filters.DepartmentName} onChange={handleChange} style={filterInput}>
+            {departments.map(d => (
+                <option key={d.DepartmentID} value={d.DepartmentName}>{d.DepartmentName}</option>
+            ))}
+            </select>
             </div>
-            <div className="report-table">
-                <DataTable
-                    title="Department Appointment Report"
-                    columns={columns}
-                    data={data}
-                    progressPending={loading}
-                    pagination
-                    fixedHeader
-                />
+            <div style={filterGroup}>
+            <label style={filterLabel}>From</label>
+            <input type="date" name="min" value={filters.min} onChange={handleChange} style={filterInput} />
             </div>
-        </>
-    );
+            <div style={filterGroup}>
+            <label style={filterLabel}>To</label>
+            <input type="date" name="max" value={filters.max} onChange={handleChange} style={filterInput} />
+            </div>
+            <button type="button" onClick={handleSubmit} style={primaryBtn}>Generate report</button>
+        </div>
+        </div>
+
+        <DataTable
+        columns={columns}
+        data={data}
+        progressPending={loading}
+        pagination
+        highlightOnHover
+        customStyles={tableCustomStyles}
+        />
+    </>
+    )
 }
 
 export default RepDAR;
