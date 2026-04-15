@@ -156,9 +156,23 @@ router.get('/api/pulldar', async (req,res) => {
     }
 })
 
-//router.get('pullgar')
+router.get('pullgar', async (req,res) => {
+    const q = "SELECT D.DepartmentName,O.OfficeName,COUNT(A.AppointmentID) AS 'Appointments' FROM department AS D,appointment AS A,employee AS E,office AS O WHERE A.DoctorID=E.EmployeeID AND D.DepartmentID=E.DepartmentID AND D.OfficeID=O.OfficeID AND A.AppointmentDate >= ? AND A.AppointmentDate <= ? GROUP BY D.DepartmentID ORDER BY Appointments DESC";
+    const {min, max} = req.body;
 
-//router.get('pullgrr')
+    try {
+
+        const [rows] = await db.query(q,[min,max]);
+        return res.json(rows)
+    } catch (err) {
+        console.error(err);
+        res.status(500).send("Report Error");
+    }
+})
+
+router.get('pullgrr', async (req,res) => {
+    
+})
 
 router.get('/api/getEmployees', async (req,res) => {
     const q = 'SELECT EmployeeID,FirstName,LastName,Email,Address,PhoneNumber FROM employee';
