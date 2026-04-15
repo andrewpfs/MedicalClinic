@@ -2,11 +2,12 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 
-router.get('/api/profile'), async (req,res) => {
+router.get('/api/profile', async (req,res) => {
     const id = 4; //CHANGE WHEN MERGE WORKS
 
     const q = `
         SELECT 
+            E.EmployeeID AS id,
             E.FirstName AS First, 
             E.LastName AS Last, 
             E.Birthdate AS Birth, 
@@ -31,7 +32,90 @@ router.get('/api/profile'), async (req,res) => {
         const [rows] = await db.query(q, [id]);
         res.json(rows[0]);
     } catch (err) { res.status(500).json({ error: 'Error loading profile' }); }
-}
+})
+
+router.post('/api/updateprofile', async (req,res) => {
+    const q = 'UPDATE employee SET FirstName=?,LastName=?,Address=?,PhoneNumber=?,Email=? WHERE EmployeeID=?';
+    const r = [
+        req.body.FirstName,
+        req.body.LastName,
+        req.body.Address,
+        req.body.PhoneNumber,
+        req.body.Email,
+        req.body.id,
+    ];
+    try {
+        await db.query(q,[pass,id]);
+    }catch(err){
+        res.status(500).json({error: 'Error updating profile'})
+    }
+})
+
+router.post('/api/updatepassword', async (req,res) => {
+    const q = 'UPDATE employee SET Password=? WHERE EmployeeID=?';
+    const pass = req.body.Password;
+    const id = req.body.id;
+    try {
+        await db.query(q,[pass,id]);
+    }catch(err){
+        res.status(500).json({error: 'Error updating profile'})
+    }
+})
+
+router.post('/api/addnurse', async (req,res) => {
+    const q = "INSERT INTO nurse ('EmployeeID','ApprovedDoctorID')VALUES (?)";
+
+    const r = [req.body.EmployeeID,req.body.ApprovedDoctorID];
+
+    try {
+        await db.query(q,[r])
+    }catch(err){
+        res.status(500).json({error: 'Error inserting nurse'})
+    }
+})
+
+router.post('/api/adddoctor', async (req,res) => {
+    const q = "INSERT INTO doctor ('EmployeeID','Specialty','isPrimaryCare')VALUES (?)";
+
+    const r = [req.body.EmployeeID,req.body.Specialty,req.body.IsPrimaryCare];
+
+    try {
+        await db.query(q,[r])
+    }catch(err){
+        res.status(500).json({error: 'Error creating doctor'})
+    }
+})
+
+router.post('/api/addemployee', async (req,res) => {
+    const q = "INSERT INTO employee (`FirstName`,`LastName`,`Birthdate`,`GenderCode`,`RaceCode`,`EthnicityCode`,`Role`,`Address`,`PhoneNumber`,`Email`,`Password`,`DepartmentID`) VALUES (?)";
+
+    const r = [
+        req.body.FirstName,
+        req.body.LastName,
+        req.body.Birthdate,
+        req.body.GenderCode,
+        req.body.RaceCode,
+        req.body.EthnicityCode,
+        req.body.Role,
+        req.body.Address,
+        req.body.PhoneNumber,
+        req.body.Email,
+        req.body.Password,
+        req.body.DepartmentID,
+    ];
+
+    try {
+        await db.query(q,[r])
+    }catch(err){
+        res.status(500).json({error: 'Error creating employee'})
+    }
+})
+
+
+
+
+
+/*
 router.get('/profile', async (req, res) => {
     const id = 4; // Keeping his hardcoded ID for now CHANGE WHEN MERGING
     
@@ -181,7 +265,7 @@ router.post("/upprof", async (req,res) =>{
         res.status(500).send("Update Profile Error");
     }
 });
-
+*/
 router.post("/adddoc", async (req,res) =>{
     /*const r = [
             req.body.FirstName,req.body.LastName,req.body.Email,req.body.DepartmentID

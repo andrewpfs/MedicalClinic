@@ -5,6 +5,8 @@ import {useNavigate} from 'react-router-dom'
 
 const navigate = useNavigate();
 
+const API_BASE = 'http://localhost:3000/admin/api';
+
 const AddE = () => {
     
     const [emp,setEmp] = useState({
@@ -24,20 +26,43 @@ const AddE = () => {
         IsPrimaryCare: "",
         AssignedDoctorID: ""
     });
+
+    const [check,setCheck] = useState({
+        Doctor:"none",
+        Nurse:"none"
+    })
     
     const handleChange = (e) => {
         setEmp(prev=>({...prev,[e.target.name] : e.target.value}));
     };
-
+    /*
     const handleClick = async e => {
         e.preventDefault()
         try {
-            await axios.post("/admin/addemp", emp) //Need to figure out how to connect and make post request
-            navigate("/admin/Employees") //IDK PLEASE SEND HELP
+            await fetch(`${API_BASE}/addemp`, emp) //Need to figure out how to connect and make post request
+            
+            if(emp.Role == 'Doctor') {
+                const id = await fetch(`${API_BASE}/`,emp)
+                
+
+            }
+            
+            
+            navigate("/admin/employees") //IDK PLEASE SEND HELP
         }catch(err){
             console.error(err)
         }
-    };
+    };*/
+
+    const handleDisplay = (e) => {
+        if (e.target.value == 'Doctor') {
+            setCheck({Doctor: "inline",Nurse: "none"})
+        }else if (e.target.value == 'Nurse') {
+            setCheck({Doctor: "none",Nurse: "inline"})
+        }else {
+            setCheck({Doctor: "none",Nurse: "none"})
+        }
+    }
 
     return (
     <div className="form-section">
@@ -116,6 +141,7 @@ const AddE = () => {
             <label>Password*:
                 <input type="text" placeholder="Password" name="Password" onChange={handleChange} required/>
             </label>
+            <div>
             <br /><br />If A Doctor:<br />
             <label>Specialty:
                 <input type="text" placeholder="Specialty" name="Specialty" onChange={handleChange} maxlength="20"/>
@@ -127,10 +153,13 @@ const AddE = () => {
                     <option value="0">No</option>
                 </select>
             </label>
+            </div>
+            <div>
             <br /><br />If A Nurse:<br />
             <label>Assigned Doctor ID:
                 <input type="text" placeholder="0000" name="AssignedDoctorID" onChange={handleChange}/>
-            </label><br />
+            </label>
+            </div><br />
             <button onClick={handleClick}>Create Employee</button>
         </form>
     </div>
