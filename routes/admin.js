@@ -131,34 +131,27 @@ router.get('/api/getID', async (req,res) => {
 })
 
 router.get('/api/pulldar', async (req,res) => {
-    const q = `
+    const q1 = `
         SELECT E.EmployeeID, E.FirstName, E.LastName, D.DepartmentName, COUNT(A.AppointmentID) AS Appointments FROM department AS D, appointment AS A, employee as E WHERE A.DoctorID = E.EmployeeID AND E.DepartmentID = D.DepartmentID AND A.AppointmentDate >= ? AND A.AppointmentDate <= ? AND D.DepartmentName = ? GROUP BY E.EmployeeID ORDER BY Appointments DESC`;
 
+    const q2 = `
+        SELECT E.EmployeeID,A.AppointmentID FROM department AS D, appointment AS A, employee as E WHERE A.DoctorID = E.EmployeeID AND E.DepartmentID = D.DepartmentID AND A.AppointmentDate >= ? AND A.AppointmentDate <= ? AND D.DepartmentName = ? GROUP BY E.EmployeeID ORDER BY Appointments DESC`;
     const { min, max, DepartmentName } = req.query;
  
     try {
  
-        const [rows] = await db.query(q, [min, max, DepartmentName]);
- 
-
-        //const [zeros] = await db.query("SELECT E.EmployeeID, E.FirstName, E.LastName FROM doctor AS DO, employee AS E, department AS D WHERE D.DepartmentID=E.DepartmentID AND DO.EmployeeID=E.EmployeeID AND D.DepartmentName=?",req.body.DepartmentName);
-        // Create a Set of EmployeeIDs from rows for O(1) lookup
-        //const employeeIdsInRows = new Set(rows.map(row => row.EmployeeID));
-
-        // Filter out employees that exist in rows
-        //const filteredZeros = zeros.filter(employee => 
-         //   !employeeIdsInRows.has(employee.EmployeeID));
-
-        return res.json({ results: rows});
+        const [rows] = await db.query(q1, [min, max, DepartmentName]);
+        //const [appointments] = await db.query(q2, [min,max,DepartmentName]);
+        return res.json({ results: rows})//,appointments:appointments});
     } catch (err) {
         console.error(err);
         res.status(500).send("Report Error");
     }
 })
 
-router.post('/api/report/gar', async (req,res) => {
+router.get('/api/pullgar', async (req,res) => {
     const q = "SELECT D.DepartmentName,O.OfficeName,COUNT(A.AppointmentID) AS 'Appointments' FROM department AS D,appointment AS A,employee AS E,office AS O WHERE A.DoctorID=E.EmployeeID AND D.DepartmentID=E.DepartmentID AND D.OfficeID=O.OfficeID AND A.AppointmentDate >= ? AND A.AppointmentDate <= ? GROUP BY D.DepartmentID ORDER BY Appointments DESC";
-    const {min, max} = req.body;
+    const {min, max} = req.query;
 
     try {
         const [rows] = await db.query(q,[min,max]);
@@ -169,13 +162,13 @@ router.post('/api/report/gar', async (req,res) => {
     }
 })
 
-router.post('/api/report/grr', async (req,res) => {
-    const q = `SELECT D.DepartmentName,O.OfficeName,SUM(T.Amount) AS 'Revenue' FROM department AS D,appointment AS A,employee AS E,transaction AS T,office AS O WHERE A.DoctorID=E.EmployeeID AND D.DepartmentID=E.DepartmentID AND D.OfficeID=O.OfficeID AND T.AppointmentID=A.AppointmentID AND A.AppointmentDate >= ? AND A.AppointmentDate <= ? GROUP BY D.DepartmentID ORDER BY Revenue DESC`;
-    const { min, max } = req.body;
+router.get('/api/pullgrr', async (req,res) => {
+    const q = "SELECT D.DepartmentName,O.OfficeName,SUM(T.Amount) AS 'Revenue' FROM department AS D,appointment AS A,employee AS E,transaction as T,office AS O WHERE A.DoctorID=E.EmployeeID AND D.DepartmentID=E.DepartmentID AND D.OfficeID=O.OfficeID AND T.AppointmentID=A.AppointmentID AND A.AppointmentDate >= ? AND A.AppointmentDate <= ? GROUP BY D.DepartmentID ORDER BY Revenue DESC";
+    const {min, max} = req.query;
 
     try {
-        const [rows] = await db.query(q, [min, max]);
-        return res.json(rows);
+        const [rows] = await db.query(q,[min,max]);
+        return res.json(rows)
     } catch (err) {
         console.error(err);
         res.status(500).send("Report Error");
@@ -183,7 +176,7 @@ router.post('/api/report/grr', async (req,res) => {
 })
 
 router.get('/api/getEmployees', async (req,res) => {
-    const q = 'SELECT EmployeeID,FirstName,LastName,Email,Address,PhoneNumber FROM employee';
+    const q = 'SELECT EmployeeID,FirstName,LastName,Role,Email,Address,PhoneNumber FROM employee';
     
     try {
         const [rows] = await db.query(q)
@@ -199,7 +192,7 @@ router.post('/api/updateEmployee', async (req,res) => {
     const q = 'UPDATE employee SET FirstName=?,LastName=?,Address=?,PhoneNumber=?,Email=? WHERE EmployeeID=?';
     const r = [
                 req.body.FirstName,
-                req.body.LarstName,
+                req.body.LastName,
                 req.body.Address,
                 req.body.PhoneNumber,
                 req.body.Email,
@@ -213,6 +206,17 @@ router.post('/api/updateEmployee', async (req,res) => {
         res.status(500).json({error: "Error updating Employee"})
     }
     
+})
+
+router.get('/api/getdepartments', async (req,res) => {
+    const q = 'SELECT DepartmentID,DepartmentName FROM department';
+
+    try {
+        const [rows] = await db.query(q)
+        return res.json(rows)
+    }catch(err){
+        console.error(err)
+    }
 })
 /*
 router.get('/profile', async (req, res) => {

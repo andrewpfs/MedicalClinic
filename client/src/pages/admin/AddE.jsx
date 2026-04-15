@@ -1,12 +1,12 @@
 import React from 'react'
-import {useState} from 'react'
+import {useState,useEffect} from 'react'
 //import {createRoot} from 'react'
 import {useNavigate} from 'react-router-dom'
 
 
 const AddE = () => {
     const navigate = useNavigate();
-
+    const [department,setDepartment] = useState([])
     const [emp,setEmp] = useState({
         FirstName: "",
         LastName: "",
@@ -30,33 +30,41 @@ const AddE = () => {
         Nurse:false
     })
     
+    async function getDepart() {
+        try {
+            const deps = await fetch('/admin/api/getdepartments').then(res => res.json())
+
+
+            setDepartment(deps)
+        }catch(err) {
+            console.error(err)
+        }
+    }
+
+    useEffect(() => {
+        getDepart()
+    },[])
     const handleChange = (e) => {
         setEmp(prev=>({...prev,[e.target.name] : e.target.value}));
     };
     
     const handleClick = async e => {
-        e.preventDefault()
+        e.preventDefault();
         try {
-            await fetch(`/api/addemployee`, emp) //Need to figure out how to connect and make post request
-            console.log("Employee Created")
+            // Correct the fetch syntax for the POST request
+            const response = await fetch(`/api/addemployee`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(emp)
+            });
 
-            if (emp.Role === 'Doctor') {
-                const id = await fetch(`/api/getID`,emp)
-                
-                await fetch(`/api/adddoctor`,{EmployeeID:id,Specialty:emp.Specialty,IsPrimaryCare:emp.IsPrimaryCare})
-                console.log("Doctor Created")
+            if (response.ok) {
+                console.log("Employee Created");
+                // If it's a Doctor, you might need to handle additional inserts here
+                navigate("/admin/employees");
             }
-            else if (emp.Role === 'Nurse') {
-                const id = await fetch(`/api/getID`,emp)
-
-                await fetch(`/api/addnurse`,{EmployeeID:id,AssignedDoctorID:emp.AssignedDoctorID})
-                console.log("Nurse Created")
-            }
-            
-            
-            navigate("/admin/employees") //IDK PLEASE SEND HELP
-        }catch(err){
-            console.error(err)
+        } catch(err){
+            console.error("Add employee error:", err);
         }
     };
 
@@ -156,13 +164,13 @@ const AddE = () => {
                 </select>
             </label>
             <label>Department*:
-                <select name="DepartmentID" onChange={handleChange} required>
-                    <option value="">Select Department</option>
-                    <option value="1">General</option>
-                    <option value="2">Optometry</option>
-                    <option value="3">Cardiology</option>
-                    <option value="4">Orthopedics</option>
-                </select>
+                <select name="DepartmentName" onChange={handleChange}>
+            {department.map(department => (
+                <option key={department.DepartmentID} value={department.DepartmentID}>
+                    {department.DepartmentName}
+                </option>
+            ))}
+        </select>
             </label><br />
             <label>Address:
                 <input type="text" name="Address" onChange={handleChange} maxlength="100"/>

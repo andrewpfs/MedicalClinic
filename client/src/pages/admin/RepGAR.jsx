@@ -34,21 +34,28 @@ function RepGAR() {
         setRep(prev => ({ ...prev, [e.target.name]: e.target.value }));
     };
 
-    const handleClick = async e => {
-        e.preventDefault()
-        setLoading(true)
+    const handleClick = async (e) => {
+        e.preventDefault();
+        setLoading(true);
         try {
-            const response = await fetch("/admin/api/report/gar", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(rep)
-            })
-            const data = await response.json()
-            setStuff(data)
+            // 1. Convert your report state into URL parameters
+            const params = new URLSearchParams(rep);
+            
+            // 2. Change method from POST to GET to match the working DAR style
+            const response = await fetch(`/admin/api/pullgar?${params}`, { 
+                method: "GET",
+                headers: { "Content-Type": "application/json" }
+            });
+
+            if (!response.ok) throw new Error("Report failed to load");
+            
+            const data = await response.json();
+            // 3. Ensure you access .results if your API wraps the array
+            setStuff(data.results || data); 
         } catch (err) {
-            console.error(err)
+            console.error(err);
         } finally {
-            setLoading(false)
+            setLoading(false);
         }
     };
 

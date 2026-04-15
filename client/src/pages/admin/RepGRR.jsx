@@ -33,21 +33,24 @@ function RepGRR() {
         setRep(prev => ({ ...prev, [e.target.name]: e.target.value }));
     };
 
-    const handleClick = async e => {
-        e.preventDefault()
-        setLoading(true)
+    const handleClick = async (e) => {
+        e.preventDefault();
+        setLoading(true);
         try {
-            const response = await fetch("/admin/api/report/grr", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(rep)
-            })
-            const data = await response.json()
-            setStuff(data)
+            const params = new URLSearchParams(rep);
+            const response = await fetch(`/admin/api/pullgrr?${params}`, {
+                method: "GET",
+                headers: { "Content-Type": "application/json" }
+            });
+
+            if (!response.ok) throw new Error("Revenue report failed");
+
+            const data = await response.json();
+            setStuff(data.results || data); 
         } catch (err) {
-            console.error(err)
+            console.error(err);
         } finally {
-            setLoading(false)
+            setLoading(false);
         }
     };
 
