@@ -1,6 +1,7 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStaffAuth } from '../../hooks/useStaffAuth'
+import API from '../../api'
 
 const styles = {
   page: { background: '#f5f3ee', minHeight: '100vh', fontFamily: 'Poppins, sans-serif' },

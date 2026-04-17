@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import DataTable from 'react-data-table-component'
 import { tableCustomStyles, filterCard, filterRow, filterGroup, filterLabel, filterInput, primaryBtn, sectionLabel } from './adminStyles'
+import API from '../../api'
 
 const columns = [
   { name: 'ID',         selector: r => r.AppointmentID, sortable: true, width: '70px' },
