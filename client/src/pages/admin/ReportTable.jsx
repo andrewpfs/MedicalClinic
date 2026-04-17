@@ -9,7 +9,7 @@ function ReportTable(type, data) {
     const [perPage,setPerPage] = useState(10)
 
     
-    const columns = []
+    let columns = []
     if (type == "RepDAR") {
         columns = [
             {

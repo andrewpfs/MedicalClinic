@@ -3,7 +3,7 @@ import DataTable from 'react-data-table-component'
 import { useStaffAuth } from '../../hooks/useStaffAuth'
 import { tableCustomStyles, filterCard, filterRow, filterGroup, filterLabel, filterInput, primaryBtn, sectionLabel } from './adminStyles'
 
-const columns = [
+let columns = [
     { name: 'Department', selector: r => r.DepartmentName, sortable: true },
     { name: 'Office',     selector: r => r.OfficeName, sortable: true },
     { name: 'Revenue',    selector: r => r.Revenue != null ? `$${parseFloat(r.Revenue).toFixed(2)}` : '—', sortable: true },

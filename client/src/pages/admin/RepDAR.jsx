@@ -3,7 +3,7 @@ import DataTable from 'react-data-table-component'
 import { useStaffAuth } from '../../hooks/useStaffAuth'
 import { tableCustomStyles, filterCard, filterRow, filterGroup, filterLabel, filterInput, primaryBtn, sectionLabel } from './adminStyles'
 
-const columns = [
+let columns = [
     { name: 'Doctor',     selector: r => `${r.FirstName} ${r.LastName}`, sortable: true },
     { name: 'Department', selector: r => r.DepartmentName, sortable: true },
     { name: 'Appointments', selector: r => r.Appointments, sortable: true },
