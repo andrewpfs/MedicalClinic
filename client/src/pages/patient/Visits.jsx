@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../../components/Navbar';
+import './patient-layout.css';
 
 const HOURS = [9, 10, 11, 12, 13, 14, 15, 16];
 const SHORT_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
@@ -187,8 +188,26 @@ export default function Visits() {
   const todayStr = toLocalDateString(new Date());
 
   return (
-    <>
+    <div className="pt-page">
       <Navbar />
+
+      <div className="pt-banner">
+        <div className="pt-banner__inner">
+          <div className="pt-banner__icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+              <rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
+              <line x1="9" y1="12" x2="15" y2="12"/>
+              <line x1="9" y1="16" x2="13" y2="16"/>
+            </svg>
+          </div>
+          <div>
+            <h1 className="pt-banner__title">Visit History</h1>
+            <p className="pt-banner__sub">Manage your upcoming and past appointments</p>
+          </div>
+        </div>
+      </div>
+
       <div style={styles.wrap}>
       <h1 style={styles.heading}>Visit history</h1>
 
@@ -364,6 +383,6 @@ export default function Visits() {
         </div>
       )}
     </div>
-    </>
+    </div>
   );
 }

@@ -185,14 +185,25 @@ router.get('/api/payments', async (req, res) => {
     const patientId = getPatientId(req);
     if (!patientId) return res.status(401).json({ error: 'Not logged in' });
     try {
+        // Run the late-fee procedure before fetching — keeps fees current
+        // even without the MySQL Event Scheduler (Azure MySQL limitation).
+        await db.query('CALL sp_apply_late_fees()').catch(() => {});
+
         const [invoices] = await db.query(
-            `SELECT DISTINCT t.TransactionID, t.Amount, a.AppointmentDate, e.LastName as DoctorName
+            `SELECT DISTINCT
+               t.TransactionID,
+               t.Amount,
+               t.DueDate,
+               COALESCE(t.LateFeeAmount, 0) AS LateFeeAmount,
+               GREATEST(0, DATEDIFF(CURDATE(), t.DueDate)) AS DaysOverdue,
+               a.AppointmentDate,
+               e.LastName AS DoctorName
              FROM transaction t
              JOIN appointment a ON t.AppointmentID = a.AppointmentID
              JOIN employee e ON a.DoctorID = e.EmployeeID
-             WHERE t.PatientID = ? 
-             AND t.Status = 'Pending' 
-             AND a.StatusCode = 1`,
+             WHERE t.PatientID = ?
+               AND t.Status = 'Pending'
+               AND a.StatusCode = 1`,
             [patientId]
         );
         res.json(invoices);

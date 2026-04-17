@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../../components/Navbar';
+import './patient-layout.css';
 
 const styles = {
   wrap: { padding: '1.5rem', maxWidth: '600px', margin: '0 auto', fontFamily: 'Poppins, sans-serif' },
@@ -39,8 +40,24 @@ export default function Billing() {
   }, [navigate]);
 
   return (
-    <>
+    <div className="pt-page">
       <Navbar />
+
+      <div className="pt-banner">
+        <div className="pt-banner__inner">
+          <div className="pt-banner__icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+              <line x1="1" y1="10" x2="23" y2="10"/>
+            </svg>
+          </div>
+          <div>
+            <h1 className="pt-banner__title">Billing</h1>
+            <p className="pt-banner__sub">Manage your invoices and payment methods</p>
+          </div>
+        </div>
+      </div>
+
       <div style={styles.wrap}>
       <h1 style={styles.heading}>Billing</h1>
       <p style={styles.subheading}>Manage your invoices and payment methods</p>
@@ -84,6 +101,6 @@ export default function Billing() {
 
       <a href="/patient/profile" style={styles.backLink}>← Back to profile</a>
     </div>
-    </>
+    </div>
   );
 }
