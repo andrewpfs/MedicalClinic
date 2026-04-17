@@ -1,91 +1,80 @@
-import DataTable from 'react-data-table-component'
-import {useState,useEffect} from 'react'
-import { useStaffAuth } from '../../hooks/useStaffAuth'
+import { useMemo } from 'react';
+import DataTable from 'react-data-table-component';
+import { useStaffAuth } from '../../hooks/useStaffAuth';
 
-function ReportTable(type, data) {
-    useStaffAuth('Admin');
-    const [stuff,setStuff] = useState([])
-    const [loading,setLoading] = useState(false)
-    const [perPage,setPerPage] = useState(10)
+export default function ReportTable({ type = 'RepDAR', data = [], title = 'Report' }) {
+  useStaffAuth('Admin');
 
-    
-    const columns = []
-    if (type == "RepDAR") {
-        columns = [
-            {
-                name: "Name",
-                selector: (row) => row.FirstName + " " + row.LastName,
-                sortable: true
-            },
-            {
-                name: "Department",
-                selector: (row) => row.DepartmentName,
-                sortable: true
-            },
-            {
-                name: "Total Appointments",
-                selector: (row) => row.Appointments,
-                sortable: true
-            },
-
-        ]
-    }
-    else if(type == "RepGAR") {
-        columns = [
-            {
-                name: "Department",
-                selector: (row) => row.DepartmentName,
-                sortable: true
-            },
-            {
-                name: "Office",
-                selector: (row) => row.OfficeName,
-                sortable: true
-            },
-            {
-                name: "Total Appointments",
-                selector: (row) => row.Appointments,
-                sortable: true
-            },
-        ]
-    }
-    else {
-        columns = [
-            {
-                name: "Department",
-                selector: (row) => row.DepartmentName,
-            },
-            {
-                name: "Office",
-                selector: (row) => row.OfficeName,
-            },
-            {
-                name: "Revenue",
-                selector: (row) => row.Revenue,
-            },
-        ]
-    } 
-
-    async function fetchTableData() {
-        setLoading(true)
-        const URL = "/" + type
-        const response = await fetch(URL)
+  const columns = useMemo(() => {
+    if (type === 'RepDAR') {
+      return [
+        {
+          name: 'Name',
+          selector: (row) => `${row.FirstName} ${row.LastName}`,
+          sortable: true,
+        },
+        {
+          name: 'Department',
+          selector: (row) => row.DepartmentName,
+          sortable: true,
+        },
+        {
+          name: 'Total Appointments',
+          selector: (row) => row.Appointments,
+          sortable: true,
+        },
+      ];
     }
 
-    useEffect(() => {
-        fetchTableData()
-    }) 
-    return (
-        <div className="report-table">
-            <DataTable 
-                title="Report" 
-                columns={columns} 
-                data={data} 
-                progressPending={loading}
-                fixedHeader/>
-        </div>
-    )
+    if (type === 'RepGAR') {
+      return [
+        {
+          name: 'Department',
+          selector: (row) => row.DepartmentName,
+          sortable: true,
+        },
+        {
+          name: 'Office',
+          selector: (row) => row.OfficeName,
+          sortable: true,
+        },
+        {
+          name: 'Total Appointments',
+          selector: (row) => row.Appointments,
+          sortable: true,
+        },
+      ];
+    }
+
+    return [
+      {
+        name: 'Department',
+        selector: (row) => row.DepartmentName,
+        sortable: true,
+      },
+      {
+        name: 'Office',
+        selector: (row) => row.OfficeName,
+        sortable: true,
+      },
+      {
+        name: 'Revenue',
+        selector: (row) => row.Revenue,
+        sortable: true,
+      },
+    ];
+  }, [type]);
+
+  return (
+    <div className="report-table">
+      <DataTable
+        title={title}
+        columns={columns}
+        data={data}
+        fixedHeader
+        highlightOnHover
+        pagination
+      />
+    </div>
+  );
 }
-
-
-export default ReportTable;
