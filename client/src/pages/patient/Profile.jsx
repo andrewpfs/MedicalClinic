@@ -4,44 +4,52 @@ import Navbar from '../../components/Navbar';
 import './patient-layout.css';
 
 const QUICK_ACTIONS = [
-  {
-    path: '/patient/booking',
-    icon: <CalendarIcon />,
-    label: 'Book Appointment',
-    sub: 'Schedule a new visit',
-  },
-  {
-    path: '/patient/visits',
-    icon: <ClipboardIcon />,
-    label: 'Visit History',
-    sub: 'View past & upcoming visits',
-  },
-  {
-    path: '/patient/billing',
-    icon: <CardIcon />,
-    label: 'Billing',
-    sub: 'Invoices & payment methods',
-  },
-  {
-    path: '/patient/update-profile',
-    icon: <GearIcon />,
-    label: 'Settings',
-    sub: 'Update personal information',
-  },
+  { path: '/patient/booking', title: 'Find a doctor', description: 'Compare doctors and book from the weekly planner.', accent: '#dcfce7' },
+  { path: '/patient/visits', title: 'Manage visits', description: 'Review past appointments, reschedule, and leave doctor feedback.', accent: '#dbeafe' },
+  { path: '/patient/billing', title: 'Billing center', description: 'See balances, payment history, and saved cards in one place.', accent: '#fef3c7' },
+  { path: '/patient/update-profile', title: 'Profile settings', description: 'Keep address, phone, and insurance details up to date.', accent: '#ede9fe' },
 ];
 
 export default function Profile() {
   const [patient, setPatient] = useState(null);
+  const [stats, setStats] = useState({ upcoming: 0, reviewsReady: 0, totalDue: 0 });
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetch('/patient/api/profile', { credentials: 'include' })
-      .then(res => {
-        if (res.status === 401) { navigate('/login'); return null; }
-        return res.json();
+    Promise.all([
+      fetch('/patient/api/profile', { credentials: 'include' }),
+      fetch('/patient/api/visits', { credentials: 'include' }),
+      fetch('/patient/api/payments', { credentials: 'include' }),
+    ])
+      .then(async ([profileRes, visitsRes, billingRes]) => {
+        if (profileRes.status === 401) {
+          navigate('/login');
+          return null;
+        }
+
+        const [profile, visits, billing] = await Promise.all([
+          profileRes.json(),
+          visitsRes.json(),
+          billingRes.json(),
+        ]);
+
+        return { profile, visits, billing };
       })
-      .then(data => { if (data) setPatient(data); })
+      .then((payload) => {
+        if (!payload) return;
+
+        setPatient(payload.profile);
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const upcoming = payload.visits.filter((visit) => new Date(visit.AppointmentDate) >= today && visit.Status !== 'Cancelled').length;
+        const reviewsReady = payload.visits.filter((visit) => Number(visit.CanReview) === 1).length;
+        const totalDue = payload.billing.reduce((sum, invoice) => sum + Number(invoice.Amount || 0), 0);
+
+        setStats({ upcoming, reviewsReady, totalDue });
+      })
       .catch(() => setError('Failed to load profile.'));
   }, [navigate]);
 
@@ -64,134 +72,327 @@ export default function Profile() {
     </div>
   );
 
-  const initials = `${patient.FName?.[0] ?? ''}${patient.LName?.[0] ?? ''}`.toUpperCase();
-
   return (
-    <div className="pt-page">
+    <div style={pageShell}>
       <Navbar />
-
-      {/* ── Banner ───────────────────────────────────────────── */}
-      <div className="pt-banner">
-        <div className="pt-banner__inner">
-          <div className="pt-banner__avatar">{initials}</div>
-          <div>
-            <h1 className="pt-banner__title">Welcome back, {patient.FName}.</h1>
-            <p className="pt-banner__sub">
-              MRN&nbsp;#{patient.PatientID}&nbsp;&nbsp;·&nbsp;&nbsp;Patient Portal
+      <div style={pageInner}>
+        <section style={heroCard}>
+          <div style={heroCopy}>
+            <p style={eyebrow}>Patient overview</p>
+            <h1 style={heroTitle}>Welcome back, {patient.FName}.</h1>
+            <p style={heroText}>
+              Your portal now keeps scheduling, visits, billing, and doctor reviews connected in one place so the next action is always easy to find.
             </p>
           </div>
-        </div>
-      </div>
+          <div style={heroStats}>
+            <HeroStat label="Upcoming visits" value={stats.upcoming} />
+            <HeroStat label="Reviews ready" value={stats.reviewsReady} />
+            <HeroStat label="Amount due" value={`$${stats.totalDue.toFixed(2)}`} />
+          </div>
+        </section>
 
-      <div className="pt-inner">
-
-        {/* ── Quick actions ─────────────────────────────────── */}
-        <p className="pt-section-label">Quick actions</p>
-        <div className="pt-action-grid">
-          {QUICK_ACTIONS.map(card => (
+        <section style={cardGrid}>
+          {QUICK_ACTIONS.map((action) => (
             <button
-              key={card.path}
-              className="pt-action-card"
-              onClick={() => navigate(card.path)}
+              key={action.path}
+              type="button"
+              onClick={() => navigate(action.path)}
+              style={actionCard}
             >
-              <div className="pt-action-card__icon">{card.icon}</div>
-              <div className="pt-action-card__text">
-                <span className="pt-action-card__label">{card.label}</span>
-                <span className="pt-action-card__sub">{card.sub}</span>
-              </div>
-              <ChevronRightIcon />
+              <span style={{ ...actionAccent, background: action.accent }} />
+              <div style={actionTitle}>{action.title}</div>
+              <p style={actionText}>{action.description}</p>
             </button>
           ))}
-        </div>
+        </section>
 
-        {/* ── Your information ──────────────────────────────── */}
-        <p className="pt-section-label" style={{ marginTop: '2rem' }}>Your information</p>
-        <div className="pt-card">
-          {[
-            { label: 'Medical Record #', value: `#${patient.PatientID}` },
-            {
-              label: 'Full Name',
-              value: `${patient.FName}${patient.MName ? ' ' + patient.MName : ''} ${patient.LName}`,
-            },
-            { label: 'Email Address', value: patient.Email },
-            { label: 'Phone Number',  value: patient.PhoneNumber || '—' },
-            { label: 'Address',       value: patient.Address || '—' },
-            {
-              label: 'Date of Birth',
-              value: patient.Dob
-                ? new Date(patient.Dob).toLocaleDateString('en-US', {
-                    month: 'long', day: 'numeric', year: 'numeric',
-                  })
-                : '—',
-            },
-          ].map((row, i, arr) => (
-            <div
-              key={row.label}
-              className={`pt-info-row${i === arr.length - 1 ? ' pt-info-row--last' : ''}`}
-            >
-              <span className="pt-info-label">{row.label}</span>
-              <span className="pt-info-value">{row.value}</span>
+        <section style={detailsLayout}>
+          <article style={surfaceCard}>
+            <h2 style={sectionTitle}>Patient details</h2>
+            <div style={detailList}>
+              <DetailRow label="Medical record number" value={patient.PatientID} />
+              <DetailRow label="Patient name" value={`${patient.FName} ${patient.LName}`} />
+              <DetailRow label="Email" value={patient.Email || 'Not set'} />
+              <DetailRow label="Contact number" value={patient.PhoneNumber || 'Not set'} />
+              <DetailRow label="Address" value={patient.Address || 'Not set'} />
+              <DetailRow label="Date of birth" value={patient.Dob ? new Date(patient.Dob).toLocaleDateString() : 'Not set'} />
             </div>
-          ))}
-        </div>
+          </article>
 
-        <button onClick={handleLogout} className="pt-signout">Sign out</button>
+          <article style={surfaceCard}>
+            <h2 style={sectionTitle}>Recommended next steps</h2>
+            <div style={nextStepList}>
+              <NextStep
+                title="Find your next appointment"
+                body="Use the doctor cards to compare specialties and ratings before you book."
+                action="Open scheduling"
+                onClick={() => navigate('/patient/booking')}
+              />
+              <NextStep
+                title="Review completed visits"
+                body="Completed appointments can now collect doctor feedback directly from Visit History."
+                action="Go to visits"
+                onClick={() => navigate('/patient/visits')}
+              />
+              <NextStep
+                title="Keep billing current"
+                body="Outstanding balances and saved payment methods now live under one billing center."
+                action="Open billing"
+                onClick={() => navigate('/patient/billing')}
+              />
+            </div>
+          </article>
+        </section>
+
+        <button type="button" onClick={handleLogout} style={logoutButton}>
+          Sign out
+        </button>
       </div>
     </div>
   );
 }
 
-/* ── SVG icons ───────────────────────────────────────────────── */
-
-function CalendarIcon() {
+function HeroStat({ label, value }) {
   return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
-      stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-      <line x1="16" y1="2" x2="16" y2="6" />
-      <line x1="8" y1="2" x2="8" y2="6" />
-      <line x1="3" y1="10" x2="21" y2="10" />
-    </svg>
+    <div style={heroStat}>
+      <div style={heroStatValue}>{value}</div>
+      <div style={heroStatLabel}>{label}</div>
+    </div>
   );
 }
 
-function ClipboardIcon() {
+function DetailRow({ label, value }) {
   return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
-      stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
-      <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
-      <line x1="9" y1="12" x2="15" y2="12" />
-      <line x1="9" y1="16" x2="13" y2="16" />
-    </svg>
+    <div style={detailRow}>
+      <div style={detailLabel}>{label}</div>
+      <div style={detailValue}>{value}</div>
+    </div>
   );
 }
 
-function CardIcon() {
+function NextStep({ title, body, action, onClick }) {
   return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
-      stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
-      <line x1="1" y1="10" x2="23" y2="10" />
-    </svg>
+    <div style={nextStepCard}>
+      <div style={nextStepTitle}>{title}</div>
+      <p style={nextStepBody}>{body}</p>
+      <button type="button" onClick={onClick} style={nextStepButton}>{action}</button>
+    </div>
   );
 }
 
-function GearIcon() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
-      stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="3" />
-      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06-.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
-    </svg>
-  );
-}
+const pageShell = {
+  minHeight: '100vh',
+  background: 'radial-gradient(circle at top left, #f3fbf7 0%, #f8fafc 52%, #eef2ff 100%)',
+  fontFamily: '"Poppins", sans-serif',
+};
 
-function ChevronRightIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-      stroke="#d1d5db" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="9 18 15 12 9 6" />
-    </svg>
-  );
-}
+const pageInner = {
+  maxWidth: '1240px',
+  margin: '0 auto',
+  padding: '28px 24px 64px',
+};
+
+const heroCard = {
+  display: 'grid',
+  gridTemplateColumns: 'minmax(0, 2fr) minmax(320px, 1fr)',
+  gap: '22px',
+  alignItems: 'center',
+  padding: '30px',
+  borderRadius: '30px',
+  background: 'linear-gradient(135deg, #0f3a2e 0%, #145f4c 52%, #2b8a73 100%)',
+  color: '#ffffff',
+  boxShadow: '0 24px 60px rgba(15, 58, 46, 0.18)',
+};
+
+const heroCopy = {};
+
+const eyebrow = {
+  margin: 0,
+  fontSize: '11px',
+  letterSpacing: '0.18em',
+  textTransform: 'uppercase',
+  fontWeight: 700,
+  opacity: 0.82,
+};
+
+const heroTitle = {
+  margin: '10px 0 12px',
+  fontSize: 'clamp(30px, 5vw, 44px)',
+  lineHeight: 1.04,
+};
+
+const heroText = {
+  margin: 0,
+  maxWidth: '680px',
+  fontSize: '15px',
+  lineHeight: 1.7,
+  color: 'rgba(255,255,255,0.9)',
+};
+
+const heroStats = {
+  display: 'grid',
+  gap: '12px',
+};
+
+const heroStat = {
+  borderRadius: '18px',
+  padding: '16px 18px',
+  background: 'rgba(255,255,255,0.12)',
+  border: '1px solid rgba(255,255,255,0.18)',
+};
+
+const heroStatValue = {
+  fontSize: '28px',
+  fontWeight: 700,
+  lineHeight: 1,
+};
+
+const heroStatLabel = {
+  marginTop: '6px',
+  fontSize: '12px',
+  letterSpacing: '0.06em',
+  textTransform: 'uppercase',
+  opacity: 0.82,
+};
+
+const cardGrid = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+  gap: '18px',
+  marginTop: '22px',
+};
+
+const actionCard = {
+  position: 'relative',
+  overflow: 'hidden',
+  textAlign: 'left',
+  border: '1px solid rgba(255,255,255,0.95)',
+  borderRadius: '24px',
+  background: 'rgba(255,255,255,0.9)',
+  boxShadow: '0 18px 44px rgba(15, 23, 42, 0.08)',
+  padding: '22px',
+  cursor: 'pointer',
+  fontFamily: 'inherit',
+};
+
+const actionAccent = {
+  position: 'absolute',
+  width: '120px',
+  height: '120px',
+  borderRadius: '999px',
+  top: '-40px',
+  right: '-20px',
+  opacity: 0.95,
+};
+
+const actionTitle = {
+  position: 'relative',
+  fontSize: '18px',
+  fontWeight: 700,
+  color: '#0f172a',
+};
+
+const actionText = {
+  position: 'relative',
+  margin: '10px 0 0',
+  color: '#64748b',
+  fontSize: '14px',
+  lineHeight: 1.65,
+};
+
+const detailsLayout = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))',
+  gap: '18px',
+  marginTop: '22px',
+};
+
+const surfaceCard = {
+  background: 'rgba(255,255,255,0.9)',
+  borderRadius: '26px',
+  border: '1px solid rgba(255,255,255,0.95)',
+  boxShadow: '0 18px 44px rgba(15, 23, 42, 0.08)',
+  padding: '24px',
+};
+
+const sectionTitle = {
+  margin: 0,
+  fontSize: '20px',
+  color: '#0f172a',
+};
+
+const detailList = {
+  marginTop: '18px',
+  borderRadius: '20px',
+  overflow: 'hidden',
+  border: '1px solid #e2e8f0',
+};
+
+const detailRow = {
+  display: 'grid',
+  gridTemplateColumns: '200px minmax(0, 1fr)',
+  borderBottom: '1px solid #e2e8f0',
+};
+
+const detailLabel = {
+  padding: '14px 16px',
+  background: '#f8fafc',
+  color: '#475569',
+  fontSize: '13px',
+  fontWeight: 700,
+};
+
+const detailValue = {
+  padding: '14px 16px',
+  color: '#0f172a',
+  fontSize: '14px',
+};
+
+const nextStepList = {
+  display: 'grid',
+  gap: '14px',
+  marginTop: '18px',
+};
+
+const nextStepCard = {
+  borderRadius: '20px',
+  border: '1px solid #e2e8f0',
+  background: '#f8fafc',
+  padding: '18px',
+};
+
+const nextStepTitle = {
+  fontSize: '16px',
+  fontWeight: 700,
+  color: '#0f172a',
+};
+
+const nextStepBody = {
+  margin: '8px 0 14px',
+  color: '#64748b',
+  fontSize: '14px',
+  lineHeight: 1.6,
+};
+
+const nextStepButton = {
+  border: 'none',
+  borderRadius: '14px',
+  background: '#123524',
+  color: '#ffffff',
+  padding: '10px 14px',
+  fontSize: '13px',
+  fontWeight: 700,
+  cursor: 'pointer',
+  fontFamily: 'inherit',
+};
+
+const logoutButton = {
+  marginTop: '22px',
+  border: 'none',
+  background: 'transparent',
+  color: '#64748b',
+  fontSize: '13px',
+  fontWeight: 700,
+  cursor: 'pointer',
+  fontFamily: 'inherit',
+};

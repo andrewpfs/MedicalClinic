@@ -1,6 +1,7 @@
 import DataTable from 'react-data-table-component'
 import { useState, useEffect } from 'react'
 import { tableCustomStyles, filterCard, filterRow, filterGroup, filterLabel, filterInput, sectionLabel } from './adminStyles'
+import API from '../../api'
 
 function EditRowForm({ row, onClose, onSave }) {
   const [editted, setEditted] = useState({
@@ -17,7 +18,7 @@ function EditRowForm({ row, onClose, onSave }) {
 
   const handleClick = async e => {
     e.preventDefault()
-    await fetch('/admin/api/updateEmployee', {
+    await fetch(`${API}/admin/api/updateEmployee`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ...editted, EmployeeID: row.EmployeeID })
@@ -80,7 +81,7 @@ function EditRowForm({ row, onClose, onSave }) {
   )
 }
 
-function EmployeeTable() {
+function EmployeeTable({ refreshKey = 0 }) {
   const [response, setResponse] = useState([])
   const [records, setRecords] = useState([])
   const [loading, setLoading] = useState(false)
@@ -88,13 +89,13 @@ function EmployeeTable() {
 
   async function fetchTableData() {
     setLoading(true)
-    const data = await fetch("/admin/api/getEmployees", { credentials: 'include' }).then(res => res.json())
+    const data = await fetch(`${API}/admin/api/getEmployees`, { credentials: 'include' }).then(res => res.json())
     setResponse(data)
     setRecords(data)
     setLoading(false)
   }
 
-  useEffect(() => { fetchTableData() }, [])
+  useEffect(() => { fetchTableData() }, [refreshKey])
 
   const columns = [
     { name: "Employee ID", selector: row => row.EmployeeID, sortable: true },

@@ -51,6 +51,8 @@ const login = async (req, res) => {
 
         res.cookie("accessToken", token, {
             httpOnly: true,
+            sameSite: 'none',
+            secure: true,
         }).json({success : true})
     }catch(err){
         res.status(500).json(err)
@@ -58,7 +60,7 @@ const login = async (req, res) => {
     }
 }
 const logout = (req, res) => {
-     res.clearCookie("accessToken").json({success: true})
+     res.clearCookie("accessToken", { sameSite: 'none', secure: true }).json({success: true})
 }
 
 module.exports = { register, login, logout };

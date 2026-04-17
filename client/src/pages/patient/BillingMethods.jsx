@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Navbar from '../../components/Navbar';
 import './patient-layout.css';
 
+import API from '../../api';
 const CARD_TYPES = ['Visa', 'Mastercard', 'American Express', 'Discover'];
 
 const styles = {
@@ -51,7 +52,7 @@ export default function BillingMethods() {
   const navigate = useNavigate();
 
   const loadMethods = () => {
-    fetch('/patient/api/payment-methods', { credentials: 'include' })
+    fetch(`${API}/patient/api/payment-methods`, { credentials: 'include' })
       .then(res => { if (res.status === 401) { navigate('/login'); return null; } return res.json(); })
       .then(data => { if (data) setMethods(data); });
   };
@@ -65,7 +66,7 @@ export default function BillingMethods() {
       setError('Please enter exactly 4 digits for the card number.');
       return;
     }
-    const res = await fetch('/patient/api/payment-methods', {
+    const res = await fetch(`${API}/patient/api/payment-methods`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(form),
@@ -81,7 +82,7 @@ export default function BillingMethods() {
   };
 
   const handleRemove = async (id) => {
-    await fetch(`/patient/api/payment-methods/${id}`, { method: 'DELETE', credentials: 'include' });
+    await fetch(`${API}/patient/api/payment-methods/${id}`, { method: 'DELETE', credentials: 'include' });
     loadMethods();
   };
 

@@ -1,4 +1,5 @@
 import { useEffect } from "react"
+import API from '../api'
 
 function DepartmentForm() {
 
@@ -9,7 +10,7 @@ function DepartmentForm() {
 
     async function getDep() {
         try {
-            const [rows] = await fetch('/admin/api/getdepartments')
+            const [rows] = await fetch(`${API}/admin/api/getdepartments`))
 
             setDepartment(await rows.json())
         }catch(err) {

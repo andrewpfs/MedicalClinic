@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
 
 const getStaff = (req) => {
     try {
@@ -68,7 +69,7 @@ router.post('/api/updateprofile', async (req,res) => {
 
 router.post('/api/updatepassword', async (req,res) => {
     const q = 'UPDATE employee SET Password=? WHERE EmployeeID=?';
-    const pass = req.body.Password;
+    const pass = await bcrypt.hash(req.body.Password, 10);
     const id = req.body.id;
     try {
         await db.query(q,[pass,id]);
@@ -104,6 +105,7 @@ router.post('/api/adddoctor', async (req,res) => {
 
 router.post('/api/addemployee', async (req,res) => {
     const q = "INSERT INTO employee (`FirstName`,`LastName`,`Birthdate`,`GenderCode`,`RaceCode`,`EthnicityCode`,`Role`,`Address`,`PhoneNumber`,`Email`,`Password`,`DepartmentID`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)";
+    const hashedPassword = await bcrypt.hash(req.body.Password, 10);
 
     const r = [
         req.body.FirstName,
@@ -116,7 +118,7 @@ router.post('/api/addemployee', async (req,res) => {
         req.body.Address || null,
         req.body.PhoneNumber || null,
         req.body.Email,
-        req.body.Password,
+        hashedPassword,
         req.body.DepartmentID || null,
     ];
 

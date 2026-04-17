@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
+import API from '../../api'
 
 function Register() {
   const navigate = useNavigate()
@@ -21,7 +22,7 @@ function Register() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    const res = await fetch("/patient/register", {
+    const res = await fetch(`${API}/patient/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",

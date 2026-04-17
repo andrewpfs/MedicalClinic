@@ -3,13 +3,14 @@ import { useState,useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useStaffAuth } from '../../hooks/useStaffAuth';
 
+import API from '../../api';
 function AdminProfile() {
     useStaffAuth('Admin');
     const [info, setInfo] = useState(null);
     const [error, setError] = useState('');
     const navigate = useNavigate();
     useEffect(() => {
-        fetch('/admin/api/profile', { credentials: 'include' })
+        fetch(`${API}/admin/api/profile`, { credentials: 'include' })
             .then(res => {
                 if (res.status === 401) { navigate('/admin/home'); return null; }
                 return res.json();
@@ -55,7 +56,7 @@ function UpdateProfile({ info }) {
     const handleUpdate = async (e) => {
         e.preventDefault();
         try {
-            const response = await fetch("/admin/api/updateprofile", {
+            const response = await fetch(`${API}/admin/api/updateprofile`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ ...updated, EmployeeID: info.id }) 

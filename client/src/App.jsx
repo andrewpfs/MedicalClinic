@@ -10,6 +10,7 @@ import RoleSelect from './pages/RoleSelect';
 // David's pages
 import EmployeePage from './pages/EmployeePage';
 import DoctorPage from './pages/DoctorPage';
+import NursePage from './pages/NursePage';
 import StaffLogin from './pages/StaffLogin';
 // Admin pages
 import AdminHome from './pages/admin/Home';
@@ -44,6 +45,7 @@ export default function App() {
         {/* Staff pages */}
         <Route path="/employee" element={<EmployeePage />} />
         <Route path="/doctor" element={<DoctorPage />} />
+        <Route path="/nurse" element={<NursePage />} />
 
         {/* Patient portal */}
         <Route path="/patient/login" element={<Login />} />

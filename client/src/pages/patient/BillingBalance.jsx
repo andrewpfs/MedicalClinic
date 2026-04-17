@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Navbar from '../../components/Navbar';
 import './patient-layout.css';
 
+import API from '../../api';
 const styles = {
   wrap: { padding: '1.5rem', maxWidth: '660px', margin: '0 auto', fontFamily: 'Poppins, sans-serif' },
   heading: { fontSize: '22px', fontWeight: 500, marginBottom: '1.5rem', color: '#1e2b1b' },
@@ -60,15 +61,15 @@ export default function BillingBalance() {
   const navigate = useNavigate();
 
   const loadData = () => {
-    fetch('/patient/api/payments', { credentials: 'include' })
+    fetch(`${API}/patient/api/payments`, { credentials: 'include' })
       .then(res => { if (res.status === 401) { navigate('/login'); return null; } return res.json(); })
       .then(data => { if (data) setInvoices(data); });
 
-    fetch('/patient/api/payment-history', { credentials: 'include' })
+    fetch(`${API}/patient/api/payment-history`, { credentials: 'include' })
       .then(res => res.json())
       .then(data => { if (data) setHistory(data); });
 
-    fetch('/patient/api/payment-methods', { credentials: 'include' })
+    fetch(`${API}/patient/api/payment-methods`, { credentials: 'include' })
       .then(res => res.json())
       .then(data => { if (data) { setMethods(data); if (data.length > 0) setSelectedMethod(data[0].PaymentMethodID); } });
   };
@@ -76,7 +77,7 @@ export default function BillingBalance() {
   useEffect(() => { loadData(); }, [navigate]);
 
   const handlePay = async () => {
-    const res = await fetch('/patient/pay', {
+    const res = await fetch(`${API}/patient/pay`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ transactionId: confirmInvoice.TransactionID }),

@@ -1,25 +1,26 @@
 import { useState, useEffect } from 'react'
 import DataTable from 'react-data-table-component'
 import { tableCustomStyles, filterCard, filterRow, filterGroup, filterLabel, filterInput, primaryBtn, sectionLabel } from './adminStyles'
+import API from '../../api'
 
 const columns = [
-  { name: 'ID',         selector: r => r.AppointmentID, sortable: true, width: '70px' },
+  { name: 'ID',         selector: r => r.TransactionID, sortable: true, width: '70px' },
   { name: 'Patient',    selector: r => `${r.FName} ${r.LName}`, sortable: true },
   { name: 'Doctor',     selector: r => `Dr. ${r.DoctorFirst} ${r.DoctorLast}`, sortable: true },
   { name: 'Department', selector: r => r.DepartmentName || '—', sortable: true },
-  { name: 'Date',       selector: r => r.AppointmentDate ? new Date(r.AppointmentDate).toLocaleDateString() : '—', sortable: true },
-  { name: 'Reason',     selector: r => r.ReasonForVisit || '—', wrap: true },
+  { name: 'Appt Date',  selector: r => r.AppointmentDate ? new Date(r.AppointmentDate).toLocaleDateString() : '—', sortable: true },
+  { name: 'Amount',     selector: r => r.Amount != null ? `$${parseFloat(r.Amount).toFixed(2)}` : '—', sortable: true },
   { name: 'Status',     selector: r => r.Status || '—', sortable: true },
 ]
 
-function RepAllAppt() {
+function RepAllTrans() {
   const [data, setData]         = useState([])
   const [departments, setDepts] = useState([])
   const [loading, setLoading]   = useState(false)
   const [filters, setFilters]   = useState({ DepartmentName: '', min: '', max: '' })
 
   useEffect(() => {
-    fetch('/admin/api/getdepartments', { credentials: 'include' })
+    fetch(`${API}/admin/api/getdepartments`, { credentials: 'include' })
       .then(r => r.json())
       .then(d => setDepts(Array.isArray(d) ? d : []))
       .catch(console.error)
@@ -30,7 +31,7 @@ function RepAllAppt() {
     setLoading(true)
     try {
       const params = new URLSearchParams(f)
-      const res = await fetch(`/admin/api/appointments?${params}`, { credentials: 'include' })
+      const res = await fetch(`${API}/admin/api/transactions?${params}`, { credentials: 'include' })
       if (!res.ok) throw new Error('Failed')
       setData(await res.json())
     } catch (err) { console.error(err) }
@@ -77,4 +78,4 @@ function RepAllAppt() {
   )
 }
 
-export default RepAllAppt
+export default RepAllTrans

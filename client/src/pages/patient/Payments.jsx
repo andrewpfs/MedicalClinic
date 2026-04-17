@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+import API from '../../api';
 export default function Payments() {
   const [invoices, setInvoices] = useState([]);
   const [selected, setSelected] = useState('');
@@ -8,7 +9,7 @@ export default function Payments() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetch('/patient/api/payments', { credentials: 'include' })
+    fetch(`${API}/patient/api/payments`, { credentials: 'include' })
       .then(res => {
         if (res.status === 401) { navigate('/login'); return null; }
         return res.json();
@@ -20,7 +21,7 @@ export default function Payments() {
   const handleSubmit = async e => {
     e.preventDefault();
     setError('');
-    const res = await fetch('/patient/pay', {
+    const res = await fetch(`${API}/patient/pay`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ transactionId: selected }),

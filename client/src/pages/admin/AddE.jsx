@@ -2,66 +2,89 @@ import React from 'react'
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStaffAuth } from '../../hooks/useStaffAuth'
-import { filterCard, filterRow, filterGroup, filterLabel, filterInput, primaryBtn, sectionLabel } from './adminStyles'
+import { filterCard, filterGroup, filterLabel, filterInput, primaryBtn, sectionLabel } from './adminStyles'
+import API from '../../api'
 
-const AddE = () => {
+const AddE = ({ onSuccess }) => {
   useStaffAuth('Admin')
   const navigate = useNavigate()
-  const [department, setDepartment] = useState([])
+  const [departments, setDepartments] = useState([])
+  const [doctors, setDoctors] = useState([])
   const [emp, setEmp] = useState({
     FirstName: '', LastName: '', BirthDate: '', GenderCode: '',
-    RaceCode: '', EthnicityCode: '', Role: '', Department: '',
+    RaceCode: '', EthnicityCode: '', Role: '', DepartmentID: '',
     Address: '', PhoneNumber: '', Email: '', Password: '',
     Specialty: '', IsPrimaryCare: '', AssignedDoctorID: ''
   })
   const [check, setCheck] = useState({ Doctor: false, Nurse: false })
   const [open, setOpen] = useState(false)
+  const [error, setError] = useState('')
 
-  async function getDepart() {
-    try {
-      const deps = await fetch('/admin/api/getdepartments').then(res => res.json())
-      setDepartment(deps)
-    } catch (err) { console.error(err) }
-  }
-
-  useEffect(() => { getDepart() }, [])
+  useEffect(() => {
+    fetch(`${API}/admin/api/getdepartments`).then(r => r.json()).then(setDepartments).catch(console.error)
+    fetch(`${API}/admin/api/getdoctors`).then(r => r.json()).then(setDoctors).catch(console.error)
+  }, [])
 
   const handleChange = (e) => {
     setEmp(prev => ({ ...prev, [e.target.name]: e.target.value }))
   }
 
-  const handleClick = async e => {
+  const handleRoleChange = (e) => {
+    const role = e.target.value
+    setEmp(prev => ({ ...prev, Role: role }))
+    setCheck({ Doctor: role === 'Doctor', Nurse: role === 'Nurse' })
+  }
+
+  const handleSubmit = async (e) => {
     e.preventDefault()
+    setError('')
     try {
-      const response = await fetch('/api/addemployee', {
+      // Step 1: create base employee record
+      const empRes = await fetch(`${API}/admin/api/addemployee`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(emp)
       })
-      if (response.ok) {
-        setOpen(false)
-        navigate('/admin/employees')
+      const empData = await empRes.json()
+      if (!empRes.ok) throw new Error(empData.error || 'Failed to create employee')
+
+      const newId = empData.employeeId
+
+      // Step 2: if Doctor, insert into doctor table
+      if (check.Doctor) {
+        const drRes = await fetch(`${API}/admin/api/adddoctor`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ EmployeeID: newId, Specialty: emp.Specialty, IsPrimaryCare: emp.IsPrimaryCare })
+        })
+        if (!drRes.ok) throw new Error('Employee created but failed to save doctor details')
       }
-    } catch (err) { console.error('Add employee error:', err) }
+
+      // Step 3: if Nurse, insert into nurse table
+      if (check.Nurse) {
+        const nurseRes = await fetch(`${API}/admin/api/addnurse`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ EmployeeID: newId, AssignedDoctorID: emp.AssignedDoctorID || null })
+        })
+        if (!nurseRes.ok) throw new Error('Employee created but failed to save nurse details')
+      }
+
+      setOpen(false)
+      if (onSuccess) onSuccess()
+      else navigate('/admin/employees')
+    } catch (err) {
+      setError(err.message)
+    }
   }
 
-  const handleDisplay = (e) => {
-    setEmp(prev => ({ ...prev, Role: e.target.value }))
-    if (e.target.value === 'Doctor') setCheck({ Doctor: true, Nurse: false })
-    else if (e.target.value === 'Nurse') setCheck({ Doctor: false, Nurse: true })
-    else setCheck({ Doctor: false, Nurse: false })
-  }
-
-  const grid2 = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }
+  const grid2 = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }
   const select = { ...filterInput, width: '100%' }
 
   return (
     <div style={{ marginBottom: '1.5rem' }}>
       {!open ? (
-        <button
-          onClick={() => setOpen(true)}
-          style={{ ...primaryBtn, marginBottom: '1.5rem' }}
-        >
+        <button onClick={() => setOpen(true)} style={{ ...primaryBtn, marginBottom: '1.5rem' }}>
           + Add new employee
         </button>
       ) : (
@@ -70,9 +93,15 @@ const AddE = () => {
             <p style={sectionLabel}>New employee</p>
           </div>
 
-          <form onSubmit={handleClick}>
+          {error && (
+            <div style={{ marginBottom: '12px', padding: '10px 14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', fontSize: '13px', color: '#991b1b' }}>
+              {error}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit}>
             {/* Row 1 — Name */}
-            <div style={{ ...grid2, marginBottom: '12px' }}>
+            <div style={grid2}>
               <div style={filterGroup}>
                 <label style={filterLabel}>First name *</label>
                 <input style={filterInput} type="text" name="FirstName" onChange={handleChange} maxLength="30" required />
@@ -84,10 +113,10 @@ const AddE = () => {
             </div>
 
             {/* Row 2 — DOB + Gender */}
-            <div style={{ ...grid2, marginBottom: '12px' }}>
+            <div style={grid2}>
               <div style={filterGroup}>
-                <label style={filterLabel}>Date of birth *</label>
-                <input style={filterInput} type="date" name="BirthDate" onChange={handleChange} required />
+                <label style={filterLabel}>Date of birth</label>
+                <input style={filterInput} type="date" name="BirthDate" onChange={handleChange} />
               </div>
               <div style={filterGroup}>
                 <label style={filterLabel}>Gender</label>
@@ -101,7 +130,7 @@ const AddE = () => {
             </div>
 
             {/* Row 3 — Race + Ethnicity */}
-            <div style={{ ...grid2, marginBottom: '12px' }}>
+            <div style={grid2}>
               <div style={filterGroup}>
                 <label style={filterLabel}>Race</label>
                 <select style={select} name="RaceCode" onChange={handleChange}>
@@ -133,10 +162,10 @@ const AddE = () => {
             </div>
 
             {/* Row 4 — Role + Department */}
-            <div style={{ ...grid2, marginBottom: '12px' }}>
+            <div style={grid2}>
               <div style={filterGroup}>
                 <label style={filterLabel}>Role *</label>
-                <select style={select} name="Role" onChange={handleDisplay} required>
+                <select style={select} name="Role" onChange={handleRoleChange} required>
                   <option value="">Select role</option>
                   <option value="Doctor">Doctor</option>
                   <option value="Nurse">Nurse</option>
@@ -145,9 +174,10 @@ const AddE = () => {
                 </select>
               </div>
               <div style={filterGroup}>
-                <label style={filterLabel}>Department *</label>
-                <select style={select} name="DepartmentName" onChange={handleChange}>
-                  {department.map(d => (
+                <label style={filterLabel}>Department</label>
+                <select style={select} name="DepartmentID" onChange={handleChange}>
+                  <option value="">Select department</option>
+                  {departments.map(d => (
                     <option key={d.DepartmentID} value={d.DepartmentID}>{d.DepartmentName}</option>
                   ))}
                 </select>
@@ -155,7 +185,7 @@ const AddE = () => {
             </div>
 
             {/* Row 5 — Phone + Email */}
-            <div style={{ ...grid2, marginBottom: '12px' }}>
+            <div style={grid2}>
               <div style={filterGroup}>
                 <label style={filterLabel}>Phone number</label>
                 <input style={filterInput} type="tel" placeholder="1234567890" name="PhoneNumber" onChange={handleChange} pattern="[0-9]{10}" />
@@ -167,7 +197,7 @@ const AddE = () => {
             </div>
 
             {/* Row 6 — Address + Password */}
-            <div style={{ ...grid2, marginBottom: '12px' }}>
+            <div style={grid2}>
               <div style={filterGroup}>
                 <label style={filterLabel}>Address</label>
                 <input style={filterInput} type="text" name="Address" onChange={handleChange} maxLength="100" />
@@ -180,10 +210,10 @@ const AddE = () => {
 
             {/* Conditional — Doctor fields */}
             {check.Doctor && (
-              <div style={{ ...grid2, marginBottom: '12px' }}>
+              <div style={grid2}>
                 <div style={filterGroup}>
                   <label style={filterLabel}>Specialty</label>
-                  <input style={filterInput} type="text" placeholder="Specialty" name="Specialty" onChange={handleChange} maxLength="20" />
+                  <input style={filterInput} type="text" placeholder="e.g. Cardiology" name="Specialty" onChange={handleChange} maxLength="20" />
                 </div>
                 <div style={filterGroup}>
                   <label style={filterLabel}>Primary care physician?</label>
@@ -198,10 +228,17 @@ const AddE = () => {
 
             {/* Conditional — Nurse fields */}
             {check.Nurse && (
-              <div style={{ marginBottom: '12px' }}>
+              <div style={{ ...grid2 }}>
                 <div style={filterGroup}>
-                  <label style={filterLabel}>Assigned doctor ID</label>
-                  <input style={{ ...filterInput, maxWidth: '50%' }} type="text" placeholder="0000" name="AssignedDoctorID" onChange={handleChange} />
+                  <label style={filterLabel}>Assigned Doctor</label>
+                  <select style={select} name="AssignedDoctorID" onChange={handleChange}>
+                    <option value="">Select doctor</option>
+                    {doctors.map(d => (
+                      <option key={d.EmployeeID} value={d.EmployeeID}>
+                        Dr. {d.LastName}, {d.FirstName}{d.Specialty ? ` — ${d.Specialty}` : ''}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
             )}
@@ -210,7 +247,7 @@ const AddE = () => {
               <button type="submit" style={primaryBtn}>Create employee</button>
               <button
                 type="button"
-                onClick={() => setOpen(false)}
+                onClick={() => { setOpen(false); setError('') }}
                 style={{ padding: '9px 20px', background: 'white', color: '#374151', border: '1px solid #d1d5db', borderRadius: '8px', fontSize: '13px', cursor: 'pointer', fontFamily: 'Poppins, sans-serif' }}
               >
                 Cancel
