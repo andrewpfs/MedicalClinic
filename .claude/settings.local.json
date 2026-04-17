@@ -5,7 +5,8 @@
       "Bash(node -e ' *)",
       "Bash(cat client/src/App.jsx)",
       "Bash(cat client/src/App.js)",
-      "Bash(cat client/src/main.jsx)"
+      "Bash(cat client/src/main.jsx)",
+      "Bash(node fix-fetch-parens.js)"
     ]
   }
 }

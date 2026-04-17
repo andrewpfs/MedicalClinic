@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import NotificationBell from "./NotificationBell";
 import "./Navbar.css";
 
+import API from '../api';
 const NAV_LINKS = [
   { label: "Find a Doctor", to: "/patient/booking" },
   { label: "My Visits", to: "/patient/visits" },
@@ -17,7 +18,7 @@ export default function Navbar() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetch("/api/session", { credentials: "include" })
+    fetch(`${API}/api/session`, { credentials: "include" })
       .then((res) => res.json())
       .then((data) => setSession({ isLoggedIn: data.isLoggedIn, firstName: data.firstName || "" }))
       .catch(() => {});
@@ -35,7 +36,7 @@ export default function Navbar() {
   }, []);
 
   const handleLogout = async () => {
-    await fetch("/patient/logout", { credentials: "include" });
+    await fetch(`${API}/patient/logout`, { credentials: "include" });
     setSession({ isLoggedIn: false, firstName: "" });
     setDropdownOpen(false);
     navigate("/");

@@ -39,7 +39,7 @@ function AdminHome() {
   const navigate = useNavigate()
 
   const handleLogout = async () => {
-    await fetch('/admin/logout', { credentials: 'include' })
+    await fetch(`${API}/admin/logout`, { credentials: 'include' })
     navigate('/')
   }
 

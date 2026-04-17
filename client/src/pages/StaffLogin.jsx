@@ -11,7 +11,7 @@ function StaffLogin() {
     e.preventDefault()
     setError("")
     try {
-      const res = await fetch("/api/employee/login", {
+      const res = await fetch(`${API}/api/employee/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

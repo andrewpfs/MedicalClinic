@@ -17,7 +17,7 @@ function EditRowForm({ row, onClose, onSave }) {
 
   const handleClick = async e => {
     e.preventDefault()
-    await fetch('/admin/api/updateEmployee', {
+    await fetch(`${API}/admin/api/updateEmployee`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ...editted, EmployeeID: row.EmployeeID })
@@ -88,7 +88,7 @@ function EmployeeTable({ refreshKey = 0 }) {
 
   async function fetchTableData() {
     setLoading(true)
-    const data = await fetch("/admin/api/getEmployees", { credentials: 'include' }).then(res => res.json())
+    const data = await fetch(`${API}/admin/api/getEmployees`, { credentials: 'include' }).then(res => res.json())
     setResponse(data)
     setRecords(data)
     setLoading(false)

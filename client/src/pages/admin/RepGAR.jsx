@@ -9,6 +9,7 @@ let columns = [
     { name: 'Total Appointments',selector: r => r.Appointments, sortable: true },
 ];
 
+import API from '../../api';
 function RepGAR() {
     useStaffAuth('Admin');
     const [data, setData]       = useState([]);
@@ -21,7 +22,7 @@ function RepGAR() {
         setLoading(true);
         try {
             const params = new URLSearchParams(f);
-            const res = await fetch(`/admin/api/pullgar?${params}`, { credentials: 'include' });
+            const res = await fetch(`${API}/admin/api/pullgar?${params}`, { credentials: 'include' });
             if (!res.ok) throw new Error('Failed');
             const json = await res.json();
             setData(json.results || json);

@@ -19,7 +19,7 @@ function RepAllTrans() {
   const [filters, setFilters]   = useState({ DepartmentName: '', min: '', max: '' })
 
   useEffect(() => {
-    fetch('/admin/api/getdepartments', { credentials: 'include' })
+    fetch(`${API}/admin/api/getdepartments`, { credentials: 'include' })
       .then(r => r.json())
       .then(d => setDepts(Array.isArray(d) ? d : []))
       .catch(console.error)
@@ -30,7 +30,7 @@ function RepAllTrans() {
     setLoading(true)
     try {
       const params = new URLSearchParams(f)
-      const res = await fetch(`/admin/api/transactions?${params}`, { credentials: 'include' })
+      const res = await fetch(`${API}/admin/api/transactions?${params}`, { credentials: 'include' })
       if (!res.ok) throw new Error('Failed')
       setData(await res.json())
     } catch (err) { console.error(err) }

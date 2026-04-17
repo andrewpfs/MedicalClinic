@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../../components/Navbar';
 
+import API from '../../api';
 const styles = {
   wrap: { padding: '1.5rem', maxWidth: '600px', margin: '0 auto', fontFamily: 'Poppins, sans-serif' },
   heading: { fontSize: '22px', fontWeight: 500, marginBottom: '0.25rem', color: '#1e2b1b' },
@@ -27,7 +28,7 @@ export default function Billing() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetch('/patient/api/payments', { credentials: 'include' })
+    fetch(`${API}/patient/api/payments`, { credentials: 'include' })
       .then(res => { if (res.status === 401) { navigate('/login'); return null; } return res.json(); })
       .then(data => {
         if (!data) return;

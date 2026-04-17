@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../../components/Navbar';
 
+import API from '../../api';
 const HOURS = [9, 10, 11, 12, 13, 14, 15, 16];
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 const SHORT_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
@@ -80,7 +81,7 @@ export default function Booking() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetch('/patient/api/doctors', { credentials: 'include' })
+    fetch(`${API}/patient/api/doctors`, { credentials: 'include' })
       .then(res => { if (res.status === 401) { navigate('/login'); return null; } return res.json(); })
       .then(data => { if (data) setDoctors(data); })
       .catch(() => setError('Failed to load doctors.'));
@@ -92,7 +93,7 @@ export default function Booking() {
     if (!selectedDoctor) return;
     const startDate = toLocalDateString(weekDates[0]);
     const endDate = toLocalDateString(weekDates[4]);
-    fetch(`/patient/api/booked-slots?doctorId=${selectedDoctor}&start=${startDate}&end=${endDate}`, { credentials: 'include' })
+    fetch(`${API}/patient/api/booked-slots?doctorId=${selectedDoctor}&start=${startDate}&end=${endDate}`, { credentials: 'include' })
       .then(res => res.json())
       .then(data => setBookedSlots(data))
       .catch(() => {});
@@ -138,7 +139,7 @@ export default function Booking() {
     const dateStr = toLocalDateString(date);
     const hourStr = String(hour).padStart(2, '0');
     const datetime = `${dateStr}T${hourStr}:00`;
-    const res = await fetch('/patient/book', {
+    const res = await fetch(`${API}/patient/book`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ doctorId: selectedDoctor, date: datetime, reason }),

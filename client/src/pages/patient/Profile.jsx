@@ -2,13 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../../components/Navbar';
 
+import API from '../../api';
 export default function Profile() {
   const [patient, setPatient] = useState(null);
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetch('/patient/api/profile', { credentials: 'include' })
+    fetch(`${API}/patient/api/profile`, { credentials: 'include' })
       .then(res => {
         if (res.status === 401) { navigate('/login'); return null; }
         return res.json();
@@ -18,7 +19,7 @@ export default function Profile() {
   }, [navigate]);
 
   const handleLogout = async () => {
-    await fetch('/patient/logout', { credentials: 'include' });
+    await fetch(`${API}/patient/logout`, { credentials: 'include' });
     navigate('/');
   };
 

@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import "./Navbar.css";
 
 
+import API from '../api';
 export default function StaffNavbar() {
   const [session, setSession] = useState({ isLoggedIn: false, firstName: "", role: "" });
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -10,7 +11,7 @@ export default function StaffNavbar() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetch("/api/employee/session", { credentials: "include" })
+    fetch(`${API}/api/employee/session`, { credentials: "include" })
       .then((res) => res.json())
       .then((data) => {
         if (data.isLoggedIn) {
@@ -32,7 +33,7 @@ export default function StaffNavbar() {
   }, []);
 
   const handleLogout = async () => {
-    await fetch("/api/employee/logout", { credentials: "include" });
+    await fetch(`${API}/api/employee/logout`, { credentials: "include" });
     setSession({ isLoggedIn: false, firstName: "", role: "" });
     setDropdownOpen(false);
     navigate("/staff-login");

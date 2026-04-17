@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../../components/Navbar';
 
+import API from '../../api';
 const HOURS = [9, 10, 11, 12, 13, 14, 15, 16];
 const SHORT_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
@@ -108,7 +109,7 @@ export default function Visits() {
   useEffect(() => { setWeekDates(getWeekDates(weekOffset)); }, [weekOffset]);
 
   const loadVisits = () => {
-    fetch('/patient/api/visits', { credentials: 'include' })
+    fetch(`${API}/patient/api/visits`, { credentials: 'include' })
       .then(res => { if (res.status === 401) { navigate('/login'); return null; } return res.json(); })
       .then(data => {
         if (!data) return;
@@ -130,14 +131,14 @@ export default function Visits() {
     if (!rescheduleTarget) return;
     const startDate = toLocalDateString(weekDates[0]);
     const endDate = toLocalDateString(weekDates[4]);
-    fetch(`/patient/api/booked-slots?doctorId=${rescheduleTarget.DoctorID}&start=${startDate}&end=${endDate}`, { credentials: 'include' })
+    fetch(`${API}/patient/api/booked-slots?doctorId=${rescheduleTarget.DoctorID}&start=${startDate}&end=${endDate}`, { credentials: 'include' })
       .then(res => res.json())
       .then(data => setBookedSlots(data))
       .catch(() => {});
   }, [rescheduleTarget, weekDates]);
 
   const handleCancel = async () => {
-    const res = await fetch('/patient/cancel-appointment', {
+    const res = await fetch(`${API}/patient/cancel-appointment`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ appointmentId: cancelTarget.AppointmentID }),
@@ -153,7 +154,7 @@ export default function Visits() {
     const dateStr = toLocalDateString(date);
     const hourStr = String(hour).padStart(2, '0');
     const newDate = `${dateStr}T${hourStr}:00`;
-    const res = await fetch('/patient/reschedule-appointment', {
+    const res = await fetch(`${API}/patient/reschedule-appointment`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ appointmentId: rescheduleTarget.AppointmentID, newDate }),

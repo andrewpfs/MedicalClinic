@@ -12,7 +12,7 @@ function Login() {
     e.preventDefault()
     setError("")
     try {
-      const res = await fetch("/patient/login", {
+      const res = await fetch(`${API}/patient/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

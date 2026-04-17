@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Navbar from '../../components/Navbar';
 import './UpdateProfile.css';
 
+import API from '../../api';
 const GENDER_OPTIONS   = [{ value: '', label: 'Select…' }, { value: '1', label: 'Male' }, { value: '2', label: 'Female' }];
 const RACE_OPTIONS     = [{ value: '', label: 'Select…' }, { value: '1', label: 'White' }, { value: '2', label: 'African' }, { value: '3', label: 'Asian' }];
 const ETHNICITY_OPTIONS = [
@@ -27,7 +28,7 @@ export default function UpdateProfile() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetch('/patient/api/profile', { credentials: 'include' })
+    fetch(`${API}/patient/api/profile`, { credentials: 'include' })
       .then(res => { if (res.status === 401) { navigate('/login'); return null; } return res.json(); })
       .then(data => {
         if (!data) return;
@@ -52,7 +53,7 @@ export default function UpdateProfile() {
   const handleSave = async e => {
     e.preventDefault();
     setError(''); setSaved('');
-    const res = await fetch('/patient/update-profile', {
+    const res = await fetch(`${API}/patient/update-profile`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
