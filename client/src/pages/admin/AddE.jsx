@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStaffAuth } from '../../hooks/useStaffAuth'
 import { filterCard, filterGroup, filterLabel, filterInput, primaryBtn, sectionLabel } from './adminStyles'
+import API from '../../api'
 
 const AddE = ({ onSuccess }) => {
   useStaffAuth('Admin')
@@ -20,8 +21,8 @@ const AddE = ({ onSuccess }) => {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    fetch('/admin/api/getdepartments').then(r => r.json()).then(setDepartments).catch(console.error)
-    fetch('/admin/api/getdoctors').then(r => r.json()).then(setDoctors).catch(console.error)
+    fetch(`${API}/admin/api/getdepartments`).then(r => r.json()).then(setDepartments).catch(console.error)
+    fetch(`${API}/admin/api/getdoctors`).then(r => r.json()).then(setDoctors).catch(console.error)
   }, [])
 
   const handleChange = (e) => {
@@ -39,7 +40,7 @@ const AddE = ({ onSuccess }) => {
     setError('')
     try {
       // Step 1: create base employee record
-      const empRes = await fetch('/admin/api/addemployee', {
+      const empRes = await fetch(`${API}/admin/api/addemployee`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(emp)
@@ -51,7 +52,7 @@ const AddE = ({ onSuccess }) => {
 
       // Step 2: if Doctor, insert into doctor table
       if (check.Doctor) {
-        const drRes = await fetch('/admin/api/adddoctor', {
+        const drRes = await fetch(`${API}/admin/api/adddoctor`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ EmployeeID: newId, Specialty: emp.Specialty, IsPrimaryCare: emp.IsPrimaryCare })
@@ -61,7 +62,7 @@ const AddE = ({ onSuccess }) => {
 
       // Step 3: if Nurse, insert into nurse table
       if (check.Nurse) {
-        const nurseRes = await fetch('/admin/api/addnurse', {
+        const nurseRes = await fetch(`${API}/admin/api/addnurse`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ EmployeeID: newId, AssignedDoctorID: emp.AssignedDoctorID || null })

@@ -1,92 +1,161 @@
-import { useNavigate } from "react-router-dom"
+import { useNavigate } from 'react-router-dom';
 
-function RoleSelect() {
-  const navigate = useNavigate()
+export default function RoleSelect() {
+  const navigate = useNavigate();
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f5f0e8', display: 'flex', flexDirection: 'column' }}>
-      
-      {/* Navbar */}
-      <div className="navbar">
-        <div className="logo">Medical Center</div>
+    <div style={pageShell}>
+      <div style={topBar}>
+        <div style={brand}>Medical Clinic</div>
       </div>
 
-      {/* Main content */}
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 20px' }}>
-        <div style={{ width: '100%', maxWidth: '900px' }}>
-          
-          <div style={{ textAlign: 'center', marginBottom: '48px' }}>
-            <h1 style={{ fontSize: '42px', fontWeight: '300', margin: '0 0 12px 0', color: '#1e2b1b' }}>
-              Welcome
-            </h1>
-            <p style={{ fontSize: '16px', color: '#888', margin: 0 }}>
-              Select your role to continue
-            </p>
-          </div>
+      <div style={pageBody}>
+        <div style={heroBlock}>
+          <p style={eyebrow}>Clinic Access</p>
+          <h1 style={title}>Choose how you’re signing in</h1>
+          <p style={subtitle}>
+            Patients can manage visits and billing, while clinic staff can move into scheduling, care coordination, and administration.
+          </p>
+        </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '24px' }}>
-            
-            {/* Patient */}
-            <button
-              onClick={() => navigate("/login")}
-              style={{
-                background: 'white',
-                border: '1px solid #e0d8cc',
-                borderRadius: '16px',
-                padding: '40px 24px',
-                cursor: 'pointer',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: '16px',
-                boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
-                transition: 'transform 0.2s, box-shadow 0.2s',
-                color: '#1e2b1b',
-                width: '100%',
-              }}
-              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.12)' }}
-              onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 2px 12px rgba(0,0,0,0.06)' }}
-            >
-              <div style={{ fontSize: '48px' }}>🏥</div>
-              <div>
-                <div style={{ fontSize: '22px', fontWeight: '600', marginBottom: '6px' }}>Patient</div>
-                <div style={{ fontSize: '14px', color: '#888', fontWeight: '400' }}>Access your medical records, appointments & billing</div>
-              </div>
-            </button>
+        <div style={cardGrid}>
+          <button
+            type="button"
+            onClick={() => navigate('/login')}
+            style={{ ...roleCard, ...patientCard }}
+          >
+            <div style={iconWrap}>Patient</div>
+            <div style={cardTitle}>Patient Portal</div>
+            <div style={cardText}>View appointments, billing, payments, and profile information.</div>
+          </button>
 
-            {/* Staff */}
-            <button
-              onClick={() => navigate("/staff-login")}
-              style={{
-                background: '#1e2b1b',
-                border: '1px solid #1e2b1b',
-                borderRadius: '16px',
-                padding: '40px 24px',
-                cursor: 'pointer',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: '16px',
-                boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
-                transition: 'transform 0.2s, box-shadow 0.2s',
-                color: 'white',
-                width: '100%',
-              }}
-              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.2)' }}
-              onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 2px 12px rgba(0,0,0,0.06)' }}
-            >
-              <div style={{ fontSize: '48px' }}>👨‍⚕️</div>
-              <div>
-                <div style={{ fontSize: '22px', fontWeight: '600', marginBottom: '6px' }}>Staff</div>
-                <div style={{ fontSize: '14px', color: '#aac4a0', fontWeight: '400' }}>Doctors, employees & administrators</div>
-              </div>
-            </button>
-
-          </div>
+          <button
+            type="button"
+            onClick={() => navigate('/staff-login')}
+            style={{ ...roleCard, ...staffCard }}
+          >
+            <div style={{ ...iconWrap, ...iconWrapDark }}>Staff</div>
+            <div style={{ ...cardTitle, color: '#ffffff' }}>Staff Workspace</div>
+            <div style={{ ...cardText, color: 'rgba(223, 244, 234, 0.82)' }}>
+              Doctors, nurses, receptionists, employees, and admins sign in here.
+            </div>
+          </button>
         </div>
       </div>
     </div>
-  )
+  );
 }
 
-export default RoleSelect
+const pageShell = {
+  minHeight: '100vh',
+  background: 'radial-gradient(circle at top left, #e2f4ec 0%, #f8fafc 46%, #eef2ff 100%)',
+  display: 'flex',
+  flexDirection: 'column',
+  fontFamily: '"Poppins", sans-serif',
+};
+
+const topBar = {
+  padding: '24px 32px 0',
+};
+
+const brand = {
+  fontSize: '20px',
+  fontWeight: 700,
+  color: '#123524',
+};
+
+const pageBody = {
+  flex: 1,
+  display: 'flex',
+  flexDirection: 'column',
+  justifyContent: 'center',
+  padding: '36px 20px 56px',
+  maxWidth: '1080px',
+  width: '100%',
+  margin: '0 auto',
+};
+
+const heroBlock = {
+  textAlign: 'center',
+  marginBottom: '40px',
+};
+
+const eyebrow = {
+  margin: 0,
+  color: '#3d8d73',
+  fontSize: '12px',
+  fontWeight: 700,
+  letterSpacing: '0.14em',
+  textTransform: 'uppercase',
+};
+
+const title = {
+  margin: '10px 0 12px',
+  color: '#0f172a',
+  fontSize: 'clamp(34px, 6vw, 52px)',
+  lineHeight: 1,
+};
+
+const subtitle = {
+  margin: '0 auto',
+  maxWidth: '720px',
+  color: '#64748b',
+  fontSize: '16px',
+  lineHeight: 1.65,
+};
+
+const cardGrid = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+  gap: '22px',
+};
+
+const roleCard = {
+  borderRadius: '24px',
+  padding: '30px',
+  border: 'none',
+  textAlign: 'left',
+  cursor: 'pointer',
+  boxShadow: '0 22px 54px rgba(15, 23, 42, 0.1)',
+  transition: 'transform 0.18s ease, box-shadow 0.18s ease',
+};
+
+const patientCard = {
+  background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+  color: '#0f172a',
+};
+
+const staffCard = {
+  background: 'linear-gradient(135deg, #123524 0%, #1d5b44 54%, #2f7a61 100%)',
+  color: '#ffffff',
+};
+
+const iconWrap = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: '10px 14px',
+  borderRadius: '999px',
+  background: '#ecfdf5',
+  color: '#166534',
+  fontSize: '12px',
+  fontWeight: 700,
+  marginBottom: '18px',
+};
+
+const iconWrapDark = {
+  background: 'rgba(255, 255, 255, 0.14)',
+  color: '#dff4ea',
+};
+
+const cardTitle = {
+  fontSize: '28px',
+  fontWeight: 700,
+  marginBottom: '10px',
+};
+
+const cardText = {
+  fontSize: '15px',
+  lineHeight: 1.65,
+  color: '#64748b',
+};

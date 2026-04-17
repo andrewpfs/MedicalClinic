@@ -1,6 +1,7 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStaffAuth } from '../../hooks/useStaffAuth'
+import API from '../../api'
 
 const styles = {
   page: { background: '#f5f3ee', minHeight: '100vh', fontFamily: 'Poppins, sans-serif' },
@@ -34,12 +35,13 @@ const reports = [
   { icon: '💳', title: 'Reviews Report', sub: 'Full transaction log with filters by department and date', type: 'Reviews' },
 ]
 
+
 function AdminHome() {
   useStaffAuth('Admin')
   const navigate = useNavigate()
 
   const handleLogout = async () => {
-    await fetch('/admin/logout', { credentials: 'include' })
+    await fetch(`${API}/admin/logout`, { credentials: 'include' })
     navigate('/')
   }
 

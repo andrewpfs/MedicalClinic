@@ -2,15 +2,18 @@ const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const session = require('express-session');
-const path = require('path');
+require('dotenv').config();
+
 const app = express();
+const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN || 'http://localhost:5173';
+const IS_PRODUCTION = process.env.NODE_ENV === 'production';
+
+app.set('trust proxy', 1);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors({
-    origin: ['http://localhost:5173',
-        "https://gentle-rock-0d78d0710.7.azurestaticapps.net"
-    ],
+    origin: CLIENT_ORIGIN,
     credentials: true
 }));
 app.use(cookieParser());
@@ -22,8 +25,9 @@ app.use(session({
     resave: false,
     saveUninitialized: true,
     cookie: {
-        secure: false,
-        sameSite: 'lax'
+        secure: IS_PRODUCTION,
+        sameSite: IS_PRODUCTION ? 'none' : 'lax',
+        httpOnly: true
     }
 }));
 

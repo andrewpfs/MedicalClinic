@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import "./Home.css";
 
+import API from '../api';
 const SERVICES = [
   { icon: <CardiologyIcon />,   title: "Cardiology",                    to: "/patient/booking" },
   { icon: <OrthopedicsIcon />,  title: "Orthopedics & Sports Medicine", to: "/patient/booking" },
@@ -11,11 +12,12 @@ const SERVICES = [
   { icon: <OptometryIcon />,  title: "Optometry",                   to: "/patient/booking" },
 ];
 
+console.log(import.meta.env.VITE_API_URL)
 export default function Home() {
   const [session, setSession] = useState({ isLoggedIn: false, firstName: "" });
 
   useEffect(() => {
-    fetch("/api/session", { credentials: "include" })
+    fetch(`${API}/api/session`, { credentials: "include" })
       .then((r) => r.json())
       .then((d) => setSession({ isLoggedIn: d.isLoggedIn, firstName: d.firstName || "" }))
       .catch(() => {});

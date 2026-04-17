@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import StaffNavbar from '../components/StaffNavbar';
 import WeekDayPicker from '../components/WeekDayPicker';
 
-const EMP_API = '/api/employee';
+import API from '../api';
+const EMP_API = `${API}/api/employee`;
 
 const TABS = [
   { id: 'overview',     label: 'Overview'     },
@@ -41,7 +42,7 @@ export default function NursePage() {
   };
 
   useEffect(() => {
-    fetch('/api/employee/session', { credentials: 'include' })
+    fetch(`${API}/api/employee/session`, { credentials: 'include' })
       .then(r => r.json())
       .then(s => {
         if (!s.isLoggedIn || s.role !== 'Nurse') navigate('/staff-login');

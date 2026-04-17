@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import "./Navbar.css";
 
 
+import API from '../api';
 export default function StaffNavbar() {
   const [session, setSession] = useState({ isLoggedIn: false, firstName: "", role: "" });
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -10,7 +11,7 @@ export default function StaffNavbar() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetch("/api/employee/session", { credentials: "include" })
+    fetch(`${API}/api/employee/session`, { credentials: "include" })
       .then((res) => res.json())
       .then((data) => {
         if (data.isLoggedIn) {
@@ -32,7 +33,7 @@ export default function StaffNavbar() {
   }, []);
 
   const handleLogout = async () => {
-    await fetch("/api/employee/logout", { credentials: "include" });
+    await fetch(`${API}/api/employee/logout`, { credentials: "include" });
     setSession({ isLoggedIn: false, firstName: "", role: "" });
     setDropdownOpen(false);
     navigate("/staff-login");
@@ -47,17 +48,21 @@ export default function StaffNavbar() {
     ? `Dr. ${session.firstName}`
     : session.firstName || "Staff";
 
+  const roleLabel =
+    session.role === "Receptionist" ? "Reception Desk" :
+    session.role === "Employee" ? "Clinic Staff" :
+    session.role || "Staff";
+
   return (
     <header className="navbar-main">
       <div className="navbar-main__inner">
 
         {/* Logo */}
         <Link to={homeLink} className="navbar-main__logo">
-          <span className="navbar-main__logo-icon" aria-hidden="true">
-            <img src="https://www.svgrepo.com/show/423810/medical-clinic-care.svg" alt="" />
-          </span>
-          <span className="navbar-main__logo-text">
+          <span className="navbar-main__logo-mark" aria-hidden="true">MC</span>
+          <span className="navbar-main__logo-copy">
             <span className="navbar-main__logo-clinic">Medical Clinic</span>
+            <span className="navbar-main__logo-sub">Staff Portal</span>
           </span>
         </Link>
 
@@ -74,7 +79,10 @@ export default function StaffNavbar() {
                   <span className="navbar-main__avatar" aria-hidden="true">
                     {session.firstName ? session.firstName[0].toUpperCase() : "S"}
                   </span>
-                  <span className="navbar-main__user-name">{displayName}</span>
+                  <span className="navbar-main__user-copy">
+                    <span className="navbar-main__user-label">{roleLabel}</span>
+                    <span className="navbar-main__user-name">{displayName}</span>
+                  </span>
                   <ChevronIcon />
                 </button>
 
@@ -88,7 +96,7 @@ export default function StaffNavbar() {
                       textTransform: "uppercase",
                       letterSpacing: "0.05em"
                     }}>
-                      {session.role || "Staff"}
+                      {roleLabel}
                     </div>
                     <div className="navbar-main__dropdown-divider" />
                     <button

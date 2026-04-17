@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+import API from '../api';
 export default function NotificationBell({ iconColor = '#374151', hoverBg = '#f3f4f6' }) {
   const [notifications, setNotifications] = useState([]);
   const [open, setOpen] = useState(false);
@@ -10,7 +11,7 @@ export default function NotificationBell({ iconColor = '#374151', hoverBg = '#f3
   const unreadCount = notifications.filter(n => !n.IsRead).length;
 
   const loadNotifications = () => {
-    fetch('/patient/api/notifications', { credentials: 'include' })
+    fetch(`${API}/patient/api/notifications`, { credentials: 'include' })
       .then(res => res.json())
       .then(data => { if (Array.isArray(data)) setNotifications(data); })
       .catch(() => {});
@@ -30,12 +31,12 @@ export default function NotificationBell({ iconColor = '#374151', hoverBg = '#f3
   }, []);
 
   const markRead = async (id) => {
-    await fetch(`/patient/api/notifications/${id}/read`, { method: 'PATCH', credentials: 'include' });
+    await fetch(`${API}/patient/api/notifications/${id}/read`, { method: 'PATCH', credentials: 'include' });
     setNotifications(prev => prev.map(n => n.NotificationID === id ? { ...n, IsRead: 1 } : n));
   };
 
   const markAllRead = async () => {
-    await fetch('/patient/api/notifications/read-all', { method: 'PATCH', credentials: 'include' });
+    await fetch(`${API}/patient/api/notifications/read-all`, { method: 'PATCH', credentials: 'include' });
     setNotifications(prev => prev.map(n => ({ ...n, IsRead: 1 })));
   };
 

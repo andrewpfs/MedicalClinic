@@ -29,13 +29,14 @@ router.get('/', async (req, res) => {
         a.OfficeID,
         a.AppointmentDate,
         a.AppointmentTime,
-        a.ReasonForVisit,
-        a.StatusCode,
         p.FName AS PatientFirstName,
         p.LName AS PatientLastName,
         e.FirstName AS DoctorFirstName,
         e.LastName AS DoctorLastName,
-        s.AppointmentText AS StatusText
+        CASE
+          WHEN s.AppointmentText = 'Paid' THEN 'Booked'
+          ELSE s.AppointmentText
+        END AS StatusText
       FROM appointment a
       JOIN patient p ON a.PatientID = p.PatientID
       JOIN employee e ON a.DoctorID = e.EmployeeID
@@ -86,13 +87,13 @@ router.get('/', async (req, res) => {
 
     res.json({
       success: true,
-      upcomingAppointments: appointments,
+      upcomingAppointments,
       patientAppointmentInfo: appointments,
       visitLogs,
       appointmentOptions
     });
   } catch (err) {
-    console.error(err);
+    console.error('Doctor API error:', err);
     res.status(500).json({
       success: false,
       error: err.message
@@ -132,7 +133,7 @@ router.post('/visit', async (req, res) => {
       message: 'Visit entry added and appointment marked as completed'
     });
   } catch (err) {
-    console.error(err);
+    console.error('Visit insert error:', err);
     res.status(500).json({
       success: false,
       error: err.message

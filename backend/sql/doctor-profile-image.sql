@@ -1,0 +1,2 @@
+ALTER TABLE doctor
+ADD COLUMN ProfileImageUrl VARCHAR(255) NULL;

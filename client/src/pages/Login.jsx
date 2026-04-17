@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import "../styles.css"
+import API from '../api'
 
 function Login() {
   const [email, setEmail] = useState("")
@@ -12,7 +13,7 @@ function Login() {
     e.preventDefault()
     setError("")
     try {
-      const res = await fetch("/patient/login", {
+      const res = await fetch(`${API}/patient/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

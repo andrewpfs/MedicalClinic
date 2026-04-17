@@ -2,8 +2,11 @@ const express = require('express');
 const router = express.Router();
 const db = require('../../db');
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
 
 const STAFF_SECRET = 'staffsecret';
+const CONFIRMED_STATUS_CODE = 5;
+const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 
 const getStaff = (req) => {
   try {
@@ -24,14 +27,25 @@ router.post('/login', async (req, res) => {
       [employeeId]
     );
     if (rows.length === 0) return res.status(404).json({ error: 'Employee not found.' });
-    if (rows[0].Password !== password) return res.status(400).json({ error: 'Wrong password.' });
+
+    const storedPassword = rows[0].Password || '';
+    const looksHashed = storedPassword.startsWith('$2');
+    const passwordMatches = looksHashed
+      ? await bcrypt.compare(password, storedPassword)
+      : storedPassword === password;
+
+    if (!passwordMatches) return res.status(400).json({ error: 'Wrong password.' });
 
     const token = jwt.sign(
       { id: rows[0].EmployeeID, role: rows[0].Role, name: rows[0].FirstName },
       STAFF_SECRET,
       { expiresIn: '24h' }
     );
-    res.cookie('staffToken', token, { httpOnly: true, sameSite: 'none', secure: true })
+    res.cookie('staffToken', token, {
+      httpOnly: true,
+      secure: IS_PRODUCTION,
+      sameSite: IS_PRODUCTION ? 'none' : 'lax',
+    })
        .json({ success: true, role: rows[0].Role, name: rows[0].FirstName });
   } catch (err) {
     console.error(err);
@@ -48,7 +62,11 @@ router.get('/session', (req, res) => {
 
 // ── Staff Logout ──────────────────────────────────────────────────────────────
 router.get('/logout', (req, res) => {
-  res.clearCookie('staffToken', { sameSite: 'none', secure: true }).json({ success: true });
+  res.clearCookie('staffToken', {
+    httpOnly: true,
+    secure: IS_PRODUCTION,
+    sameSite: IS_PRODUCTION ? 'none' : 'lax',
+  }).json({ success: true });
 });
 
 // ── Get all data ──────────────────────────────────────────────────────────────
@@ -77,13 +95,14 @@ router.get('/', async (req, res) => {
 
     const [appointments] = await db.query(`
       SELECT a.AppointmentID, a.PatientID, a.DoctorID, a.OfficeID,
-        a.AppointmentDate, a.AppointmentTime, a.ReasonForVisit, a.StatusCode,
+        a.AppointmentDate, a.AppointmentTime, a.ReasonForVisit, a.StatusCode, a.CreatedVia,
         p.FName AS PatientFirstName, p.LName AS PatientLastName,
         e.FirstName AS DoctorFirstName, e.LastName AS DoctorLastName,
-        s.AppointmentText AS StatusText
+        e.Role AS DoctorRole, d.Specialty, s.AppointmentText AS StatusText
       FROM appointment a
       JOIN patient p ON a.PatientID = p.PatientID
       JOIN employee e ON a.DoctorID = e.EmployeeID
+      LEFT JOIN doctor d ON a.DoctorID = d.EmployeeID
       LEFT JOIN appointmentstatus s ON a.StatusCode = s.AppointmentCode
       ORDER BY a.AppointmentDate DESC, a.AppointmentTime DESC LIMIT 25
     `);
@@ -91,7 +110,8 @@ router.get('/', async (req, res) => {
     const [transactions] = await db.query(`
       SELECT t.TransactionID, t.AppointmentID, t.PatientID,
         p.FName AS PatientFirstName, p.LName AS PatientLastName,
-        t.PaymentCode, pm.PaymentText, t.Amount, t.TransactionDateTime, t.Status
+        t.PaymentCode, pm.PaymentText, t.Amount, t.TransactionDateTime, t.Status,
+        t.DueDate, t.LateFeeAmount
       FROM transaction t
       JOIN patient p ON t.PatientID = p.PatientID
       LEFT JOIN paymentmethod pm ON t.PaymentCode = pm.PaymentCode
@@ -107,6 +127,66 @@ router.get('/', async (req, res) => {
     `);
 
     res.json({ success: true, patients, doctors, employees, paymentMethods, appointments, transactions, availability });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+router.post('/appointments/:appointmentId/confirm', async (req, res) => {
+  const staff = getStaff(req);
+  if (!staff) return res.status(401).json({ success: false, error: 'Not logged in' });
+  if (staff.role === 'Doctor') {
+    return res.status(403).json({ success: false, error: 'Doctors cannot confirm appointments.' });
+  }
+
+  try {
+    const appointmentId = Number(req.params.appointmentId);
+    if (!appointmentId) {
+      return res.status(400).json({ success: false, error: 'A valid appointment ID is required.' });
+    }
+
+    const [[confirmedStatus]] = await db.query(
+      'SELECT AppointmentCode FROM appointmentstatus WHERE AppointmentCode = ? OR LOWER(AppointmentText) = ? LIMIT 1',
+      [CONFIRMED_STATUS_CODE, 'confirmed']
+    );
+
+    if (!confirmedStatus) {
+      return res.status(409).json({
+        success: false,
+        error: 'Confirmed status is missing from appointmentstatus. Run backend/sql/appointment-status-confirmed.sql first.'
+      });
+    }
+
+    const [[appointment]] = await db.query(
+      `SELECT a.AppointmentID, a.StatusCode, s.AppointmentText AS StatusText
+       FROM appointment a
+       LEFT JOIN appointmentstatus s ON a.StatusCode = s.AppointmentCode
+       WHERE a.AppointmentID = ?`,
+      [appointmentId]
+    );
+
+    if (!appointment) {
+      return res.status(404).json({ success: false, error: 'Appointment not found.' });
+    }
+
+    if (appointment.StatusCode === confirmedStatus.AppointmentCode) {
+      return res.json({ success: true, message: 'Appointment is already confirmed.' });
+    }
+
+    if (appointment.StatusCode === 3 || appointment.StatusCode === 4) {
+      return res.status(400).json({
+        success: false,
+        error: `Appointments marked ${appointment.StatusText || 'with this status'} cannot be confirmed.`
+      });
+    }
+
+    await db.query(
+      'UPDATE appointment SET StatusCode = ? WHERE AppointmentID = ?',
+      [confirmedStatus.AppointmentCode, appointmentId]
+    );
+
+    res.json({ success: true, message: 'Appointment confirmed successfully.' });
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, error: err.message });
@@ -179,7 +259,8 @@ router.get('/nurse', async (req, res) => {
 });
 
 router.post('/book', async (req, res) => {
-  if (!getStaff(req)) return res.status(401).json({ success: false, error: 'Not logged in' });
+  const staff = getStaff(req);
+  if (!staff) return res.status(401).json({ success: false, error: 'Not logged in' });
   try {
     const { patientId, doctorId, appointmentDate, officeId, reasonForVisit } = req.body;
     if (!patientId || !doctorId || !appointmentDate || !officeId) {
@@ -194,7 +275,7 @@ router.post('/book', async (req, res) => {
     await db.query(`
       INSERT INTO appointment (PatientID, DoctorID, OfficeID, AppointmentDate, AppointmentTime, ReasonForVisit, StatusCode, CreatedVia)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `, [patientId, doctorId, officeId, sqlDate, sqlTime, reasonForVisit || null, 1, 0]);
+    `, [patientId, doctorId, officeId, sqlDate, sqlTime, reasonForVisit || null, 1, 1]);
     res.json({ success: true, message: 'Appointment booked successfully' });
   } catch (err) {
     console.error(err);
@@ -205,14 +286,14 @@ router.post('/book', async (req, res) => {
 router.post('/payment', async (req, res) => {
   if (!getStaff(req)) return res.status(401).json({ success: false, error: 'Not logged in' });
   try {
-    const { appointmentId, patientId, paymentCode, amount, status } = req.body;
+    const { appointmentId, patientId, paymentCode, amount, status, dueDate } = req.body;
     if (!appointmentId || !patientId || !amount) {
       return res.status(400).json({ success: false, error: 'Missing required payment fields' });
     }
     await db.query(`
-      INSERT INTO transaction (AppointmentID, PatientID, PaymentCode, Amount, TransactionDateTime, Status)
-      VALUES (?, ?, ?, ?, NOW(), ?)
-    `, [appointmentId, patientId, paymentCode || null, amount, status || 'Posted']);
+      INSERT INTO transaction (AppointmentID, PatientID, PaymentCode, Amount, TransactionDateTime, Status, DueDate)
+      VALUES (?, ?, ?, ?, NOW(), ?, ?)
+    `, [appointmentId, patientId, paymentCode || null, amount, status || 'Posted', dueDate || null]);
     res.json({ success: true, message: 'Payment recorded successfully' });
   } catch (err) {
     console.error(err);
@@ -235,6 +316,42 @@ router.post('/availability', async (req, res) => {
       VALUES (?, ?, ?, ?, ?)
     `, [employeeId, officeId, shiftDate, startTime, endTime]);
     res.json({ success: true, message: 'Availability saved successfully' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+router.delete('/availability/:shiftId', async (req, res) => {
+  const staff = getStaff(req);
+  if (!staff) return res.status(401).json({ success: false, error: 'Not logged in' });
+
+  try {
+    const shiftId = Number(req.params.shiftId);
+    if (!shiftId) {
+      return res.status(400).json({ success: false, error: 'A valid shift ID is required.' });
+    }
+
+    const [[shift]] = await db.query(
+      'SELECT ShiftID, EmployeeID, ShiftDate, StartTime, EndTime FROM employee_shift WHERE ShiftID = ? LIMIT 1',
+      [shiftId]
+    );
+
+    if (!shift) {
+      return res.status(404).json({ success: false, error: 'Shift not found.' });
+    }
+
+    const canManageShift = staff.role === 'Admin' || Number(shift.EmployeeID) === Number(staff.id);
+    if (!canManageShift) {
+      return res.status(403).json({ success: false, error: 'You are not allowed to remove this shift.' });
+    }
+
+    await db.query('DELETE FROM employee_shift WHERE ShiftID = ?', [shiftId]);
+
+    res.json({
+      success: true,
+      message: `Shift on ${shift.ShiftDate} from ${shift.StartTime} to ${shift.EndTime} removed.`,
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, error: err.message });

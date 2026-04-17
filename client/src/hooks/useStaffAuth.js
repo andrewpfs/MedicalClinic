@@ -1,23 +1,27 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+import API from '../api';
 /**
  * Checks the staff session and redirects if not logged in or wrong role.
- * @param {'Admin'|'Doctor'|'Nurse'} requiredRole
+ * @param {string|string[]} requiredRole
  */
 export function useStaffAuth(requiredRole) {
   const navigate = useNavigate();
+
   useEffect(() => {
-    fetch('/api/employee/session', { credentials: 'include' })
+    fetch(`${API}/api/employee/session`, { credentials: 'include' })
       .then(res => res.json())
       .then(session => {
         if (!session.isLoggedIn) {
           navigate('/staff-login');
           return;
         }
-        if (session.role !== requiredRole) {
+        const allowedRoles = Array.isArray(requiredRole) ? requiredRole : [requiredRole];
+        if (!allowedRoles.includes(session.role)) {
           if (session.role === 'Doctor') navigate('/doctor');
           else if (session.role === 'Admin') navigate('/admin');
+          else if (session.role === 'Nurse') navigate('/nurse');
           else navigate('/employee');
         }
       })
