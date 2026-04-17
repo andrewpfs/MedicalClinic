@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import Navbar from '../../components/Navbar';
 
 const CARD_TYPES = ['Visa', 'Mastercard', 'American Express', 'Discover'];
 
@@ -50,7 +51,7 @@ export default function BillingMethods() {
 
   const loadMethods = () => {
     fetch('/patient/api/payment-methods', { credentials: 'include' })
-      .then(res => { if (res.status === 401) { navigate('/patient/login'); return null; } return res.json(); })
+      .then(res => { if (res.status === 401) { navigate('/login'); return null; } return res.json(); })
       .then(data => { if (data) setMethods(data); });
   };
 
@@ -84,7 +85,9 @@ export default function BillingMethods() {
   };
 
   return (
-    <div style={styles.wrap}>
+    <>
+      <Navbar />
+      <div style={styles.wrap}>
       <h1 style={styles.heading}>Payment methods</h1>
 
       <p style={styles.sectionLabel}>Saved cards</p>
@@ -148,5 +151,6 @@ export default function BillingMethods() {
 
       <a href="/patient/billing" style={styles.backLink}>← Back to billing</a>
     </div>
+    </>
   );
 }

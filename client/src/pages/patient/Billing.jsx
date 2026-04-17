@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import Navbar from '../../components/Navbar';
 
 const styles = {
   wrap: { padding: '1.5rem', maxWidth: '600px', margin: '0 auto', fontFamily: 'Poppins, sans-serif' },
@@ -27,7 +28,7 @@ export default function Billing() {
 
   useEffect(() => {
     fetch('/patient/api/payments', { credentials: 'include' })
-      .then(res => { if (res.status === 401) { navigate('/patient/login'); return null; } return res.json(); })
+      .then(res => { if (res.status === 401) { navigate('/login'); return null; } return res.json(); })
       .then(data => {
         if (!data) return;
         const total = data.reduce((sum, inv) => sum + parseFloat(inv.Amount), 0);
@@ -38,7 +39,9 @@ export default function Billing() {
   }, [navigate]);
 
   return (
-    <div style={styles.wrap}>
+    <>
+      <Navbar />
+      <div style={styles.wrap}>
       <h1 style={styles.heading}>Billing</h1>
       <p style={styles.subheading}>Manage your invoices and payment methods</p>
 
@@ -79,7 +82,8 @@ export default function Billing() {
         </div>
       </div>
 
-      <a href="/patient/profile" style={styles.backLink}>← Back to profile</a>
+  
     </div>
+    </>
   );
 }

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import Navbar from '../../components/Navbar';
 
 const HOURS = [9, 10, 11, 12, 13, 14, 15, 16];
 const SHORT_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
@@ -108,13 +109,13 @@ export default function Visits() {
 
   const loadVisits = () => {
     fetch('/patient/api/visits', { credentials: 'include' })
-      .then(res => { if (res.status === 401) { navigate('/patient/login'); return null; } return res.json(); })
+      .then(res => { if (res.status === 401) { navigate('/login'); return null; } return res.json(); })
       .then(data => {
         if (!data) return;
         const now = new Date();
         now.setHours(0, 0, 0, 0);
-        const up = data.filter(v => new Date(v.AppointmentDate) >= now && v.Status === 'Scheduled');
-        const pa = data.filter(v => new Date(v.AppointmentDate) < now || v.Status === 'Paid' || v.Status === 'Cancelled');
+        const up = data.filter(v => new Date(v.AppointmentDate) >= now && v.Status !== 'Cancelled');
+        const pa = data.filter(v => new Date(v.AppointmentDate) < now || v.Status === 'Cancelled');
         up.sort((a, b) => new Date(a.AppointmentDate) - new Date(b.AppointmentDate));
         pa.sort((a, b) => new Date(b.AppointmentDate) - new Date(a.AppointmentDate));
         setUpcoming(up);
@@ -186,7 +187,9 @@ export default function Visits() {
   const todayStr = toLocalDateString(new Date());
 
   return (
-    <div style={styles.wrap}>
+    <>
+      <Navbar />
+      <div style={styles.wrap}>
       <h1 style={styles.heading}>Visit history</h1>
 
       {bookingMsg && (
@@ -343,8 +346,6 @@ export default function Visits() {
         )
       }
 
-      <a href="/patient/profile" style={styles.backLink}>← Back to profile</a>
-
       {/* Cancel confirmation modal */}
       {cancelTarget && (
         <div style={styles.modal}>
@@ -361,5 +362,6 @@ export default function Visits() {
         </div>
       )}
     </div>
+    </>
   );
 }

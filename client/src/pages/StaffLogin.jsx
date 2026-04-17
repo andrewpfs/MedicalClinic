@@ -23,6 +23,8 @@ function StaffLogin() {
       if (res.ok && data.success) {
         if (data.role === "Doctor") {
           navigate("/doctor")
+        } else if (data.role === "Admin") {
+          navigate("/admin")
         } else {
           navigate("/employee")
         }

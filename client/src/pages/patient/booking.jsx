@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import Navbar from '../../components/Navbar';
 
 const HOURS = [9, 10, 11, 12, 13, 14, 15, 16];
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
@@ -33,14 +34,18 @@ function toLocalDateString(date) {
 const styles = {
   wrap: { padding: '1.5rem', maxWidth: '860px', margin: '0 auto', fontFamily: 'Poppins, sans-serif' },
   heading: { fontSize: '22px', fontWeight: 500, marginBottom: '1.5rem', color: '#1e2b1b' },
-  doctorRow: { display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '1.5rem' },
-  doctorLabel: { fontSize: '13px', color: '#6b7280', fontWeight: 500, whiteSpace: 'nowrap' },
-  doctorSelect: { fontSize: '14px', padding: '8px 12px', borderRadius: '8px', border: '1px solid #d1d5db', background: 'white', color: '#111', maxWidth: '280px', width: '100%' },
-  weekNav: { display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '1rem' },
+  doctorGrid: { display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', marginBottom: '2rem' },
+  doctorCard: { display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 16px', border: '1.5px solid #e5e7eb', borderRadius: '10px', cursor: 'pointer', textAlign: 'left', fontFamily: 'Poppins, sans-serif', transition: 'border-color 0.15s, background 0.15s', width: '100%' },
+  doctorAvatar: { width: '40px', height: '40px', borderRadius: '50%', background: '#1e2b1b', color: 'white', fontSize: '14px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  doctorCardInfo: { display: 'flex', flexDirection: 'column', flex: 1 },
+  doctorCardName: { fontSize: '14px', fontWeight: 600, color: '#1e2b1b' },
+  doctorCardSpecialty: { fontSize: '12px', color: '#6b7280', marginTop: '2px' },
+  doctorCardCheck: { fontSize: '16px', color: '#3b6d11', fontWeight: 700, flexShrink: 0 },
+  weekNav: { display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '1rem', justifyContent: 'center' },
   navBtn: { fontSize: '13px', padding: '6px 14px', borderRadius: '8px', border: '1px solid #d1d5db', background: 'white', color: '#374151', cursor: 'pointer', width: 'auto' },
   navBtnDisabled: { fontSize: '13px', padding: '6px 14px', borderRadius: '8px', border: '1px solid #d1d5db', background: 'white', color: '#374151', cursor: 'not-allowed', opacity: 0.35, width: 'auto' },
   weekLabel: { fontSize: '14px', fontWeight: 500, color: '#111', minWidth: '200px', textAlign: 'center' },
-  legend: { display: 'flex', gap: '20px', marginBottom: '1rem' },
+  legend: { display: 'flex', gap: '20px', marginBottom: '1rem', justifyContent: 'center' },
   legendItem: { display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#6b7280' },
   dot: { width: '10px', height: '10px', borderRadius: '50%' },
   table: { width: '100%', borderCollapse: 'collapse' },
@@ -57,8 +62,8 @@ const styles = {
   successBar: { background: '#EAF3DE', border: '1px solid #C0DD97', borderRadius: '8px', padding: '10px 16px', fontSize: '13px', color: '#3B6D11', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '10px' },
   errorBar: { background: '#FAECE7', border: '1px solid #F5C4B3', borderRadius: '8px', padding: '10px 16px', fontSize: '13px', color: '#993C1D', marginBottom: '1rem' },
   checkCircle: { width: '18px', height: '18px', borderRadius: '50%', background: '#639922', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: 'white', fontSize: '11px', fontWeight: 700 },
-  emptyMsg: { color: '#9ca3af', fontStyle: 'italic', fontSize: '14px', padding: '2rem 0' },
-  backLink: { fontSize: '13px', color: '#6b7280', textDecoration: 'none', display: 'inline-block', marginTop: '1rem' },
+  emptyMsg: { color: '#9ca3af', fontStyle: 'italic', fontSize: '14px', padding: '2rem 0', textAlign: 'center' },
+  backLink: { fontSize: '13px', color: '#6b7280', textDecoration: 'none', display: 'block', marginTop: '1rem', textAlign: 'center' },
 };
 
 export default function Booking() {
@@ -71,11 +76,12 @@ export default function Booking() {
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const [confirmData, setConfirmData] = useState(null);
+  const [reason, setReason] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
     fetch('/patient/api/doctors', { credentials: 'include' })
-      .then(res => { if (res.status === 401) { navigate('/patient/login'); return null; } return res.json(); })
+      .then(res => { if (res.status === 401) { navigate('/login'); return null; } return res.json(); })
       .then(data => { if (data) setDoctors(data); })
       .catch(() => setError('Failed to load doctors.'));
   }, [navigate]);
@@ -121,6 +127,7 @@ export default function Booking() {
       return;
     }
     const doctorObj = doctors.find(d => String(d.EmployeeID) === String(selectedDoctor));
+    setReason('');
     setConfirmData({ date, hour, doctorName: doctorObj ? `Dr. ${doctorObj.FirstName} ${doctorObj.LastName}` : 'this doctor' });
   };
 
@@ -134,7 +141,7 @@ export default function Booking() {
     const res = await fetch('/patient/book', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ doctorId: selectedDoctor, date: datetime }),
+      body: JSON.stringify({ doctorId: selectedDoctor, date: datetime, reason }),
       credentials: 'include',
     });
     setLoading(false);
@@ -151,23 +158,39 @@ export default function Booking() {
   const todayStr = toLocalDateString(new Date());
 
   return (
-    <div style={styles.wrap}>
+    <>
+      <Navbar />
+      <div style={styles.wrap}>
       <h1 style={styles.heading}>Schedule an appointment</h1>
+      <p style={{ fontSize: '14px', color: '#6b7280', marginBottom: '1.5rem' }}>
+        Select a doctor below to view their available time slots.
+      </p>
 
-      <div style={styles.doctorRow}>
-        <label style={styles.doctorLabel}>Doctor</label>
-        <select
-          value={selectedDoctor}
-          onChange={e => { setSelectedDoctor(e.target.value); setSuccess(''); setError(''); }}
-          style={styles.doctorSelect}
-        >
-          <option value="">Select a doctor</option>
-          {doctors.map(doc => (
-            <option key={doc.EmployeeID} value={doc.EmployeeID}>
-              Dr. {doc.FirstName} {doc.LastName}
-            </option>
-          ))}
-        </select>
+      {/* Doctor cards */}
+      <div style={styles.doctorGrid}>
+        {doctors.map(doc => {
+          const isSelected = String(doc.EmployeeID) === String(selectedDoctor);
+          return (
+            <button
+              key={doc.EmployeeID}
+              onClick={() => { setSelectedDoctor(String(doc.EmployeeID)); setSuccess(''); setError(''); }}
+              style={{
+                ...styles.doctorCard,
+                borderColor: isSelected ? '#1e2b1b' : '#e5e7eb',
+                background: isSelected ? '#f0f4ee' : 'white',
+              }}
+            >
+              <div style={styles.doctorAvatar}>
+                {doc.FirstName?.[0] ?? ''}{doc.LastName?.[0] ?? ''}
+              </div>
+              <div style={styles.doctorCardInfo}>
+                <span style={styles.doctorCardName}>Dr. {doc.FirstName} {doc.LastName}</span>
+                {doc.Specialty && <span style={styles.doctorCardSpecialty}>{doc.Specialty}</span>}
+              </div>
+              {isSelected && <span style={styles.doctorCardCheck}>✓</span>}
+            </button>
+          );
+        })}
       </div>
 
       {success && (
@@ -201,7 +224,7 @@ export default function Booking() {
       </div>
 
       {selectedDoctor ? (
-        <div style={{ overflowX: 'auto' }}>
+        <div style={{ overflowX: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           <table style={styles.table}>
             <thead>
               <tr>
@@ -251,9 +274,21 @@ export default function Booking() {
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
           <div style={{ background: 'white', borderRadius: '12px', padding: '2rem', maxWidth: '420px', width: '90%', boxShadow: '0 4px 24px rgba(0,0,0,0.12)' }}>
             <h3 style={{ fontSize: '18px', fontWeight: 500, marginBottom: '0.75rem', color: '#1e2b1b' }}>Confirm appointment</h3>
-            <p style={{ fontSize: '14px', color: '#6b7280', marginBottom: '1.5rem', lineHeight: 1.6 }}>
+            <p style={{ fontSize: '14px', color: '#6b7280', marginBottom: '1.25rem', lineHeight: 1.6 }}>
               Please confirm you would like to book an appointment with <strong>{confirmData.doctorName}</strong> on <strong>{confirmData.date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</strong> at <strong>{formatHour(confirmData.hour)}</strong>.
             </p>
+            <div style={{ marginBottom: '1.25rem' }}>
+              <label style={{ fontSize: '13px', fontWeight: 500, color: '#374151', display: 'block', marginBottom: '6px' }}>
+                Reason for visit <span style={{ color: '#9ca3af', fontWeight: 400 }}>(optional)</span>
+              </label>
+              <textarea
+                value={reason}
+                onChange={e => setReason(e.target.value)}
+                placeholder="e.g. Annual checkup, back pain, follow-up..."
+                rows={3}
+                style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #d1d5db', fontSize: '13px', fontFamily: 'Poppins, sans-serif', resize: 'vertical', boxSizing: 'border-box', color: '#111' }}
+              />
+            </div>
             <div style={{ display: 'flex', gap: '10px' }}>
               <button
                 onClick={handleConfirmBooking}
@@ -262,7 +297,7 @@ export default function Booking() {
                 Confirm booking
               </button>
               <button
-                onClick={() => setConfirmData(null)}
+                onClick={() => { setConfirmData(null); setReason(''); }}
                 style={{ flex: 1, padding: '10px', background: 'white', color: '#374151', border: '1px solid #d1d5db', borderRadius: '8px', fontSize: '14px', cursor: 'pointer', width: 'auto' }}
               >
                 Cancel
@@ -276,7 +311,8 @@ export default function Booking() {
         <p style={styles.emptyMsg}>Select a doctor above to see available time slots.</p>
       )}
 
-      <a href="/patient/profile" style={styles.backLink}>← Back to profile</a>
+
     </div>
+    </>
   );
 }

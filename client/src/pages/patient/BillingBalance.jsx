@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import Navbar from '../../components/Navbar';
 
 const styles = {
   wrap: { padding: '1.5rem', maxWidth: '660px', margin: '0 auto', fontFamily: 'Poppins, sans-serif' },
@@ -47,7 +48,7 @@ export default function BillingBalance() {
 
   const loadData = () => {
     fetch('/patient/api/payments', { credentials: 'include' })
-      .then(res => { if (res.status === 401) { navigate('/patient/login'); return null; } return res.json(); })
+      .then(res => { if (res.status === 401) { navigate('/login'); return null; } return res.json(); })
       .then(data => { if (data) setInvoices(data); });
 
     fetch('/patient/api/payment-history', { credentials: 'include' })
@@ -78,7 +79,9 @@ export default function BillingBalance() {
   };
 
   return (
-    <div style={styles.wrap}>
+    <>
+      <Navbar />
+      <div style={styles.wrap}>
       <h1 style={styles.heading}>Balance details</h1>
 
       <p style={styles.sectionLabel}>Outstanding invoices</p>
@@ -171,5 +174,6 @@ export default function BillingBalance() {
         </div>
       )}
     </div>
+    </>
   );
 }
