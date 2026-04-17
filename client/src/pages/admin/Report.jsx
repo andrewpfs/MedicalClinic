@@ -6,15 +6,17 @@ import RepGRR from './RepGRR'
 import RepAllAppt from './RepAllAppt'
 import RepAllTrans from './RepAllTrans'
 import RevenueReport from './RevenueReport'
+import ReviewsReport from './ReviewsReport'
 import { useStaffAuth } from '../../hooks/useStaffAuth'
 import { topbar, page, content, heading, subheading } from './adminStyles'
+
 
 const REPORT_META = {
   AllAppt:  { title: 'All Appointments',              sub: 'Browse and filter all appointment records by department and date' },
   AllTrans: { title: 'All Transactions',              sub: 'Browse and filter all transaction records by department and date' },
   RepDAR:   { title: 'Department Appointment Report', sub: 'Doctors within a department ranked by number of appointments' },
   Revenue:   { title: 'Revenue Report',   sub: 'Departments ranked by appointment volume over a date range' },
-  RepGRR:   { title: 'General Revenue Report',       sub: 'Departments ranked by revenue generated over a date range' },
+  Reviews:   { title: 'General Revenue Report',       sub: 'Departments ranked by revenue generated over a date range' },
 }
 
 function Report() {
@@ -38,7 +40,7 @@ function Report() {
         {type === 'AllTrans' && <RepAllTrans />}
         {type === 'RepDAR'   && <RepDAR />}
         {type === 'Revenue'   && <RevenueReport />}
-        {type === 'RepGRR'   && <RepGRR />}
+        {type === 'Reviews'   && <ReviewsReport />}
       </div>
     </div>
   )
