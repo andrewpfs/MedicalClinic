@@ -142,12 +142,14 @@ router.get('/api/getdoctors', async (req, res) => {
 })
 
 router.get('/api/getdepdoctors', async (req,res) => {
-    const q = req.body.DepartmentName.length>0 
-    ? 'SELECT EmployeeID,FirstName,LastName,DepartmentName FROM doctor AS DO,employee AS E,department AS D WHERE D.DepartmentID=E.DepartmentID AND E.EmployeeID=D.EmployeeID AND D.DepartmentName=' + req.body.DepartmentName 
-    : 'SELECT EmployeeID,FirstName,LastName,DepartmentName FROM doctor AS DO,employee AS E,department AS D WHERE D.DepartmentID=E.DepartmentID AND E.EmployeeID=D.EmployeeID'
+    const {DepartmentName} = req.query
+    const q = (DepartmentName && DepartmentName.length>0) 
+    ? 'SELECT E.EmployeeID,E.FirstName,E.LastName,D.DepartmentName FROM doctor AS DO,employee AS E,department AS D WHERE D.DepartmentID=E.DepartmentID AND E.EmployeeID=DO.EmployeeID AND D.DepartmentName=?' 
+    : 'SELECT E.EmployeeID,E.FirstName,E.LastName,D.DepartmentName FROM doctor AS DO,employee AS E,department AS D WHERE D.DepartmentID=E.DepartmentID AND E.EmployeeID=DO.EmployeeID'
 
+    const r = (DepartmentName && DepartmentName.length>0) ? [DepartmentName] : []
     try {
-        const [rows] = await db.query(q)
+        const [rows] = await db.query(q,r)
         return res.json(rows)
     }catch(err){
         res.status(500).json({ error: 'Error fetching doctors' });

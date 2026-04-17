@@ -9,6 +9,7 @@ function RevenueReport() {
     const [departments, setDepts]   = useState([])
     const [doctors,setDoctors] = useState([])
     const [loading, setLoading] = useState(false)
+    const [filterCheck,setFilterCheck] = useState(true)
     const [best,setBest] = useState({
         totalRevenue: 0,
         topDoctor: "",
@@ -172,6 +173,8 @@ function RevenueReport() {
 
     const handleChange = (e) => {
         setRep(prev => ({ ...prev, [e.target.name]: e.target.value }));
+        handleFilters()
+        console.log(rep)
     };
 
     function handleFilterFirst(event) {
@@ -220,33 +223,26 @@ function RevenueReport() {
     }
 
     function handleFilters(event) {
-        var check = true
+        setRecords(response)
         if (rep.DepartmentName.length > 0) {
-            check ? setRecords(response.filter(row => row.DepartmentName === (rep.DepartmentName))) : setRecords(records.filter(row => row.DepartmentName === (event.target.value)))
-            check = false
+            setRecords(records.filter(row => row.DepartmentName === (rep.DepartmentName)))
             getDoctors()
         }
         if (rep.DoctorLast.length > 0) {
-            check ? setRecords(response.filter(row => row.DocLast === (rep.DoctorLast))) : setRecords(records.filter(row => row.DocLast === (rep.DoctorLast)))
-            check = false
+            setRecords(records.filter(row => row.DocLast === (rep.DoctorLast)))
         }
         if (rep.min.length > 0) {
-            check ? setRecords(response.filter(row => row.Date >= rep.min.length)) : setRecords(records.filter(row => row.Date >= rep.min.length))
-            check = false
+            setRecords(records.filter(row => row.Date >= rep.min.length))
         }
         if (rep.max.length > 0) {
-            check ? setRecords(response.filter(row => row.Date <= rep.max)) : setRecords(records.filter(row => row.Date <= rep.max))
-            check = false
+            setRecords(records.filter(row => row.Date <= rep.max))
         }
         if (rep.PFirst.length > 0) {
-            check ? setRecords(response.filter(row => row.PatFirst.toLowerCase().includes(rep.PFirst.toLowerCase()))) : setRecords(records.filter(row => row.PatFirst.toLowerCase().includes(rep.PFirst.toLowerCase())))
-            check = false
+            setRecords(records.filter(row => row.PatFirst.toLowerCase().includes(rep.PFirst.toLowerCase())))
         }
         if (rep.PLast.length > 0) {
-            check ? setRecords(response.filter(row => row.PatLast.toLowerCase().includes(rep.PLast.toLowerCase()))) : setRecords(records.filter(row => row.PatLast.toLowerCase().includes(rep.PLast.toLowerCase())))
-            check = false
+            setRecords(records.filter(row => row.PatLast.toLowerCase().includes(rep.PLast.toLowerCase())))
         }
-        if (check) setRecords(response)
         getTop()
     }
 
@@ -275,7 +271,7 @@ function RevenueReport() {
                 <div style={filterRow}>
                     <div style={filterGroup}>
                     <label style={filterLabel}>Department</label>
-                    <select name="DepartmentName" onChange={handleChange,handleFilters} style={filterInput}>
+                    <select name="DepartmentName" onChange={handleChange} style={filterInput}>
                     <option value = "">Select</option>
                     {departments.map(d => (
                         <option key={d.DepartmentID} value={d.DepartmentName}>{d.DepartmentName}</option>
@@ -284,7 +280,7 @@ function RevenueReport() {
                     </div>
                     <div style={filterGroup}>
                     <label style={filterLabel}>Doctor</label>
-                    <select name="DoctorLast" onChange={handleChange,handleFilters} style={filterInput}>
+                    <select name="DoctorLast" onChange={handleChange} style={filterInput}>
                     <option value = "">Select</option>
                     {doctors.map(d => (
                         <option key={d.EmployeeID} value={d.LastName}>{d.FirstName} {d.LastName}</option>
@@ -293,22 +289,22 @@ function RevenueReport() {
                     </div>
                     <div style={filterGroup}>
                     <label style={filterLabel}>Patient's First</label>
-                    <input type="text" name="PFirst" onChange={handleChange,handleFilters} style={filterInput} />
+                    <input type="text" name="PFirst" onChange={handleChange} style={filterInput} />
                     </div>
                     <div style={filterGroup}>
                     <label style={filterLabel}>Patient's Last</label>
-                    <input type="text" name="PLast" onChange={handleChange,handleFilters} style={filterInput} />
+                    <input type="text" name="PLast" onChange={handleChange} style={filterInput} />
                     </div>
                 </div>
                 <br />
                 <div style={filterRow}>
                     <div style={filterGroup}>
                     <label style={filterLabel}>From</label>
-                    <input type="date" name="min" onChange={handleChange,handleFilters} style={filterInput} />
+                    <input type="date" name="min" onChange={handleChange} style={filterInput} />
                     </div>
                     <div style={filterGroup}>
                     <label style={filterLabel}>To</label>
-                    <input type="date" name="max" onChange={handleChange,handleFilters} style={filterInput} />
+                    <input type="date" name="max" onChange={handleChange} style={filterInput} />
                     </div>
                 </div>
                 </div>
