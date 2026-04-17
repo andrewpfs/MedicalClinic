@@ -141,6 +141,19 @@ router.get('/api/getdoctors', async (req, res) => {
     }
 })
 
+router.get('/api/getdepdoctors', async (req,res) => {
+    const q = req.body.DepartmentName.length>0 
+    ? 'SELECT EmployeeID,FirstName,LastName,DepartmentName FROM doctor AS DO,employee AS E,department AS D WHERE D.DepartmentID=E.DepartmentID AND E.EmployeeID=D.EmployeeID AND D.DepartmentName=' + req.body.DepartmentName 
+    : 'SELECT EmployeeID,FirstName,LastName,DepartmentName FROM doctor AS DO,employee AS E,department AS D WHERE D.DepartmentID=E.DepartmentID AND E.EmployeeID=D.EmployeeID'
+
+    try {
+        const [rows] = await db.query(q)
+        return res.json(rows)
+    }catch(err){
+        res.status(500).json({ error: 'Error fetching doctors' });
+    }
+})
+
 router.get('/api/getID', async (req,res) => {
     const q = 'SELECT EmployeeID FROM employee WHERE FirstName=? AND LastName=? AND Email=?';
     const r = [req.body.FirstName,req.body.LastName,req.body.Email]
@@ -199,6 +212,20 @@ router.get('/api/pullgrr', requireAdmin, async (req,res) => {
     } catch (err) {
         console.error(err);
         res.status(500).send("Report Error");
+    }
+})
+
+router.get('/api/pullrevenue', requireAdmin, async (req,res) => {
+    const q = `
+    SELECT T.TransactionID AS "Id", P.FName AS "PatFirst", P.LName AS "PatLast", E.FirstName AS "DocFirst", E.LastName AS "DocLast",D.DepartmentName,T.Amount,T.TransactionDateTime AS "Date",E.EmployeeID AS "DocID" 
+    FROM transaction AS T, patient AS P,appointment AS A, employee AS E, department AS D 
+    WHERE T.AppointmentID=A.AppointmentID AND T.PatientID=P.PatientID AND E.EmployeeID=A.DoctorID AND E.DepartmentID=D.DepartmentID`;
+
+    const [rows] = await db.query(q)
+    try {
+        res.json(rows)
+    }catch(err) {
+        res.status(500).json({error: 'Error pulling revenue'})
     }
 })
 

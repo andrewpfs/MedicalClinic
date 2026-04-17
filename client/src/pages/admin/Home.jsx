@@ -30,7 +30,7 @@ const styles = {
 
 const reports = [
   { icon: '💰', title: 'General Revenue Report', sub: 'Departments ranked by revenue generated over a date range', type: 'RepGRR' },
-  { icon: '📋', title: 'Department Appointment Report', sub: 'Doctors within a department ranked by appointments', type: 'RepDAR' },
+  { icon: '📋', title: 'Revenue Report', sub: 'Doctors within a department ranked by appointments', type: 'Revenue' },
   { icon: '💳', title: 'All Transactions', sub: 'Full transaction log with filters by department and date', type: 'AllTrans' },
 ]
 

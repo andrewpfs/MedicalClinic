@@ -21,7 +21,7 @@ import Report from './pages/admin/Report';
 import RepDAR from './pages/admin/RepDAR';
 import RepGAR from './pages/admin/RepGAR';
 import RepGRR from './pages/admin/RepGRR';
-import ReportTable from './pages/admin/ReportTable';
+import RevenueReport from './pages/admin/RevenueReport';
 // Patient pages
 import Profile from './pages/patient/Profile';
 import Booking from './pages/patient/booking';
@@ -71,7 +71,7 @@ export default function App() {
         <Route path="/admin/report/dar" element={<RepDAR />} />
         <Route path="/admin/report/gar" element={<RepGAR />} />
         <Route path="/admin/report/grr" element={<RepGRR />} />
-        <Route path="/admin/report/table" element={<ReportTable />} />
+        <Route path="/admin/report/revenue" element={<RevenueReport />} />
       </Routes>
     </BrowserRouter>
   );
