@@ -12,6 +12,7 @@ const SERVICES = [
   { icon: <OptometryIcon />,  title: "Optometry",                   to: "/patient/booking" },
 ];
 
+console.log(import.meta.env.VITE_API_URL)
 export default function Home() {
   const [session, setSession] = useState({ isLoggedIn: false, firstName: "" });
 

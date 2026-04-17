@@ -35,6 +35,7 @@ const reports = [
   { icon: '💳', title: 'All Transactions', sub: 'Full transaction log with filters by department and date', type: 'AllTrans' },
 ]
 
+
 function AdminHome() {
   useStaffAuth('Admin')
   const navigate = useNavigate()
