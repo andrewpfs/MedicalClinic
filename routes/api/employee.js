@@ -31,7 +31,7 @@ router.post('/login', async (req, res) => {
       STAFF_SECRET,
       { expiresIn: '24h' }
     );
-    res.cookie('staffToken', token, { httpOnly: true })
+    res.cookie('staffToken', token, { httpOnly: true, sameSite: 'none', secure: true })
        .json({ success: true, role: rows[0].Role, name: rows[0].FirstName });
   } catch (err) {
     console.error(err);
@@ -48,7 +48,7 @@ router.get('/session', (req, res) => {
 
 // ── Staff Logout ──────────────────────────────────────────────────────────────
 router.get('/logout', (req, res) => {
-  res.clearCookie('staffToken').json({ success: true });
+  res.clearCookie('staffToken', { sameSite: 'none', secure: true }).json({ success: true });
 });
 
 // ── Get all data ──────────────────────────────────────────────────────────────
