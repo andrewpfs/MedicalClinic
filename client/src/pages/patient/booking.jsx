@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../../components/Navbar';
+import { formatDoctorRating, getDoctorImageUrl, getDoctorInitials } from '../../utils/doctorProfiles';
 
-import API from '../../api';
 const HOURS = [9, 10, 11, 12, 13, 14, 15, 16];
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 const SHORT_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
@@ -13,10 +13,10 @@ function getWeekDates(offset = 0) {
   const monday = new Date(now);
   monday.setDate(now.getDate() - (day === 0 ? 6 : day - 1) + offset * 7);
   monday.setHours(0, 0, 0, 0);
-  return DAYS.map((_, i) => {
-    const d = new Date(monday);
-    d.setDate(monday.getDate() + i);
-    return d;
+  return DAYS.map((_, index) => {
+    const date = new Date(monday);
+    date.setDate(monday.getDate() + index);
+    return date;
   });
 }
 
@@ -26,46 +26,19 @@ function formatHour(hour) {
 }
 
 function toLocalDateString(date) {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
-const styles = {
-  wrap: { padding: '1.5rem', maxWidth: '860px', margin: '0 auto', fontFamily: 'Poppins, sans-serif' },
-  heading: { fontSize: '22px', fontWeight: 500, marginBottom: '1.5rem', color: '#1e2b1b' },
-  doctorGrid: { display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', marginBottom: '2rem' },
-  doctorCard: { display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 16px', border: '1.5px solid #e5e7eb', borderRadius: '10px', cursor: 'pointer', textAlign: 'left', fontFamily: 'Poppins, sans-serif', transition: 'border-color 0.15s, background 0.15s', width: '100%' },
-  doctorAvatar: { width: '40px', height: '40px', borderRadius: '50%', background: '#1e2b1b', color: 'white', fontSize: '14px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  doctorCardInfo: { display: 'flex', flexDirection: 'column', flex: 1 },
-  doctorCardName: { fontSize: '14px', fontWeight: 600, color: '#1e2b1b' },
-  doctorCardSpecialty: { fontSize: '12px', color: '#6b7280', marginTop: '2px' },
-  doctorCardCheck: { fontSize: '16px', color: '#3b6d11', fontWeight: 700, flexShrink: 0 },
-  weekNav: { display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '1rem', justifyContent: 'center' },
-  navBtn: { fontSize: '13px', padding: '6px 14px', borderRadius: '8px', border: '1px solid #d1d5db', background: 'white', color: '#374151', cursor: 'pointer', width: 'auto' },
-  navBtnDisabled: { fontSize: '13px', padding: '6px 14px', borderRadius: '8px', border: '1px solid #d1d5db', background: 'white', color: '#374151', cursor: 'not-allowed', opacity: 0.35, width: 'auto' },
-  weekLabel: { fontSize: '14px', fontWeight: 500, color: '#111', minWidth: '200px', textAlign: 'center' },
-  legend: { display: 'flex', gap: '20px', marginBottom: '1rem', justifyContent: 'center' },
-  legendItem: { display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#6b7280' },
-  dot: { width: '10px', height: '10px', borderRadius: '50%' },
-  table: { width: '100%', borderCollapse: 'collapse' },
-  th: { fontSize: '12px', fontWeight: 500, color: '#6b7280', padding: '10px 8px', textAlign: 'center', borderBottom: '1px solid #e5e7eb' },
-  thToday: { fontSize: '12px', fontWeight: 500, color: '#185FA5', padding: '10px 8px', textAlign: 'center', borderBottom: '1px solid #e5e7eb' },
-  dayNum: { fontSize: '20px', fontWeight: 500, lineHeight: 1.2 },
-  dayNumToday: { fontSize: '20px', fontWeight: 500, lineHeight: 1.2, background: '#E6F1FB', borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto', color: '#185FA5' },
-  timeCell: { fontSize: '11px', color: '#9ca3af', padding: '0 10px 0 0', textAlign: 'right', whiteSpace: 'nowrap', width: '70px', verticalAlign: 'middle' },
-  slotTd: { padding: '2px 3px' },
-  slotAvailable: { padding: '8px 4px', textAlign: 'center', borderRadius: '6px', fontSize: '11px', fontWeight: 500, cursor: 'pointer', background: '#EAF3DE', color: '#3B6D11', border: '1px solid #C0DD97', transition: 'opacity 0.15s' },
-  slotBooked: { padding: '8px 4px', textAlign: 'center', borderRadius: '6px', fontSize: '11px', fontWeight: 500, cursor: 'not-allowed', background: '#FAECE7', color: '#993C1D', border: '1px solid #F5C4B3' },
-  slotMine: { padding: '8px 4px', textAlign: 'center', borderRadius: '6px', fontSize: '11px', fontWeight: 500, cursor: 'pointer', background: '#FAEEDA', color: '#854F0B', border: '1px solid #FAC775' },
-  slotPast: { padding: '8px 4px', textAlign: 'center', borderRadius: '6px', fontSize: '13px', fontWeight: 400, cursor: 'not-allowed', background: '#f9fafb', color: '#d1d5db', border: '1px solid #f3f4f6' },
-  successBar: { background: '#EAF3DE', border: '1px solid #C0DD97', borderRadius: '8px', padding: '10px 16px', fontSize: '13px', color: '#3B6D11', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '10px' },
-  errorBar: { background: '#FAECE7', border: '1px solid #F5C4B3', borderRadius: '8px', padding: '10px 16px', fontSize: '13px', color: '#993C1D', marginBottom: '1rem' },
-  checkCircle: { width: '18px', height: '18px', borderRadius: '50%', background: '#639922', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: 'white', fontSize: '11px', fontWeight: 700 },
-  emptyMsg: { color: '#9ca3af', fontStyle: 'italic', fontSize: '14px', padding: '2rem 0', textAlign: 'center' },
-  backLink: { fontSize: '13px', color: '#6b7280', textDecoration: 'none', display: 'block', marginTop: '1rem', textAlign: 'center' },
-};
+function bookingWindowLabel(weekDates) {
+  return `${weekDates[0].toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${weekDates[4].toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+}
+
+function formatBookingReason(reason) {
+  return reason?.trim() ? reason.trim() : 'General visit';
+}
 
 export default function Booking() {
   const [doctors, setDoctors] = useState([]);
@@ -73,42 +46,57 @@ export default function Booking() {
   const [bookedSlots, setBookedSlots] = useState([]);
   const [weekOffset, setWeekOffset] = useState(0);
   const [weekDates, setWeekDates] = useState(getWeekDates(0));
+  const [search, setSearch] = useState('');
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const [confirmData, setConfirmData] = useState(null);
   const [reason, setReason] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetch(`${API}/patient/api/doctors`, { credentials: 'include' })
-      .then(res => { if (res.status === 401) { navigate('/login'); return null; } return res.json(); })
-      .then(data => { if (data) setDoctors(data); })
+    fetch('/patient/api/doctors', { credentials: 'include' })
+      .then((res) => {
+        if (res.status === 401) {
+          navigate('/login');
+          return null;
+        }
+        return res.json();
+      })
+      .then((data) => {
+        if (data) setDoctors(data);
+      })
       .catch(() => setError('Failed to load doctors.'));
   }, [navigate]);
 
-  useEffect(() => { setWeekDates(getWeekDates(weekOffset)); }, [weekOffset]);
+  useEffect(() => {
+    setWeekDates(getWeekDates(weekOffset));
+  }, [weekOffset]);
 
   useEffect(() => {
     if (!selectedDoctor) return;
     const startDate = toLocalDateString(weekDates[0]);
     const endDate = toLocalDateString(weekDates[4]);
-    fetch(`${API}/patient/api/booked-slots?doctorId=${selectedDoctor}&start=${startDate}&end=${endDate}`, { credentials: 'include' })
-      .then(res => res.json())
-      .then(data => setBookedSlots(data))
+    fetch(`/patient/api/booked-slots?doctorId=${selectedDoctor}&start=${startDate}&end=${endDate}`, { credentials: 'include' })
+      .then((res) => res.json())
+      .then((data) => setBookedSlots(data))
       .catch(() => {});
   }, [selectedDoctor, weekDates]);
 
   const getSlotStatus = (date, hour) => {
     const dateStr = toLocalDateString(date);
+
     for (const slot of bookedSlots) {
-      const slotLocal = new Date(slot.AppointmentDate);
-      const slotDateStr = toLocalDateString(slotLocal);
-      const slotHour = slotLocal.getHours();
+      const slotDate = new Date(slot.AppointmentDate);
+      const slotDateStr = toLocalDateString(slotDate);
+      const slotHour = slot.AppointmentTime
+        ? Number(String(slot.AppointmentTime).split(':')[0])
+        : slotDate.getHours();
+
       if (slotDateStr === dateStr && slotHour === hour) {
-        return slot.conflictType; // 'doctor' or 'patient'
+        return slot.conflictType;
       }
     }
+
     return null;
   };
 
@@ -120,200 +108,886 @@ export default function Booking() {
   };
 
   const handleSlotClick = (date, hour, status) => {
-    if (!selectedDoctor) { setError('Please select a doctor first.'); return; }
-    setError('');
-    setSuccess('');
-    if (status === 'patient') {
-      setError('You already have an appointment at this time. Please cancel it from your Visit History before booking a new one.');
+    if (!selectedDoctor) {
+      setError('Please select a doctor first.');
       return;
     }
-    const doctorObj = doctors.find(d => String(d.EmployeeID) === String(selectedDoctor));
+
+    setError('');
+
+    if (status === 'patient') {
+      setError('You already have an appointment at this time. Visit History is the best place to reschedule it.');
+      return;
+    }
+
+    const doctor = doctors.find((entry) => String(entry.EmployeeID) === String(selectedDoctor));
     setReason('');
-    setConfirmData({ date, hour, doctorName: doctorObj ? `Dr. ${doctorObj.FirstName} ${doctorObj.LastName}` : 'this doctor' });
+    setConfirmData({
+      date,
+      hour,
+      doctor,
+      doctorName: doctor ? `Dr. ${doctor.FirstName} ${doctor.LastName}` : 'this doctor',
+    });
   };
 
   const handleConfirmBooking = async () => {
+    if (!confirmData) return;
+
     const { date, hour, doctorName } = confirmData;
     setConfirmData(null);
     setLoading(true);
+
     const dateStr = toLocalDateString(date);
     const hourStr = String(hour).padStart(2, '0');
     const datetime = `${dateStr}T${hourStr}:00`;
-    const res = await fetch(`${API}/patient/book`, {
+
+    const response = await fetch('/patient/book', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ doctorId: selectedDoctor, date: datetime, reason }),
+      body: JSON.stringify({
+        doctorId: selectedDoctor,
+        date: datetime,
+        reason: formatBookingReason(reason),
+      }),
       credentials: 'include',
     });
+
     setLoading(false);
-    if (res.ok) {
+
+    if (response.ok) {
       const formattedDate = date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
       const formattedTime = formatHour(hour);
       navigate(`/patient/visits?booked=true&doctor=${encodeURIComponent(doctorName)}&date=${encodeURIComponent(formattedDate)}&time=${encodeURIComponent(formattedTime)}`);
-    } else {
-      const msg = await res.json();
-      setError(msg.error || 'Booking failed.');
+      return;
     }
+
+    const payload = await response.json();
+    setError(payload.error || 'Booking failed.');
   };
 
+  const selectedDoctorDetails = doctors.find((doctor) => String(doctor.EmployeeID) === String(selectedDoctor));
   const todayStr = toLocalDateString(new Date());
+  const filteredDoctors = doctors.filter((doctor) => {
+    const haystack = `${doctor.FirstName} ${doctor.LastName} ${doctor.Specialty || ''} ${doctor.DepartmentName || ''}`.toLowerCase();
+    return haystack.includes(search.trim().toLowerCase());
+  });
 
   return (
     <>
       <Navbar />
-      <div style={styles.wrap}>
-      <h1 style={styles.heading}>Schedule an appointment</h1>
-      <p style={{ fontSize: '14px', color: '#6b7280', marginBottom: '1.5rem' }}>
-        Select a doctor below to view their available time slots.
-      </p>
-
-      {/* Doctor cards */}
-      <div style={styles.doctorGrid}>
-        {doctors.map(doc => {
-          const isSelected = String(doc.EmployeeID) === String(selectedDoctor);
-          return (
-            <button
-              key={doc.EmployeeID}
-              onClick={() => { setSelectedDoctor(String(doc.EmployeeID)); setSuccess(''); setError(''); }}
-              style={{
-                ...styles.doctorCard,
-                borderColor: isSelected ? '#1e2b1b' : '#e5e7eb',
-                background: isSelected ? '#f0f4ee' : 'white',
-              }}
-            >
-              <div style={styles.doctorAvatar}>
-                {doc.FirstName?.[0] ?? ''}{doc.LastName?.[0] ?? ''}
+      <div style={pageShell}>
+        <div style={pageInner}>
+          <section style={heroCard}>
+            <div style={heroPattern} />
+            <div style={heroCopy}>
+              <p style={eyebrow}>Patient scheduling</p>
+              <h1 style={heroTitle}>Book the right doctor with confidence</h1>
+              <p style={heroText}>
+                Browse doctor cards, compare specialties and reviews, then pick a time slot from the live weekly grid.
+              </p>
+            </div>
+            <div style={heroAside}>
+              <div style={heroStat}>
+                <div style={heroStatValue}>{doctors.length}</div>
+                <div style={heroStatLabel}>Doctors available</div>
               </div>
-              <div style={styles.doctorCardInfo}>
-                <span style={styles.doctorCardName}>Dr. {doc.FirstName} {doc.LastName}</span>
-                {doc.Specialty && <span style={styles.doctorCardSpecialty}>{doc.Specialty}</span>}
+              <div style={heroStat}>
+                <div style={heroStatValue}>{selectedDoctorDetails ? bookingWindowLabel(weekDates) : 'Pick a doctor'}</div>
+                <div style={heroStatLabel}>Current booking window</div>
               </div>
-              {isSelected && <span style={styles.doctorCardCheck}>✓</span>}
-            </button>
-          );
-        })}
-      </div>
+            </div>
+          </section>
 
-      {success && (
-        <div style={styles.successBar}>
-          <div style={styles.checkCircle}>✓</div>
-          <span>{success}</span>
-        </div>
-      )}
-      {error && <div style={styles.errorBar}>{error}</div>}
-      {loading && <div style={{ fontSize: '13px', color: '#6b7280', marginBottom: '1rem' }}>Booking...</div>}
+          <section style={layout}>
+            <div style={leftRail}>
+              <section style={surfaceCard}>
+                <div style={sectionHeader}>
+                  <div>
+                    <h2 style={sectionTitle}>Choose a doctor</h2>
+                    <p style={sectionSubtitle}>Every card shows specialty, clinic department, review summary, and the doctor photo or default clinic avatar.</p>
+                  </div>
+                  <input
+                    type="text"
+                    value={search}
+                    onChange={(event) => setSearch(event.target.value)}
+                    placeholder="Search specialty or doctor name"
+                    style={searchInput}
+                  />
+                </div>
 
-      <div style={styles.weekNav}>
-        <button
-          onClick={() => { setWeekOffset(w => w - 1); setError(''); setSuccess(''); }}
-          disabled={weekOffset === 0}
-          style={weekOffset === 0 ? styles.navBtnDisabled : styles.navBtn}
-        >← Previous</button>
-        <span style={styles.weekLabel}>
-          {weekDates[0].toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – {weekDates[4].toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-        </span>
-        <button onClick={() => { setWeekOffset(w => w + 1); setError(''); setSuccess(''); }} style={styles.navBtn}>
-          Next →
-        </button>
-      </div>
+                <div style={doctorGrid}>
+                  {filteredDoctors.map((doctor) => {
+                    const isSelected = String(doctor.EmployeeID) === String(selectedDoctor);
 
-      <div style={styles.legend}>
-        <div style={styles.legendItem}><div style={{ ...styles.dot, background: '#639922' }}></div> Available</div>
-        <div style={styles.legendItem}><div style={{ ...styles.dot, background: '#D85A30' }}></div> Booked</div>
-        <div style={styles.legendItem}><div style={{ ...styles.dot, background: '#d1d5db' }}></div> Unavailable</div>
-        <div style={styles.legendItem}><div style={{ ...styles.dot, background: '#BA7517' }}></div> Your appointment</div>
-      </div>
-
-      {selectedDoctor ? (
-        <div style={{ overflowX: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <table style={styles.table}>
-            <thead>
-              <tr>
-                <th style={{ width: '70px' }}></th>
-                {weekDates.map((date, i) => {
-                  const isToday = toLocalDateString(date) === todayStr;
-                  return (
-                    <th key={i} style={isToday ? styles.thToday : styles.th}>
-                      <div style={{ fontSize: '12px', marginBottom: '4px' }}>{SHORT_DAYS[i]}</div>
-                      {isToday
-                        ? <div style={styles.dayNumToday}>{date.getDate()}</div>
-                        : <div style={styles.dayNum}>{date.getDate()}</div>
-                      }
-                    </th>
-                  );
-                })}
-              </tr>
-            </thead>
-            <tbody>
-              {HOURS.map(hour => (
-                <tr key={hour}>
-                  <td style={styles.timeCell}>{formatHour(hour)}</td>
-                  {weekDates.map((date, i) => {
-                    const status = getSlotStatus(date, hour);
-                    const past = isPast(date, hour);
-                    const slotStyle = past ? styles.slotPast : status === 'doctor' ? styles.slotBooked : status === 'patient' ? styles.slotMine : styles.slotAvailable;
-                    const slotText = past ? '–' : status === 'doctor' ? 'Booked' : status === 'patient' ? 'My appt' : 'Available';
-                    const clickable = !past && status !== 'doctor';
                     return (
-                      <td key={i} style={styles.slotTd}>
-                        <div
-                          onClick={() => clickable && handleSlotClick(date, hour, status)}
-                          style={slotStyle}
-                          onMouseEnter={e => { if (clickable) e.currentTarget.style.opacity = '0.7'; }}
-                          onMouseLeave={e => { e.currentTarget.style.opacity = '1'; }}
-                        >
-                          {slotText}
+                      <button
+                        key={doctor.EmployeeID}
+                        type="button"
+                        onClick={() => {
+                          setSelectedDoctor(String(doctor.EmployeeID));
+                          setError('');
+                        }}
+                        style={{
+                          ...doctorCard,
+                          ...(isSelected ? doctorCardActive : null),
+                        }}
+                      >
+                        <div style={doctorPhotoWrap}>
+                          {doctor.ProfileImageUrl ? (
+                            <img
+                              src={getDoctorImageUrl(doctor)}
+                              alt={`Dr. ${doctor.FirstName} ${doctor.LastName}`}
+                              style={doctorPhoto}
+                            />
+                          ) : (
+                            <div style={doctorAvatarFallback}>{getDoctorInitials(doctor)}</div>
+                          )}
                         </div>
-                      </td>
+
+                        <div style={doctorCardBody}>
+                          <div style={doctorCardTitle}>Dr. {doctor.FirstName} {doctor.LastName}</div>
+                          <div style={doctorCardMeta}>{doctor.Specialty || 'General practice'}{doctor.DepartmentName ? ` · ${doctor.DepartmentName}` : ''}</div>
+                          <div style={doctorCardRating}>{formatDoctorRating(doctor)}</div>
+                          <p style={doctorCardBio}>{doctor.Bio || 'No custom bio yet. Patients will still see the clinic default profile.'}</p>
+                        </div>
+
+                        <div style={doctorCardBadge}>{isSelected ? 'Selected' : 'View schedule'}</div>
+                      </button>
                     );
                   })}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-      {confirmData && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-          <div style={{ background: 'white', borderRadius: '12px', padding: '2rem', maxWidth: '420px', width: '90%', boxShadow: '0 4px 24px rgba(0,0,0,0.12)' }}>
-            <h3 style={{ fontSize: '18px', fontWeight: 500, marginBottom: '0.75rem', color: '#1e2b1b' }}>Confirm appointment</h3>
-            <p style={{ fontSize: '14px', color: '#6b7280', marginBottom: '1.25rem', lineHeight: 1.6 }}>
-              Please confirm you would like to book an appointment with <strong>{confirmData.doctorName}</strong> on <strong>{confirmData.date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</strong> at <strong>{formatHour(confirmData.hour)}</strong>.
-            </p>
-            <div style={{ marginBottom: '1.25rem' }}>
-              <label style={{ fontSize: '13px', fontWeight: 500, color: '#374151', display: 'block', marginBottom: '6px' }}>
-                Reason for visit <span style={{ color: '#9ca3af', fontWeight: 400 }}>(optional)</span>
-              </label>
-              <textarea
-                value={reason}
-                onChange={e => setReason(e.target.value)}
-                placeholder="e.g. Annual checkup, back pain, follow-up..."
-                rows={3}
-                style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #d1d5db', fontSize: '13px', fontFamily: 'Poppins, sans-serif', resize: 'vertical', boxSizing: 'border-box', color: '#111' }}
-              />
-            </div>
-            <div style={{ display: 'flex', gap: '10px' }}>
-              <button
-                onClick={handleConfirmBooking}
-                style={{ flex: 1, padding: '10px', background: '#1e2b1b', color: 'white', border: 'none', borderRadius: '8px', fontSize: '14px', cursor: 'pointer', width: 'auto' }}
-              >
-                Confirm booking
-              </button>
-              <button
-                onClick={() => { setConfirmData(null); setReason(''); }}
-                style={{ flex: 1, padding: '10px', background: 'white', color: '#374151', border: '1px solid #d1d5db', borderRadius: '8px', fontSize: '14px', cursor: 'pointer', width: 'auto' }}
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-        </div>
-      ) : (
-        <p style={styles.emptyMsg}>Select a doctor above to see available time slots.</p>
-      )}
+                </div>
 
+                {!filteredDoctors.length && <p style={emptyState}>No doctors match that search.</p>}
+              </section>
+            </div>
 
-    </div>
+            <div style={rightRail}>
+              <section style={surfaceCard}>
+                <div style={sectionHeader}>
+                  <div>
+                    <h2 style={sectionTitle}>Availability planner</h2>
+                    <p style={sectionSubtitle}>
+                      {selectedDoctorDetails
+                        ? `Scheduling with Dr. ${selectedDoctorDetails.FirstName} ${selectedDoctorDetails.LastName}`
+                        : 'Choose a doctor to unlock the live booking grid.'}
+                    </p>
+                  </div>
+                  <div style={weekNav}>
+                    <button
+                      type="button"
+                      onClick={() => setWeekOffset((value) => value - 1)}
+                      disabled={weekOffset === 0}
+                      style={weekOffset === 0 ? navButtonDisabled : navButton}
+                    >
+                      Prev
+                    </button>
+                    <span style={weekLabel}>{bookingWindowLabel(weekDates)}</span>
+                    <button type="button" onClick={() => setWeekOffset((value) => value + 1)} style={navButton}>
+                      Next
+                    </button>
+                  </div>
+                </div>
+
+                {selectedDoctorDetails ? (
+                  <>
+                    <div style={selectedDoctorBanner}>
+                      <div style={selectedDoctorSummary}>
+                        <div style={selectedDoctorName}>Dr. {selectedDoctorDetails.FirstName} {selectedDoctorDetails.LastName}</div>
+                        <div style={selectedDoctorSub}>{selectedDoctorDetails.Specialty || 'General practice'} · {formatDoctorRating(selectedDoctorDetails)}</div>
+                      </div>
+                      <div style={legend}>
+                        <LegendChip color="#dff4ea" label="Available" />
+                        <LegendChip color="#fde2de" label="Booked" />
+                        <LegendChip color="#f8ecce" label="Your appointment" />
+                      </div>
+                    </div>
+
+                    {error && <div style={errorBanner}>{error}</div>}
+                    {loading && <div style={infoBanner}>Booking appointment...</div>}
+
+                    <div style={calendarWrap}>
+                      <table style={calendarTable}>
+                        <thead>
+                          <tr>
+                            <th style={timeHead}></th>
+                            {weekDates.map((date, index) => {
+                              const isToday = toLocalDateString(date) === todayStr;
+                              return (
+                                <th key={SHORT_DAYS[index]} style={calendarHead}>
+                                  <div style={calendarDayLabel}>{SHORT_DAYS[index]}</div>
+                                  <div style={isToday ? calendarDayActive : calendarDayNumber}>{date.getDate()}</div>
+                                </th>
+                              );
+                            })}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {HOURS.map((hour) => (
+                            <tr key={hour}>
+                              <td style={timeCell}>{formatHour(hour)}</td>
+                              {weekDates.map((date, index) => {
+                                const status = getSlotStatus(date, hour);
+                                const past = isPast(date, hour);
+                                const clickable = !past && status !== 'doctor';
+                                const slotStyle = past
+                                  ? slotPast
+                                  : status === 'doctor'
+                                    ? slotBooked
+                                    : status === 'patient'
+                                      ? slotMine
+                                      : slotAvailable;
+                                const slotText = past ? '-' : status === 'doctor' ? 'Booked' : status === 'patient' ? 'Your visit' : 'Book';
+
+                                return (
+                                  <td key={`${index}-${hour}`} style={calendarCell}>
+                                    <button
+                                      type="button"
+                                      onClick={() => clickable && handleSlotClick(date, hour, status)}
+                                      disabled={!clickable}
+                                      style={slotStyle}
+                                    >
+                                      {slotText}
+                                    </button>
+                                  </td>
+                                );
+                              })}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </>
+                ) : (
+                  <div style={emptyPlanner}>
+                    <div style={emptyPlannerTitle}>Select a doctor to view availability</div>
+                    <p style={emptyPlannerText}>Once you choose a doctor on the left, this planner will show the live weekly schedule and let you book directly from available slots.</p>
+                  </div>
+                )}
+              </section>
+            </div>
+          </section>
+
+          {confirmData && (
+            <div style={modalOverlay}>
+              <div style={modalCard}>
+                <h3 style={modalTitle}>Confirm appointment</h3>
+                <p style={modalText}>
+                  Book with <strong>{confirmData.doctorName}</strong> on <strong>{confirmData.date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</strong> at <strong>{formatHour(confirmData.hour)}</strong>.
+                </p>
+
+                <label style={fieldLabel}>
+                  Reason for visit
+                  <textarea
+                    value={reason}
+                    onChange={(event) => setReason(event.target.value)}
+                    rows={4}
+                    style={reasonInput}
+                    placeholder="Annual checkup, follow-up, new symptoms, prescription question..."
+                  />
+                </label>
+
+                <div style={modalActions}>
+                  <button type="button" onClick={handleConfirmBooking} style={confirmButton}>
+                    Confirm booking
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setConfirmData(null);
+                      setReason('');
+                    }}
+                    style={cancelButton}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
     </>
   );
 }
+
+function LegendChip({ color, label }) {
+  return (
+    <div style={legendChip}>
+      <span style={{ ...legendDot, background: color }} />
+      <span>{label}</span>
+    </div>
+  );
+}
+
+const pageShell = {
+  minHeight: '100vh',
+  background: 'radial-gradient(circle at top left, #f3fbf7 0%, #f8fafc 52%, #eef2ff 100%)',
+  fontFamily: '"Poppins", sans-serif',
+};
+
+const pageInner = {
+  maxWidth: '1260px',
+  margin: '0 auto',
+  padding: '28px 24px 64px',
+};
+
+const heroCard = {
+  position: 'relative',
+  overflow: 'hidden',
+  display: 'grid',
+  gridTemplateColumns: 'minmax(0, 2fr) minmax(280px, 1fr)',
+  gap: '22px',
+  alignItems: 'center',
+  borderRadius: '30px',
+  padding: '30px',
+  background: 'linear-gradient(135deg, #0f3a2e 0%, #145f4c 52%, #2b8a73 100%)',
+  color: '#ffffff',
+  boxShadow: '0 24px 60px rgba(15, 58, 46, 0.18)',
+};
+
+const heroPattern = {
+  position: 'absolute',
+  inset: 'auto -70px -90px auto',
+  width: '240px',
+  height: '240px',
+  borderRadius: '999px',
+  background: 'rgba(255,255,255,0.12)',
+};
+
+const heroCopy = {
+  position: 'relative',
+};
+
+const eyebrow = {
+  margin: 0,
+  fontSize: '11px',
+  letterSpacing: '0.18em',
+  textTransform: 'uppercase',
+  fontWeight: 700,
+  opacity: 0.82,
+};
+
+const heroTitle = {
+  margin: '10px 0 12px',
+  fontSize: 'clamp(30px, 5vw, 44px)',
+  lineHeight: 1.04,
+};
+
+const heroText = {
+  margin: 0,
+  maxWidth: '680px',
+  fontSize: '15px',
+  lineHeight: 1.7,
+  color: 'rgba(255,255,255,0.9)',
+};
+
+const heroAside = {
+  position: 'relative',
+  display: 'grid',
+  gap: '12px',
+};
+
+const heroStat = {
+  borderRadius: '18px',
+  padding: '16px 18px',
+  background: 'rgba(255,255,255,0.12)',
+  border: '1px solid rgba(255,255,255,0.18)',
+};
+
+const heroStatValue = {
+  fontSize: '22px',
+  fontWeight: 700,
+  lineHeight: 1.2,
+};
+
+const heroStatLabel = {
+  marginTop: '6px',
+  fontSize: '12px',
+  letterSpacing: '0.06em',
+  textTransform: 'uppercase',
+  opacity: 0.82,
+};
+
+const layout = {
+  display: 'grid',
+  gridTemplateColumns: 'minmax(340px, 430px) minmax(0, 1fr)',
+  gap: '20px',
+  marginTop: '22px',
+  alignItems: 'start',
+};
+
+const leftRail = {
+  display: 'grid',
+  gap: '20px',
+};
+
+const rightRail = {
+  display: 'grid',
+  gap: '20px',
+};
+
+const surfaceCard = {
+  background: 'rgba(255,255,255,0.9)',
+  borderRadius: '26px',
+  border: '1px solid rgba(255,255,255,0.95)',
+  boxShadow: '0 18px 44px rgba(15, 23, 42, 0.08)',
+  padding: '24px',
+  backdropFilter: 'blur(10px)',
+};
+
+const sectionHeader = {
+  display: 'flex',
+  justifyContent: 'space-between',
+  gap: '14px',
+  alignItems: 'flex-start',
+  flexWrap: 'wrap',
+  marginBottom: '18px',
+};
+
+const sectionTitle = {
+  margin: 0,
+  color: '#0f172a',
+  fontSize: '19px',
+};
+
+const sectionSubtitle = {
+  margin: '6px 0 0',
+  color: '#64748b',
+  fontSize: '13px',
+  lineHeight: 1.55,
+  maxWidth: '640px',
+};
+
+const searchInput = {
+  minWidth: '230px',
+  maxWidth: '290px',
+  width: '100%',
+  padding: '11px 14px',
+  borderRadius: '14px',
+  border: '1px solid #dbe4ea',
+  background: '#f8fafc',
+  color: '#0f172a',
+  fontSize: '14px',
+  fontFamily: 'inherit',
+};
+
+const doctorGrid = {
+  display: 'grid',
+  gap: '14px',
+};
+
+const doctorCard = {
+  display: 'grid',
+  gridTemplateColumns: '92px minmax(0, 1fr)',
+  gap: '16px',
+  alignItems: 'center',
+  width: '100%',
+  textAlign: 'left',
+  padding: '16px',
+  borderRadius: '22px',
+  border: '1px solid #e2e8f0',
+  background: '#f8fafc',
+  cursor: 'pointer',
+  fontFamily: 'inherit',
+};
+
+const doctorCardActive = {
+  borderColor: '#123524',
+  background: '#eef9f3',
+  boxShadow: '0 12px 28px rgba(18, 53, 36, 0.08)',
+};
+
+const doctorPhotoWrap = {
+  width: '92px',
+  height: '92px',
+  borderRadius: '24px',
+  overflow: 'hidden',
+  background: 'linear-gradient(135deg, #e2f3ea 0%, #d5e8df 100%)',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+};
+
+const doctorPhoto = {
+  width: '100%',
+  height: '100%',
+  objectFit: 'cover',
+};
+
+const doctorAvatarFallback = {
+  width: '100%',
+  height: '100%',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  fontSize: '28px',
+  fontWeight: 700,
+  color: '#145f4c',
+};
+
+const doctorCardBody = {
+  display: 'grid',
+  gap: '4px',
+};
+
+const doctorCardTitle = {
+  fontSize: '17px',
+  fontWeight: 700,
+  color: '#0f172a',
+};
+
+const doctorCardMeta = {
+  color: '#475569',
+  fontSize: '13px',
+};
+
+const doctorCardRating = {
+  color: '#145f4c',
+  fontSize: '13px',
+  fontWeight: 700,
+};
+
+const doctorCardBio = {
+  margin: '2px 0 0',
+  color: '#64748b',
+  fontSize: '13px',
+  lineHeight: 1.55,
+};
+
+const doctorCardBadge = {
+  gridColumn: '2 / span 1',
+  display: 'inline-flex',
+  width: 'fit-content',
+  alignItems: 'center',
+  padding: '6px 10px',
+  borderRadius: '999px',
+  background: '#dff4ea',
+  color: '#0f6b52',
+  fontSize: '11px',
+  fontWeight: 700,
+  letterSpacing: '0.04em',
+  textTransform: 'uppercase',
+};
+
+const emptyState = {
+  margin: 0,
+  padding: '24px 8px',
+  color: '#94a3b8',
+  textAlign: 'center',
+  fontSize: '14px',
+};
+
+const weekNav = {
+  display: 'flex',
+  gap: '10px',
+  alignItems: 'center',
+  flexWrap: 'wrap',
+};
+
+const navButton = {
+  border: '1px solid #dbe4ea',
+  borderRadius: '12px',
+  background: '#ffffff',
+  color: '#334155',
+  padding: '9px 12px',
+  fontSize: '13px',
+  fontWeight: 700,
+  cursor: 'pointer',
+  fontFamily: 'inherit',
+};
+
+const navButtonDisabled = {
+  ...navButton,
+  opacity: 0.45,
+  cursor: 'not-allowed',
+};
+
+const weekLabel = {
+  fontSize: '13px',
+  fontWeight: 700,
+  color: '#475569',
+};
+
+const selectedDoctorBanner = {
+  display: 'flex',
+  justifyContent: 'space-between',
+  gap: '16px',
+  alignItems: 'center',
+  padding: '14px 16px',
+  borderRadius: '18px',
+  background: '#f8fafc',
+  border: '1px solid #e2e8f0',
+  marginBottom: '14px',
+  flexWrap: 'wrap',
+};
+
+const selectedDoctorSummary = {
+  display: 'grid',
+  gap: '4px',
+};
+
+const selectedDoctorName = {
+  fontSize: '16px',
+  fontWeight: 700,
+  color: '#0f172a',
+};
+
+const selectedDoctorSub = {
+  fontSize: '13px',
+  color: '#64748b',
+};
+
+const legend = {
+  display: 'flex',
+  gap: '10px',
+  flexWrap: 'wrap',
+};
+
+const legendChip = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '8px',
+  padding: '7px 10px',
+  borderRadius: '999px',
+  background: '#ffffff',
+  border: '1px solid #e2e8f0',
+  color: '#475569',
+  fontSize: '12px',
+  fontWeight: 600,
+};
+
+const legendDot = {
+  width: '10px',
+  height: '10px',
+  borderRadius: '999px',
+  display: 'inline-block',
+};
+
+const errorBanner = {
+  marginBottom: '14px',
+  padding: '12px 14px',
+  borderRadius: '14px',
+  background: '#fef2f2',
+  border: '1px solid #fecaca',
+  color: '#991b1b',
+  fontSize: '13px',
+  fontWeight: 600,
+};
+
+const infoBanner = {
+  marginBottom: '14px',
+  padding: '12px 14px',
+  borderRadius: '14px',
+  background: '#eff6ff',
+  border: '1px solid #bfdbfe',
+  color: '#1d4ed8',
+  fontSize: '13px',
+  fontWeight: 600,
+};
+
+const calendarWrap = {
+  overflowX: 'auto',
+};
+
+const calendarTable = {
+  width: '100%',
+  borderCollapse: 'separate',
+  borderSpacing: '0 10px',
+};
+
+const calendarHead = {
+  padding: '0 6px 12px',
+  textAlign: 'center',
+};
+
+const timeHead = {
+  width: '92px',
+};
+
+const calendarDayLabel = {
+  fontSize: '12px',
+  color: '#64748b',
+  marginBottom: '8px',
+};
+
+const calendarDayNumber = {
+  width: '38px',
+  height: '38px',
+  margin: '0 auto',
+  borderRadius: '999px',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  background: '#f8fafc',
+  color: '#0f172a',
+  fontWeight: 700,
+};
+
+const calendarDayActive = {
+  ...calendarDayNumber,
+  background: '#dbeafe',
+  color: '#1d4ed8',
+};
+
+const timeCell = {
+  fontSize: '12px',
+  color: '#64748b',
+  fontWeight: 600,
+  textAlign: 'right',
+  paddingRight: '12px',
+  whiteSpace: 'nowrap',
+};
+
+const calendarCell = {
+  padding: '0 6px',
+};
+
+const slotBase = {
+  width: '100%',
+  borderRadius: '16px',
+  padding: '14px 10px',
+  border: '1px solid transparent',
+  fontSize: '12px',
+  fontWeight: 700,
+  fontFamily: 'inherit',
+};
+
+const slotAvailable = {
+  ...slotBase,
+  background: '#dff4ea',
+  borderColor: '#b9e1cf',
+  color: '#0f6b52',
+  cursor: 'pointer',
+};
+
+const slotBooked = {
+  ...slotBase,
+  background: '#fde2de',
+  borderColor: '#f6c7c0',
+  color: '#b42318',
+  cursor: 'not-allowed',
+};
+
+const slotMine = {
+  ...slotBase,
+  background: '#f8ecce',
+  borderColor: '#f1d592',
+  color: '#9a6700',
+  cursor: 'pointer',
+};
+
+const slotPast = {
+  ...slotBase,
+  background: '#f8fafc',
+  borderColor: '#e2e8f0',
+  color: '#cbd5e1',
+  cursor: 'not-allowed',
+};
+
+const emptyPlanner = {
+  borderRadius: '20px',
+  padding: '36px 24px',
+  background: '#f8fafc',
+  border: '1px dashed #cbd5e1',
+  textAlign: 'center',
+};
+
+const emptyPlannerTitle = {
+  fontSize: '18px',
+  fontWeight: 700,
+  color: '#0f172a',
+};
+
+const emptyPlannerText = {
+  margin: '8px auto 0',
+  maxWidth: '520px',
+  color: '#64748b',
+  fontSize: '14px',
+  lineHeight: 1.7,
+};
+
+const modalOverlay = {
+  position: 'fixed',
+  inset: 0,
+  background: 'rgba(15, 23, 42, 0.5)',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: '20px',
+  zIndex: 1200,
+};
+
+const modalCard = {
+  width: '100%',
+  maxWidth: '520px',
+  background: '#ffffff',
+  borderRadius: '26px',
+  padding: '28px',
+  boxShadow: '0 24px 60px rgba(15, 23, 42, 0.2)',
+};
+
+const modalTitle = {
+  margin: 0,
+  fontSize: '22px',
+  color: '#0f172a',
+};
+
+const modalText = {
+  margin: '12px 0 18px',
+  color: '#64748b',
+  fontSize: '14px',
+  lineHeight: 1.7,
+};
+
+const fieldLabel = {
+  display: 'block',
+  fontSize: '13px',
+  fontWeight: 700,
+  color: '#334155',
+};
+
+const reasonInput = {
+  width: '100%',
+  boxSizing: 'border-box',
+  marginTop: '8px',
+  borderRadius: '16px',
+  border: '1px solid #dbe4ea',
+  background: '#f8fafc',
+  padding: '14px',
+  fontSize: '14px',
+  color: '#0f172a',
+  fontFamily: 'inherit',
+  resize: 'vertical',
+};
+
+const modalActions = {
+  display: 'flex',
+  gap: '12px',
+  marginTop: '18px',
+};
+
+const confirmButton = {
+  flex: 1,
+  border: 'none',
+  borderRadius: '16px',
+  background: 'linear-gradient(135deg, #123524 0%, #1f7a5c 100%)',
+  color: '#ffffff',
+  padding: '12px 16px',
+  fontSize: '14px',
+  fontWeight: 700,
+  cursor: 'pointer',
+  fontFamily: 'inherit',
+};
+
+const cancelButton = {
+  flex: 1,
+  borderRadius: '16px',
+  border: '1px solid #cbd5e1',
+  background: '#ffffff',
+  color: '#334155',
+  padding: '12px 16px',
+  fontSize: '14px',
+  fontWeight: 700,
+  cursor: 'pointer',
+  fontFamily: 'inherit',
+};

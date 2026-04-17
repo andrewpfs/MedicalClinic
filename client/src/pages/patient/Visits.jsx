@@ -2,10 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../../components/Navbar';
 
-import API from '../../api';
 const HOURS = [9, 10, 11, 12, 13, 14, 15, 16];
 const SHORT_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+const REVIEW_OPTIONS = [1, 2, 3, 4, 5];
 
 function getWeekDates(offset = 0) {
   const now = new Date();
@@ -13,10 +13,11 @@ function getWeekDates(offset = 0) {
   const monday = new Date(now);
   monday.setDate(now.getDate() - (day === 0 ? 6 : day - 1) + offset * 7);
   monday.setHours(0, 0, 0, 0);
-  return DAYS.map((_, i) => {
-    const d = new Date(monday);
-    d.setDate(monday.getDate() + i);
-    return d;
+
+  return DAYS.map((_, index) => {
+    const date = new Date(monday);
+    date.setDate(monday.getDate() + index);
+    return date;
   });
 }
 
@@ -26,49 +27,74 @@ function formatHour(hour) {
 }
 
 function toLocalDateString(date) {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 function formatDate(dateStr) {
-  const d = new Date(dateStr);
-  return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+  const date = new Date(dateStr);
+  return date.toLocaleDateString('en-US', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
 }
 
-function formatTime(dateStr) {
-  const d = new Date(dateStr);
-  const h = d.getHours();
-  const min = String(d.getMinutes()).padStart(2, '0');
-  if (h === 0 && min === '00') return '—';
-  return h < 12 ? `${h}:${min} AM` : h === 12 ? `12:${min} PM` : `${h - 12}:${min} PM`;
+function formatTime(dateStr, timeStr) {
+  if (timeStr) {
+    const [hours = 0, minutes = 0] = String(timeStr).split(':').map(Number);
+    const temp = new Date();
+    temp.setHours(hours, minutes, 0, 0);
+    return temp.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  }
+
+  const date = new Date(dateStr);
+  const hours = date.getHours();
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+
+  if (hours === 0 && minutes === '00') return 'Not set';
+  if (hours === 12) return `12:${minutes} PM`;
+  return hours < 12 ? `${hours}:${minutes} AM` : `${hours - 12}:${minutes} PM`;
+}
+
+function isCompletedVisit(visit) {
+  const status = String(visit.Status || visit.StatusCode || '').toLowerCase();
+  return status.includes('completed') || status === '4';
 }
 
 const styles = {
-  wrap: { padding: '1.5rem', maxWidth: '860px', margin: '0 auto', fontFamily: 'Poppins, sans-serif' },
+  wrap: { padding: '1.5rem', maxWidth: '1120px', margin: '0 auto', fontFamily: 'Poppins, sans-serif' },
   heading: { fontSize: '22px', fontWeight: 500, marginBottom: '1.5rem', color: '#1e2b1b' },
   sectionHeading: { fontSize: '12px', fontWeight: 500, marginBottom: '0.75rem', marginTop: '1.5rem', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em' },
   table: { width: '100%', borderCollapse: 'collapse', marginBottom: '1rem' },
-  th: { fontSize: '12px', fontWeight: 500, color: '#6b7280', padding: '10px 12px', textAlign: 'left', borderBottom: '1px solid #e5e7eb', background: '#f9fafb' },
+  th: { fontSize: '12px', fontWeight: 500, color: '#6b7280', padding: '10px 12px', textAlign: 'left', borderBottom: '1px solid #e5e7eb', background: '#f9fafb', whiteSpace: 'nowrap' },
   td: { fontSize: '13px', color: '#374151', padding: '12px', borderBottom: '1px solid #f3f4f6', verticalAlign: 'middle' },
   badge: (status) => ({
-    display: 'inline-block', padding: '3px 10px', borderRadius: '99px', fontSize: '11px', fontWeight: 500,
-    background: status === 'Scheduled' ? '#EAF3DE' : status === 'Paid' ? '#E6F1FB' : status === 'Cancelled' ? '#FAECE7' : '#f3f4f6',
-    color: status === 'Scheduled' ? '#3B6D11' : status === 'Paid' ? '#185FA5' : status === 'Cancelled' ? '#993C1D' : '#6b7280',
-    border: `1px solid ${status === 'Scheduled' ? '#C0DD97' : status === 'Paid' ? '#B5D4F4' : status === 'Cancelled' ? '#F5C4B3' : '#e5e7eb'}`,
+    display: 'inline-block',
+    padding: '3px 10px',
+    borderRadius: '99px',
+    fontSize: '11px',
+    fontWeight: 500,
+    background: status === 'Scheduled' ? '#EAF3DE' : status === 'Paid' ? '#E6F1FB' : status === 'Cancelled' ? '#FAECE7' : status === 'Completed' ? '#E7F8EE' : '#f3f4f6',
+    color: status === 'Scheduled' ? '#3B6D11' : status === 'Paid' ? '#185FA5' : status === 'Cancelled' ? '#993C1D' : status === 'Completed' ? '#166534' : '#6b7280',
+    border: `1px solid ${status === 'Scheduled' ? '#C0DD97' : status === 'Paid' ? '#B5D4F4' : status === 'Cancelled' ? '#F5C4B3' : status === 'Completed' ? '#BBF7D0' : '#e5e7eb'}`,
   }),
   rescheduleBtn: { fontSize: '11px', padding: '5px 10px', background: 'white', color: '#185FA5', border: '1px solid #B5D4F4', borderRadius: '6px', cursor: 'pointer', marginRight: '6px', width: 'auto' },
   cancelBtn: { fontSize: '11px', padding: '5px 10px', background: 'white', color: '#993C1D', border: '1px solid #F5C4B3', borderRadius: '6px', cursor: 'pointer', width: 'auto' },
+  reviewBtn: { fontSize: '11px', padding: '5px 10px', background: '#123524', color: 'white', border: '1px solid #123524', borderRadius: '6px', cursor: 'pointer', width: 'auto' },
+  reviewStatus: { display: 'inline-flex', alignItems: 'center', padding: '4px 10px', borderRadius: '999px', fontSize: '11px', fontWeight: 600, background: '#eef2ff', color: '#4338ca' },
   emptyMsg: { fontSize: '13px', color: '#9ca3af', fontStyle: 'italic', padding: '1rem 0' },
   divider: { border: 'none', borderTop: '1px solid #e5e7eb', margin: '1.5rem 0' },
-  backLink: { fontSize: '13px', color: '#6b7280', textDecoration: 'none', display: 'inline-block', marginTop: '1rem' },
   modal: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 },
-  modalBox: { background: 'white', borderRadius: '12px', padding: '2rem', maxWidth: '420px', width: '90%' },
+  modalBox: { background: 'white', borderRadius: '12px', padding: '2rem', maxWidth: '500px', width: '92%' },
   modalHeading: { fontSize: '18px', fontWeight: 500, marginBottom: '0.75rem', color: '#1e2b1b' },
-  modalSub: { fontSize: '14px', color: '#6b7280', marginBottom: '1.5rem', lineHeight: 1.6 },
-  modalBtns: { display: 'flex', gap: '10px' },
+  modalSub: { fontSize: '14px', color: '#6b7280', marginBottom: '1.25rem', lineHeight: 1.6 },
+  modalBtns: { display: 'flex', gap: '10px', marginTop: '1rem' },
   confirmCancelBtn: { flex: 1, padding: '10px', background: '#993C1D', color: 'white', border: 'none', borderRadius: '8px', fontSize: '14px', cursor: 'pointer', width: 'auto' },
+  saveBtn: { flex: 1, padding: '10px', background: '#123524', color: 'white', border: 'none', borderRadius: '8px', fontSize: '14px', cursor: 'pointer', width: 'auto' },
   dismissBtn: { flex: 1, padding: '10px', background: 'white', color: '#374151', border: '1px solid #d1d5db', borderRadius: '8px', fontSize: '14px', cursor: 'pointer', width: 'auto' },
   calendarWrap: { background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '1.5rem', marginBottom: '1rem' },
   calHeading: { fontSize: '14px', fontWeight: 500, color: '#1e2b1b', marginBottom: '0.5rem' },
@@ -81,6 +107,21 @@ const styles = {
   slotAvailable: { padding: '6px 4px', textAlign: 'center', borderRadius: '4px', fontSize: '10px', fontWeight: 500, cursor: 'pointer', background: '#EAF3DE', color: '#3B6D11', border: '1px solid #C0DD97' },
   slotBooked: { padding: '6px 4px', textAlign: 'center', borderRadius: '4px', fontSize: '10px', fontWeight: 500, cursor: 'not-allowed', background: '#FAECE7', color: '#993C1D', border: '1px solid #F5C4B3' },
   slotPast: { padding: '6px 4px', textAlign: 'center', borderRadius: '4px', fontSize: '12px', cursor: 'not-allowed', background: '#f9fafb', color: '#d1d5db', border: '1px solid #f3f4f6' },
+  reviewOptions: { display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '1rem' },
+  ratingButton: (selected) => ({
+    padding: '9px 14px',
+    borderRadius: '999px',
+    border: `1px solid ${selected ? '#123524' : '#d1d5db'}`,
+    background: selected ? '#123524' : '#ffffff',
+    color: selected ? '#ffffff' : '#374151',
+    cursor: 'pointer',
+    fontSize: '13px',
+    fontWeight: 600,
+  }),
+  textarea: { width: '100%', minHeight: '120px', resize: 'vertical', borderRadius: '12px', border: '1px solid #d1d5db', padding: '12px 14px', fontSize: '14px', fontFamily: 'inherit', boxSizing: 'border-box' },
+  helperText: { fontSize: '12px', color: '#6b7280', marginTop: '0.5rem', lineHeight: 1.5 },
+  reviewSummary: { display: 'grid', gap: '4px' },
+  reviewComment: { color: '#6b7280', lineHeight: 1.55, maxWidth: '320px' },
 };
 
 export default function Visits() {
@@ -90,10 +131,14 @@ export default function Visits() {
   const [bookingMsg, setBookingMsg] = useState('');
   const [cancelTarget, setCancelTarget] = useState(null);
   const [rescheduleTarget, setRescheduleTarget] = useState(null);
+  const [reviewTarget, setReviewTarget] = useState(null);
   const [bookedSlots, setBookedSlots] = useState([]);
   const [weekOffset, setWeekOffset] = useState(0);
   const [weekDates, setWeekDates] = useState(getWeekDates(0));
   const [rescheduleError, setRescheduleError] = useState('');
+  const [reviewError, setReviewError] = useState('');
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+  const [reviewForm, setReviewForm] = useState({ rating: 5, comment: '' });
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -106,75 +151,134 @@ export default function Visits() {
     }
   }, []);
 
-  useEffect(() => { setWeekDates(getWeekDates(weekOffset)); }, [weekOffset]);
+  useEffect(() => {
+    setWeekDates(getWeekDates(weekOffset));
+  }, [weekOffset]);
 
   const loadVisits = () => {
-    fetch(`${API}/patient/api/visits`, { credentials: 'include' })
-      .then(res => { if (res.status === 401) { navigate('/login'); return null; } return res.json(); })
-      .then(data => {
+    fetch('/patient/api/visits', { credentials: 'include' })
+      .then((res) => {
+        if (res.status === 401) {
+          navigate('/login');
+          return null;
+        }
+        return res.json();
+      })
+      .then((data) => {
         if (!data) return;
+
         const now = new Date();
         now.setHours(0, 0, 0, 0);
-        const up = data.filter(v => new Date(v.AppointmentDate) >= now && v.Status !== 'Cancelled');
-        const pa = data.filter(v => new Date(v.AppointmentDate) < now || v.Status === 'Cancelled');
-        up.sort((a, b) => new Date(a.AppointmentDate) - new Date(b.AppointmentDate));
-        pa.sort((a, b) => new Date(b.AppointmentDate) - new Date(a.AppointmentDate));
-        setUpcoming(up);
-        setPast(pa);
+
+        const upcomingVisits = data.filter(
+          (visit) => new Date(visit.AppointmentDate) >= now && visit.Status !== 'Cancelled' && !isCompletedVisit(visit)
+        );
+        const pastVisits = data.filter((visit) => new Date(visit.AppointmentDate) < now || visit.Status === 'Cancelled' || isCompletedVisit(visit));
+
+        upcomingVisits.sort((left, right) => new Date(left.AppointmentDate) - new Date(right.AppointmentDate));
+        pastVisits.sort((left, right) => new Date(right.AppointmentDate) - new Date(left.AppointmentDate));
+
+        setUpcoming(upcomingVisits);
+        setPast(pastVisits);
       })
       .catch(() => setError('Failed to load visits.'));
   };
 
-  useEffect(() => { loadVisits(); }, [navigate]);
+  useEffect(() => {
+    loadVisits();
+  }, [navigate]);
 
   useEffect(() => {
     if (!rescheduleTarget) return;
+
     const startDate = toLocalDateString(weekDates[0]);
     const endDate = toLocalDateString(weekDates[4]);
-    fetch(`${API}/patient/api/booked-slots?doctorId=${rescheduleTarget.DoctorID}&start=${startDate}&end=${endDate}`, { credentials: 'include' })
-      .then(res => res.json())
-      .then(data => setBookedSlots(data))
+
+    fetch(`/patient/api/booked-slots?doctorId=${rescheduleTarget.DoctorID}&start=${startDate}&end=${endDate}`, {
+      credentials: 'include',
+    })
+      .then((res) => res.json())
+      .then((data) => setBookedSlots(data))
       .catch(() => {});
   }, [rescheduleTarget, weekDates]);
 
   const handleCancel = async () => {
-    const res = await fetch(`${API}/patient/cancel-appointment`, {
+    const response = await fetch('/patient/cancel-appointment', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ appointmentId: cancelTarget.AppointmentID }),
       credentials: 'include',
     });
+
     setCancelTarget(null);
-    if (res.ok) { loadVisits(); }
-    else { setError('Failed to cancel appointment.'); }
+
+    if (response.ok) loadVisits();
+    else setError('Failed to cancel appointment.');
   };
 
   const handleReschedule = async (date, hour) => {
     setRescheduleError('');
+
     const dateStr = toLocalDateString(date);
     const hourStr = String(hour).padStart(2, '0');
     const newDate = `${dateStr}T${hourStr}:00`;
-    const res = await fetch(`${API}/patient/reschedule-appointment`, {
+
+    const response = await fetch('/patient/reschedule-appointment', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ appointmentId: rescheduleTarget.AppointmentID, newDate }),
       credentials: 'include',
     });
-    if (res.ok) {
+
+    if (response.ok) {
       setRescheduleTarget(null);
       setWeekOffset(0);
       loadVisits();
     } else {
-      const msg = await res.json();
-      setRescheduleError(msg.error || 'Failed to reschedule.');
+      const payload = await response.json();
+      setRescheduleError(payload.error || 'Failed to reschedule.');
+    }
+  };
+
+  const handleReviewSubmit = async () => {
+    if (!reviewTarget) return;
+
+    setIsSubmittingReview(true);
+    setReviewError('');
+
+    try {
+      const response = await fetch('/patient/api/reviews', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          appointmentId: reviewTarget.AppointmentID,
+          rating: reviewForm.rating,
+          comment: reviewForm.comment,
+        }),
+      });
+
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || 'Failed to save review.');
+
+      setReviewTarget(null);
+      setReviewForm({ rating: 5, comment: '' });
+      loadVisits();
+    } catch (err) {
+      setReviewError(err.message);
+    } finally {
+      setIsSubmittingReview(false);
     }
   };
 
   const isBooked = (date, hour) => {
     const dateStr = toLocalDateString(date);
-    return bookedSlots.some(slot => {
+    return bookedSlots.some((slot) => {
       const slotLocal = new Date(slot.AppointmentDate);
-      return toLocalDateString(slotLocal) === dateStr && slotLocal.getHours() === hour;
+      const slotHour = slot.AppointmentTime
+        ? Number(String(slot.AppointmentTime).split(':')[0])
+        : slotLocal.getHours();
+      return toLocalDateString(slotLocal) === dateStr && slotHour === hour;
     });
   };
 
@@ -191,21 +295,21 @@ export default function Visits() {
     <>
       <Navbar />
       <div style={styles.wrap}>
-      <h1 style={styles.heading}>Visit history</h1>
+        <h1 style={styles.heading}>Visit history</h1>
 
-      {bookingMsg && (
-        <div style={{ background: '#EAF3DE', border: '1px solid #C0DD97', borderRadius: '8px', padding: '12px 16px', marginBottom: '1.5rem', fontSize: '14px', color: '#3B6D11', display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <span style={{ fontSize: '18px' }}>🎉</span>
-          <span>{bookingMsg}</span>
-        </div>
-      )}
-      {error && <p style={{ color: '#993C1D', fontSize: '13px' }}>{error}</p>}
+        {bookingMsg && (
+          <div style={{ background: '#EAF3DE', border: '1px solid #C0DD97', borderRadius: '8px', padding: '12px 16px', marginBottom: '1.5rem', fontSize: '14px', color: '#3B6D11' }}>
+            {bookingMsg}
+          </div>
+        )}
 
-      <p style={styles.sectionHeading}>Upcoming appointments</p>
+        {error && <p style={{ color: '#993C1D', fontSize: '13px' }}>{error}</p>}
 
-      {upcoming.length === 0
-        ? <p style={styles.emptyMsg}>No upcoming appointments.</p>
-        : (
+        <p style={styles.sectionHeading}>Upcoming appointments</p>
+
+        {upcoming.length === 0 ? (
+          <p style={styles.emptyMsg}>No upcoming appointments.</p>
+        ) : (
           <table style={styles.table}>
             <thead>
               <tr>
@@ -217,45 +321,48 @@ export default function Visits() {
               </tr>
             </thead>
             <tbody>
-              {upcoming.map(v => (
-                <React.Fragment key={v.AppointmentID}>
-                  <tr style={{ background: rescheduleTarget?.AppointmentID === v.AppointmentID ? '#f0f7ff' : 'white' }}>
-                    <td style={styles.td}>{formatDate(v.AppointmentDate)}</td>
-                    <td style={styles.td}>{formatTime(v.AppointmentDate)}</td>
-                    <td style={styles.td}>Dr. {v.FirstName} {v.LastName}</td>
-                    <td style={styles.td}><span style={styles.badge(v.Status)}>{v.Status}</span></td>
+              {upcoming.map((visit) => (
+                <React.Fragment key={visit.AppointmentID}>
+                  <tr style={{ background: rescheduleTarget?.AppointmentID === visit.AppointmentID ? '#f0f7ff' : 'white' }}>
+                    <td style={styles.td}>{formatDate(visit.AppointmentDate)}</td>
+                    <td style={styles.td}>{formatTime(visit.AppointmentDate, visit.AppointmentTime)}</td>
+                    <td style={styles.td}>Dr. {visit.FirstName} {visit.LastName}</td>
+                    <td style={styles.td}><span style={styles.badge(visit.Status)}>{visit.Status}</span></td>
                     <td style={styles.td}>
                       <button
                         style={styles.rescheduleBtn}
-                        onClick={() => { setRescheduleTarget(v); setWeekOffset(0); setRescheduleError(''); }}
+                        onClick={() => {
+                          setRescheduleTarget(visit);
+                          setWeekOffset(0);
+                          setRescheduleError('');
+                        }}
                       >
                         Reschedule
                       </button>
-                      <button style={styles.cancelBtn} onClick={() => setCancelTarget(v)}>
+                      <button style={styles.cancelBtn} onClick={() => setCancelTarget(visit)}>
                         Cancel
                       </button>
                     </td>
                   </tr>
 
-                  {/* Inline reschedule calendar */}
-                  {rescheduleTarget?.AppointmentID === v.AppointmentID && (
+                  {rescheduleTarget?.AppointmentID === visit.AppointmentID && (
                     <tr>
                       <td colSpan={5} style={{ padding: '0 0 12px 0', background: '#f9fafb' }}>
                         <div style={styles.calendarWrap}>
                           <p style={styles.calHeading}>
-                            Select a new time for your appointment with Dr. {v.FirstName} {v.LastName}
+                            Select a new time for your appointment with Dr. {visit.FirstName} {visit.LastName}
                           </p>
                           <p style={{ fontSize: '12px', color: '#6b7280', marginBottom: '1rem' }}>
-                            Current: {formatDate(v.AppointmentDate)} at {formatTime(v.AppointmentDate)}
+                            Current: {formatDate(visit.AppointmentDate)} at {formatTime(visit.AppointmentDate, visit.AppointmentTime)}
                           </p>
                           {rescheduleError && <p style={{ color: '#993C1D', fontSize: '12px', marginBottom: '0.5rem' }}>{rescheduleError}</p>}
 
                           <div style={styles.weekNav}>
-                            <button onClick={() => setWeekOffset(w => w - 1)} disabled={weekOffset === 0} style={weekOffset === 0 ? styles.navBtnDisabled : styles.navBtn}>← Prev</button>
+                            <button onClick={() => setWeekOffset((value) => value - 1)} disabled={weekOffset === 0} style={weekOffset === 0 ? styles.navBtnDisabled : styles.navBtn}>Prev</button>
                             <span style={styles.weekLabel}>
-                              {weekDates[0].toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – {weekDates[4].toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                              {weekDates[0].toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {weekDates[4].toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                             </span>
-                            <button onClick={() => setWeekOffset(w => w + 1)} style={styles.navBtn}>Next →</button>
+                            <button onClick={() => setWeekOffset((value) => value + 1)} style={styles.navBtn}>Next</button>
                           </div>
 
                           <div style={{ overflowX: 'auto' }}>
@@ -263,11 +370,11 @@ export default function Visits() {
                               <thead>
                                 <tr>
                                   <th style={{ width: '60px' }}></th>
-                                  {weekDates.map((date, i) => {
+                                  {weekDates.map((date, index) => {
                                     const isToday = toLocalDateString(date) === todayStr;
                                     return (
-                                      <th key={i} style={{ ...styles.calTh, color: isToday ? '#185FA5' : '#6b7280' }}>
-                                        <div>{SHORT_DAYS[i]}</div>
+                                      <th key={index} style={{ ...styles.calTh, color: isToday ? '#185FA5' : '#6b7280' }}>
+                                        <div>{SHORT_DAYS[index]}</div>
                                         <div style={{ fontSize: '15px', fontWeight: 500 }}>{date.getDate()}</div>
                                       </th>
                                     );
@@ -275,22 +382,27 @@ export default function Visits() {
                                 </tr>
                               </thead>
                               <tbody>
-                                {HOURS.map(hour => (
+                                {HOURS.map((hour) => (
                                   <tr key={hour}>
                                     <td style={styles.timeCell}>{formatHour(hour)}</td>
-                                    {weekDates.map((date, i) => {
+                                    {weekDates.map((date, index) => {
                                       const booked = isBooked(date, hour);
-                                      const past = isPast(date, hour);
-                                      const unavailable = booked || past;
+                                      const pastTime = isPast(date, hour);
+                                      const unavailable = booked || pastTime;
+
                                       return (
-                                        <td key={i} style={{ padding: '2px 3px' }}>
+                                        <td key={index} style={{ padding: '2px 3px' }}>
                                           <div
                                             onClick={() => !unavailable && handleReschedule(date, hour)}
-                                            style={past ? styles.slotPast : booked ? styles.slotBooked : styles.slotAvailable}
-                                            onMouseEnter={e => { if (!unavailable) e.currentTarget.style.opacity = '0.7'; }}
-                                            onMouseLeave={e => { e.currentTarget.style.opacity = '1'; }}
+                                            style={pastTime ? styles.slotPast : booked ? styles.slotBooked : styles.slotAvailable}
+                                            onMouseEnter={(event) => {
+                                              if (!unavailable) event.currentTarget.style.opacity = '0.7';
+                                            }}
+                                            onMouseLeave={(event) => {
+                                              event.currentTarget.style.opacity = '1';
+                                            }}
                                           >
-                                            {past ? '–' : booked ? 'Booked' : 'Available'}
+                                            {pastTime ? '-' : booked ? 'Booked' : 'Available'}
                                           </div>
                                         </td>
                                       );
@@ -302,10 +414,13 @@ export default function Visits() {
                           </div>
 
                           <button
-                            onClick={() => { setRescheduleTarget(null); setWeekOffset(0); }}
+                            onClick={() => {
+                              setRescheduleTarget(null);
+                              setWeekOffset(0);
+                            }}
                             style={{ marginTop: '0.75rem', fontSize: '12px', color: '#6b7280', background: 'none', border: 'none', cursor: 'pointer', padding: 0, width: 'auto' }}
                           >
-                            ✕ Close
+                            Close
                           </button>
                         </div>
                       </td>
@@ -315,15 +430,15 @@ export default function Visits() {
               ))}
             </tbody>
           </table>
-        )
-      }
+        )}
 
-      <hr style={styles.divider} />
+        <hr style={styles.divider} />
 
-      <p style={styles.sectionHeading}>Past visits</p>
-      {past.length === 0
-        ? <p style={styles.emptyMsg}>No past visits on record.</p>
-        : (
+        <p style={styles.sectionHeading}>Past visits</p>
+
+        {past.length === 0 ? (
+          <p style={styles.emptyMsg}>No past visits on record.</p>
+        ) : (
           <table style={styles.table}>
             <thead>
               <tr>
@@ -331,38 +446,127 @@ export default function Visits() {
                 <th style={styles.th}>Time</th>
                 <th style={styles.th}>Doctor</th>
                 <th style={styles.th}>Status</th>
+                <th style={styles.th}>Review</th>
+                <th style={styles.th}>Action</th>
               </tr>
             </thead>
             <tbody>
-              {past.map(v => (
-                <tr key={v.AppointmentID} style={{ background: 'white' }}>
-                  <td style={styles.td}>{formatDate(v.AppointmentDate)}</td>
-                  <td style={styles.td}>{formatTime(v.AppointmentDate)}</td>
-                  <td style={styles.td}>Dr. {v.FirstName} {v.LastName}</td>
-                  <td style={styles.td}><span style={styles.badge(v.Status)}>{v.Status}</span></td>
+              {past.map((visit) => (
+                <tr key={visit.AppointmentID} style={{ background: 'white' }}>
+                  <td style={styles.td}>{formatDate(visit.AppointmentDate)}</td>
+                  <td style={styles.td}>{formatTime(visit.AppointmentDate, visit.AppointmentTime)}</td>
+                  <td style={styles.td}>Dr. {visit.FirstName} {visit.LastName}</td>
+                  <td style={styles.td}><span style={styles.badge(visit.Status)}>{visit.Status}</span></td>
+                  <td style={styles.td}>
+                    {Number(visit.HasReview) === 1 ? (
+                      <div style={styles.reviewSummary}>
+                        <span style={styles.reviewStatus}>{visit.ReviewRating}/5 rating</span>
+                        <span style={styles.reviewComment}>{visit.ReviewComment || 'No comment left.'}</span>
+                      </div>
+                    ) : Number(visit.CanReview) === 1 ? (
+                      <span style={styles.reviewStatus}>Ready for review</span>
+                    ) : (
+                      <span style={{ color: '#9ca3af' }}>Not available</span>
+                    )}
+                  </td>
+                  <td style={styles.td}>
+                    {Number(visit.HasReview) === 1 ? (
+                      <span style={{ color: '#64748b', fontSize: '12px' }}>Review submitted</span>
+                    ) : Number(visit.CanReview) === 1 ? (
+                      <button
+                        type="button"
+                        style={styles.reviewBtn}
+                        onClick={() => {
+                          setReviewTarget(visit);
+                          setReviewForm({ rating: 5, comment: '' });
+                          setReviewError('');
+                        }}
+                      >
+                        Leave review
+                      </button>
+                    ) : (
+                      <span style={{ color: '#9ca3af', fontSize: '12px' }}>No action</span>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
-        )
-      }
+        )}
 
-      {/* Cancel confirmation modal */}
-      {cancelTarget && (
-        <div style={styles.modal}>
-          <div style={styles.modalBox}>
-            <h3 style={styles.modalHeading}>Cancel appointment</h3>
-            <p style={styles.modalSub}>
-              Are you sure you want to cancel your appointment with <strong>Dr. {cancelTarget.FirstName} {cancelTarget.LastName}</strong> on <strong>{formatDate(cancelTarget.AppointmentDate)}</strong> at <strong>{formatTime(cancelTarget.AppointmentDate)}</strong>? This cannot be undone.
-            </p>
-            <div style={styles.modalBtns}>
-              <button style={styles.confirmCancelBtn} onClick={handleCancel}>Yes, cancel it</button>
-              <button style={styles.dismissBtn} onClick={() => setCancelTarget(null)}>Keep appointment</button>
+        {cancelTarget && (
+          <div style={styles.modal}>
+            <div style={styles.modalBox}>
+              <h3 style={styles.modalHeading}>Cancel appointment</h3>
+              <p style={styles.modalSub}>
+                Are you sure you want to cancel your appointment with <strong>Dr. {cancelTarget.FirstName} {cancelTarget.LastName}</strong> on <strong>{formatDate(cancelTarget.AppointmentDate)}</strong> at <strong>{formatTime(cancelTarget.AppointmentDate, cancelTarget.AppointmentTime)}</strong>? This cannot be undone.
+              </p>
+              <div style={styles.modalBtns}>
+                <button style={styles.confirmCancelBtn} onClick={handleCancel}>Yes, cancel it</button>
+                <button style={styles.dismissBtn} onClick={() => setCancelTarget(null)}>Keep appointment</button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
-    </div>
+        )}
+
+        {reviewTarget && (
+          <div style={styles.modal}>
+            <div style={styles.modalBox}>
+              <h3 style={styles.modalHeading}>Leave a doctor review</h3>
+              <p style={styles.modalSub}>
+                Share feedback for Dr. {reviewTarget.FirstName} {reviewTarget.LastName} after your completed visit on {formatDate(reviewTarget.AppointmentDate)}.
+              </p>
+
+              <div>
+                <div style={{ fontSize: '13px', fontWeight: 600, color: '#374151', marginBottom: '0.5rem' }}>Rating</div>
+                <div style={styles.reviewOptions}>
+                  {REVIEW_OPTIONS.map((value) => (
+                    <button
+                      key={value}
+                      type="button"
+                      style={styles.ratingButton(reviewForm.rating === value)}
+                      onClick={() => setReviewForm((current) => ({ ...current, rating: value }))}
+                    >
+                      {value} / 5
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <div style={{ fontSize: '13px', fontWeight: 600, color: '#374151', marginBottom: '0.5rem' }}>Comment</div>
+                <textarea
+                  style={styles.textarea}
+                  value={reviewForm.comment}
+                  onChange={(event) => setReviewForm((current) => ({ ...current, comment: event.target.value }))}
+                  maxLength={1000}
+                  placeholder="What went well? Was the explanation clear, respectful, and helpful?"
+                />
+                <div style={styles.helperText}>
+                  One review is allowed per completed appointment. Comments are optional and stay attached to this visit.
+                </div>
+              </div>
+
+              {reviewError && <p style={{ color: '#993C1D', fontSize: '12px', marginTop: '0.75rem' }}>{reviewError}</p>}
+
+              <div style={styles.modalBtns}>
+                <button style={styles.saveBtn} onClick={handleReviewSubmit} disabled={isSubmittingReview}>
+                  {isSubmittingReview ? 'Saving...' : 'Submit review'}
+                </button>
+                <button
+                  style={styles.dismissBtn}
+                  onClick={() => {
+                    setReviewTarget(null);
+                    setReviewError('');
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </>
   );
 }

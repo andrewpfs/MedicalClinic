@@ -3,16 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import StaffNavbar from '../components/StaffNavbar';
 import WeekDayPicker from '../components/WeekDayPicker';
 
-import API from '../api';
-const EMP_API = `${API}/api/employee`;
+const EMPLOYEE_API = '/api/employee';
 
 const TABS = [
-  { id: 'overview',     label: 'Overview'     },
+  { id: 'overview', label: 'Overview' },
   { id: 'appointments', label: 'Appointments' },
-  { id: 'payments',     label: 'Payments'     },
-  { id: 'schedule',     label: 'Schedule'     },
-  { id: 'patients',     label: 'Patients'     },
-  { id: 'staff',        label: 'Staff'        },
+  { id: 'payments', label: 'Payments' },
+  { id: 'schedule', label: 'Schedule' },
+  { id: 'patients', label: 'Patients' },
+  { id: 'staff', label: 'Staff' },
 ];
 
 export default function EmployeePage() {
@@ -20,593 +19,755 @@ export default function EmployeePage() {
   const [activeTab, setActiveTab] = useState('overview');
   const [staffName, setStaffName] = useState('');
   const [staffRole, setStaffRole] = useState('');
-  const [data, setData] = useState({
-    patients: [], doctors: [], employees: [], paymentMethods: [],
-    appointments: [], transactions: [], availability: [],
-  });
-  const [message, setMessage] = useState({ type: '', text: '' });
   const [schedEmpId, setSchedEmpId] = useState('');
-
+  const [patientSearch, setPatientSearch] = useState('');
+  const [appointmentSearch, setAppointmentSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [confirmingId, setConfirmingId] = useState('');
+  const [message, setMessage] = useState({ type: '', text: '' });
+  const [data, setData] = useState({
+    patients: [],
+    doctors: [],
+    employees: [],
+    paymentMethods: [],
+    appointments: [],
+    transactions: [],
+    availability: [],
+  });
   const [bookForm, setBookForm] = useState({
-    patientId: '', doctorId: '', appointmentDate: '', reasonForVisit: '', officeId: '1',
+    patientId: '',
+    doctorId: '',
+    appointmentDate: '',
+    reasonForVisit: '',
+    officeId: '1',
   });
   const [payForm, setPayForm] = useState({
-    appointmentId: '', patientId: '', paymentCode: '', amount: '', status: 'Posted',
+    appointmentId: '',
+    patientId: '',
+    paymentCode: '',
+    amount: '',
+    status: 'Posted',
+    dueDate: '',
   });
 
   const loadData = async () => {
     try {
-      const res = await fetch(EMP_API, { credentials: 'include' });
-      const r = await res.json();
-      if (!r.success) throw new Error(r.error || 'Failed to load data');
-      setData(r);
-    } catch (err) { setMessage({ type: 'error', text: err.message }); }
+      const response = await fetch(EMPLOYEE_API, { credentials: 'include' });
+      const payload = await response.json();
+      if (!payload.success) throw new Error(payload.error || 'Failed to load employee workspace.');
+      setData(payload);
+    } catch (err) {
+      setMessage({ type: 'error', text: err.message });
+    }
   };
 
   useEffect(() => {
-    fetch(`${API}/api/employee/session`, { credentials: 'include' })
-      .then(r => r.json())
-      .then(s => {
-        if (!s.isLoggedIn) navigate('/staff-login');
-        else if (s.role === 'Doctor') navigate('/doctor');
-        else if (s.role === 'Nurse')  navigate('/nurse');
-        else if (s.role === 'Admin')  navigate('/admin');
-        else { setStaffName(s.name); setStaffRole(s.role); loadData(); }
+    fetch('/api/employee/session', { credentials: 'include' })
+      .then(res => res.json())
+      .then(session => {
+        if (!session.isLoggedIn) {
+          navigate('/staff-login');
+          return;
+        }
+
+        if (session.role === 'Doctor') {
+          navigate('/doctor');
+          return;
+        }
+
+        if (session.role === 'Nurse') {
+          navigate('/nurse');
+          return;
+        }
+
+        if (session.role === 'Admin') {
+          navigate('/admin');
+          return;
+        }
+
+        setStaffName(session.name || '');
+        setStaffRole(session.role || 'Employee');
+        loadData();
       })
       .catch(() => navigate('/staff-login'));
-  }, []);
+  }, [navigate]);
 
   useEffect(() => {
-    if (message.text) {
-      const t = setTimeout(() => setMessage({ type: '', text: '' }), 4500);
-      return () => clearTimeout(t);
-    }
+    if (!message.text) return undefined;
+    const timer = setTimeout(() => setMessage({ type: '', text: '' }), 4500);
+    return () => clearTimeout(timer);
   }, [message]);
 
   const post = async (url, body) => {
-    const res = await fetch(url, {
+    const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
       body: JSON.stringify(body),
     });
-    const r = await res.json();
-    if (!r.success) throw new Error(r.error || 'Request failed');
-    return r;
+    const payload = await response.json();
+    if (!payload.success) throw new Error(payload.error || 'Request failed.');
+    return payload;
   };
 
-  const handleBook = async (e) => {
-    e.preventDefault();
+  const handleBook = async (event) => {
+    event.preventDefault();
     try {
-      const r = await post(`${EMP_API}/book`, bookForm);
-      setMessage({ type: 'success', text: r.message });
-      setBookForm({ patientId: '', doctorId: '', appointmentDate: '', reasonForVisit: '', officeId: '1' });
+      const payload = await post(`${EMPLOYEE_API}/book`, bookForm);
+      setBookForm({
+        patientId: '',
+        doctorId: '',
+        appointmentDate: '',
+        reasonForVisit: '',
+        officeId: '1',
+      });
+      setMessage({ type: 'success', text: payload.message });
       loadData();
-    } catch (err) { setMessage({ type: 'error', text: err.message }); }
+    } catch (err) {
+      setMessage({ type: 'error', text: err.message });
+    }
   };
 
-  const handlePayment = async (e) => {
-    e.preventDefault();
+  const handlePayment = async (event) => {
+    event.preventDefault();
     try {
-      const r = await post(`${EMP_API}/payment`, payForm);
-      setMessage({ type: 'success', text: r.message });
-      setPayForm({ appointmentId: '', patientId: '', paymentCode: '', amount: '', status: 'Posted' });
+      const payload = await post(`${EMPLOYEE_API}/payment`, payForm);
+      setPayForm({
+        appointmentId: '',
+        patientId: '',
+        paymentCode: '',
+        amount: '',
+        status: 'Posted',
+        dueDate: '',
+      });
+      setMessage({ type: 'success', text: payload.message });
       loadData();
-    } catch (err) { setMessage({ type: 'error', text: err.message }); }
+    } catch (err) {
+      setMessage({ type: 'error', text: err.message });
+    }
   };
 
   const handleShiftSave = async (slot) => {
-    if (!schedEmpId) { setMessage({ type: 'error', text: 'Please select an employee first.' }); return; }
+    if (!schedEmpId) {
+      setMessage({ type: 'error', text: 'Select an employee before saving a shift.' });
+      return;
+    }
+
     try {
-      await post(`${EMP_API}/availability`, { ...slot, employeeId: schedEmpId });
-      setMessage({ type: 'success', text: 'Shift saved!' });
+      await post(`${EMPLOYEE_API}/availability`, { ...slot, employeeId: schedEmpId });
+      setMessage({ type: 'success', text: 'Shift saved successfully.' });
       loadData();
-    } catch (err) { setMessage({ type: 'error', text: err.message }); }
+    } catch (err) {
+      setMessage({ type: 'error', text: err.message });
+    }
   };
 
-  const totalRevenue = data.transactions.reduce((s, t) => s + parseFloat(t.Amount || 0), 0);
+  const handleConfirmAppointment = async (appointmentId) => {
+    setConfirmingId(String(appointmentId));
+    try {
+      const response = await fetch(`${EMPLOYEE_API}/appointments/${appointmentId}/confirm`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      const payload = await response.json();
+      if (!payload.success) throw new Error(payload.error || 'Failed to confirm appointment.');
+      setMessage({ type: 'success', text: payload.message });
+      loadData();
+    } catch (err) {
+      setMessage({ type: 'error', text: err.message });
+    } finally {
+      setConfirmingId('');
+    }
+  };
+
+  const canConfirmAppointments = staffRole === 'Receptionist' || staffRole === 'Employee';
+  const scheduledAppointments = data.appointments.filter(isScheduledStatus);
+  const confirmedAppointments = data.appointments.filter(isConfirmedStatus);
+  const overdueInvoices = data.transactions.filter(isOverdueTransaction);
+  const totalRevenue = data.transactions.reduce((sum, transaction) => sum + Number(transaction.Amount || 0), 0);
+  const staffRoleCounts = data.employees.reduce((acc, employee) => {
+    const key = employee.Role || 'Unknown';
+    acc[key] = (acc[key] || 0) + 1;
+    return acc;
+  }, {});
+
+  const filteredAppointments = data.appointments.filter((appointment) => {
+    const text = `${appointment.AppointmentID} ${appointment.PatientFirstName} ${appointment.PatientLastName} ${appointment.DoctorFirstName} ${appointment.DoctorLastName} ${appointment.ReasonForVisit || ''}`.toLowerCase();
+    const matchesSearch = text.includes(appointmentSearch.trim().toLowerCase());
+    const matchesStatus = statusFilter === 'all' ? true : normalizeStatus(appointment.StatusText || appointment.StatusCode) === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
+
+  const filteredPatients = data.patients.filter((patient) => {
+    const text = `${patient.PatientID} ${patient.FirstName} ${patient.LastName}`.toLowerCase();
+    return text.includes(patientSearch.trim().toLowerCase());
+  });
+
+  const selectedEmployee = data.employees.find((employee) => String(employee.EmployeeID) === schedEmpId);
 
   return (
-    <div style={{ fontFamily: "'Poppins', sans-serif", margin: 0, background: '#f4f6f4', minHeight: '100vh' }}>
+    <div style={pageShell}>
       <StaffNavbar />
 
-      {/* ── Page header + tab bar ── */}
-      <div style={{ background: 'white', borderBottom: '1px solid #e5e7eb' }}>
-        <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '0 40px' }}>
-          <div style={{ paddingTop: '24px', paddingBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div style={pageInner}>
+        <section style={heroCard}>
+          <div style={heroOrb} />
+          <div style={heroContent}>
             <div>
-              <p style={{ margin: '0 0 2px', fontSize: '12px', fontWeight: 600, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
-                {staffRole || 'Employee'} Dashboard
+              <p style={eyebrow}>{staffRole || 'Employee'} operations</p>
+              <h1 style={heroTitle}>{staffName || 'Staff workspace'}</h1>
+              <p style={heroText}>
+                This dashboard is tuned for front-desk workflow: book visits, confirm appointments, track payments, and keep the clinic schedule organized with data that matches the current schema.
               </p>
-              <h1 style={{ margin: 0, fontSize: '22px', fontWeight: 700, color: '#111827' }}>
-                {staffName || '…'}
-              </h1>
             </div>
-            <div style={{ fontSize: '13px', color: '#9ca3af' }}>
-              {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+            <div style={heroHighlights}>
+              <HeroStat label="Awaiting confirmation" value={scheduledAppointments.length} />
+              <HeroStat label="Confirmed visits" value={confirmedAppointments.length} />
+              <HeroStat label="Overdue invoices" value={overdueInvoices.length} />
             </div>
           </div>
-          <div style={{ display: 'flex', gap: '2px' }}>
-            {TABS.map(t => (
-              <button key={t.id} onClick={() => setActiveTab(t.id)} style={{
-                padding: '10px 18px',
-                border: 'none',
-                borderBottom: `2px solid ${activeTab === t.id ? '#1e2b1b' : 'transparent'}`,
-                background: 'transparent',
-                color: activeTab === t.id ? '#1e2b1b' : '#6b7280',
-                fontWeight: activeTab === t.id ? 600 : 400,
-                fontSize: '14px',
-                cursor: 'pointer',
-                fontFamily: 'inherit',
-                marginBottom: '-1px',
-                transition: 'color 0.12s, border-color 0.12s',
-              }}>
-                {t.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
+        </section>
 
-      {/* ── Content ── */}
-      <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '32px 40px 60px' }}>
+        <nav style={tabRow}>
+          {TABS.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setActiveTab(tab.id)}
+              style={{
+                ...tabButton,
+                ...(activeTab === tab.id ? activeTabButton : null),
+              }}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </nav>
 
-        {/* Toast */}
         {message.text && (
-          <div style={{
-            marginBottom: '20px', padding: '13px 16px', borderRadius: '10px', fontSize: '14px',
-            display: 'flex', alignItems: 'center', gap: '10px',
-            ...(message.type === 'success'
-              ? { background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0' }
-              : { background: '#fef2f2', color: '#991b1b', border: '1px solid #fecaca' }),
-          }}>
-            <span style={{ fontSize: '16px' }}>{message.type === 'success' ? '✓' : '!'}</span>
+          <div style={message.type === 'success' ? successBanner : errorBanner}>
             {message.text}
           </div>
         )}
 
-        {/* ── OVERVIEW ── */}
         {activeTab === 'overview' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-            {/* Stat cards */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
-              <StatCard
-                icon={<CalendarIcon />}
-                value={data.appointments.length}
-                label="Appointments"
-                sub="This month"
-                color="#2563eb"
-                bg="#eff6ff"
-                onClick={() => setActiveTab('appointments')}
-              />
-              <StatCard
-                icon={<DollarIcon />}
-                value={`$${totalRevenue.toFixed(2)}`}
-                label="Revenue"
-                sub={`${data.transactions.length} transactions`}
-                color="#16a34a"
-                bg="#f0fdf4"
-                onClick={() => setActiveTab('payments')}
-              />
-              <StatCard
-                icon={<PersonIcon />}
-                value={data.patients.length}
-                label="Patients"
-                sub="Registered"
-                color="#d97706"
-                bg="#fffbeb"
-                onClick={() => setActiveTab('patients')}
-              />
-              <StatCard
-                icon={<TeamIcon />}
-                value={data.employees.length}
-                label="Staff Members"
-                sub={`${data.doctors.length} doctors`}
-                color="#7c3aed"
-                bg="#f5f3ff"
-                onClick={() => setActiveTab('staff')}
-              />
-            </div>
+          <div style={stackLayout}>
+            <section style={metricGrid}>
+              <MetricCard label="Appointments" value={data.appointments.length} detail="All recent bookings" tone="blue" />
+              <MetricCard label="Need Confirmation" value={scheduledAppointments.length} detail="Scheduled but not confirmed" tone="amber" />
+              <MetricCard label="Revenue Posted" value={`$${totalRevenue.toFixed(2)}`} detail={`${data.transactions.length} transactions tracked`} tone="green" />
+              <MetricCard label="Patients" value={data.patients.length} detail="Searchable patient roster" tone="plum" />
+            </section>
 
-            {/* Quick actions */}
-            <div>
-              <p style={{ margin: '0 0 12px', fontSize: '13px', fontWeight: 600, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Quick Actions</p>
-              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                <ActionBtn onClick={() => setActiveTab('appointments')}>Book Appointment</ActionBtn>
-                <ActionBtn onClick={() => setActiveTab('payments')}>Record Payment</ActionBtn>
-                <ActionBtn onClick={() => setActiveTab('schedule')}>Manage Schedule</ActionBtn>
-              </div>
-            </div>
+            <section style={twoColumnLayout}>
+              <SurfaceCard
+                title="Confirmation Queue"
+                subtitle={canConfirmAppointments
+                  ? 'Reception and employee staff should confirm upcoming visits here.'
+                  : 'This account can view the queue, but confirmation is intended for reception staff.'}
+              >
+                <DataTable
+                  headers={['Patient', 'Doctor', 'When', 'Status', 'Action']}
+                  rows={scheduledAppointments.slice(0, 6)}
+                  empty="No appointments are waiting for confirmation."
+                  renderRow={(row) => (
+                    <tr key={row.AppointmentID}>
+                      <td style={tableCellStrong}>
+                        {row.PatientLastName}, {row.PatientFirstName}
+                      </td>
+                      <td style={tableCell}>
+                        Dr. {row.DoctorLastName}
+                        <div style={microText}>{row.Specialty || 'General'}</div>
+                      </td>
+                      <td style={tableCell}>
+                        {fmtDate(row.AppointmentDate)}
+                        <div style={microText}>{fmtTime(row.AppointmentDate, row.AppointmentTime)}</div>
+                      </td>
+                      <td style={tableCell}>
+                        <StatusBadge status={row.StatusText || row.StatusCode} />
+                      </td>
+                      <td style={tableCell}>
+                        {canConfirmAppointments ? (
+                          <button
+                            type="button"
+                            onClick={() => handleConfirmAppointment(row.AppointmentID)}
+                            disabled={confirmingId === String(row.AppointmentID)}
+                            style={secondaryActionButton}
+                          >
+                            {confirmingId === String(row.AppointmentID) ? 'Confirming...' : 'Confirm'}
+                          </button>
+                        ) : (
+                          <span style={microText}>Reception only</span>
+                        )}
+                      </td>
+                    </tr>
+                  )}
+                />
+              </SurfaceCard>
 
-            {/* Two-column: recent appointments + recent transactions */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-              <Card title="Recent Appointments" sub="Latest scheduled visits" action={{ label: 'View all', onClick: () => setActiveTab('appointments') }}>
-                {data.appointments.length === 0
-                  ? <Empty text="No appointments yet." />
-                  : <DTable
-                      headers={['Patient', 'Doctor', 'Date', 'Status']}
-                      rows={data.appointments.slice(0, 5)}
-                      renderRow={r => (
-                        <tr key={r.AppointmentID} style={{ cursor: 'default' }}>
-                          <td style={td}>{r.PatientLastName}, {r.PatientFirstName}</td>
-                          <td style={td}>Dr. {r.DoctorLastName}</td>
-                          <td style={td}>{fmtDate(r.AppointmentDate)}</td>
-                          <td style={td}><SBadge s={r.StatusText || r.StatusCode} /></td>
-                        </tr>
-                      )}
-                    />
-                }
-              </Card>
-              <Card title="Recent Transactions" sub="Latest payment records" action={{ label: 'View all', onClick: () => setActiveTab('payments') }}>
-                {data.transactions.length === 0
-                  ? <Empty text="No transactions yet." />
-                  : <DTable
-                      headers={['Patient', 'Amount', 'Method', 'Status']}
-                      rows={data.transactions.slice(0, 5)}
-                      renderRow={r => (
-                        <tr key={r.TransactionID}>
-                          <td style={td}>{r.PatientLastName}, {r.PatientFirstName}</td>
-                          <td style={{ ...td, fontWeight: 600, color: '#111827' }}>${r.Amount}</td>
-                          <td style={td}>{r.PaymentText || '—'}</td>
-                          <td style={td}><SBadge s={r.Status} /></td>
-                        </tr>
-                      )}
-                    />
-                }
-              </Card>
-            </div>
+              <SurfaceCard title="Billing Snapshot" subtitle="Due dates and late-fee columns now surface directly from the transaction table">
+                <DataTable
+                  headers={['Patient', 'Amount', 'Due', 'Late Fee', 'Status']}
+                  rows={data.transactions.slice(0, 6)}
+                  empty="No transactions posted yet."
+                  renderRow={(row) => (
+                    <tr key={row.TransactionID}>
+                      <td style={tableCellStrong}>
+                        {row.PatientLastName}, {row.PatientFirstName}
+                      </td>
+                      <td style={tableCell}>${currency(row.Amount)}</td>
+                      <td style={tableCell}>{fmtDate(row.DueDate)}</td>
+                      <td style={tableCell}>${currency(row.LateFeeAmount)}</td>
+                      <td style={tableCell}>
+                        <StatusBadge status={row.Status} />
+                      </td>
+                    </tr>
+                  )}
+                />
+              </SurfaceCard>
+            </section>
           </div>
         )}
 
-        {/* ── APPOINTMENTS ── */}
         {activeTab === 'appointments' && (
-          <div style={{ display: 'grid', gridTemplateColumns: '340px 1fr', gap: '24px', alignItems: 'start' }}>
-            <Card title="Book Appointment" sub="Schedule a patient with a doctor">
+          <div style={formLayout}>
+            <SurfaceCard title="Book Appointment" subtitle="Creates a staff-booked appointment and stores it with CreatedVia = 1">
               <form onSubmit={handleBook}>
-                <FField label="Patient">
-                  <select style={inp} value={bookForm.patientId}
-                    onChange={e => setBookForm({ ...bookForm, patientId: e.target.value })} required>
-                    <option value="">Select patient…</option>
-                    {data.patients.map(p => (
-                      <option key={p.PatientID} value={p.PatientID}>
-                        {p.LastName}, {p.FirstName} (ID: {p.PatientID})
+                <Field label="Patient">
+                  <select
+                    style={inputStyle}
+                    value={bookForm.patientId}
+                    onChange={(event) => setBookForm({ ...bookForm, patientId: event.target.value })}
+                    required
+                  >
+                    <option value="">Select patient</option>
+                    {data.patients.map((patient) => (
+                      <option key={patient.PatientID} value={patient.PatientID}>
+                        {patient.LastName}, {patient.FirstName} (#{patient.PatientID})
                       </option>
                     ))}
                   </select>
-                </FField>
-                <FField label="Doctor">
-                  <select style={inp} value={bookForm.doctorId}
-                    onChange={e => setBookForm({ ...bookForm, doctorId: e.target.value })} required>
-                    <option value="">Select doctor…</option>
-                    {data.doctors.map(d => (
-                      <option key={d.EmployeeID} value={d.EmployeeID}>
-                        Dr. {d.LastName}, {d.FirstName}
-                      </option>
-                    ))}
-                  </select>
-                </FField>
-                <FField label="Date & Time">
-                  <input style={inp} type="datetime-local" value={bookForm.appointmentDate}
-                    onChange={e => setBookForm({ ...bookForm, appointmentDate: e.target.value })} required />
-                </FField>
-                <FField label="Reason for Visit">
-                  <input style={inp} type="text" maxLength={20} placeholder="e.g. Check-up"
-                    value={bookForm.reasonForVisit}
-                    onChange={e => setBookForm({ ...bookForm, reasonForVisit: e.target.value })} />
-                </FField>
-                <FField label="Office ID">
-                  <input style={inp} type="number" min="1" value={bookForm.officeId}
-                    onChange={e => setBookForm({ ...bookForm, officeId: e.target.value })} required />
-                </FField>
-                <button style={btn} type="submit">Book Appointment</button>
-              </form>
-            </Card>
+                </Field>
 
-            <Card title="All Appointments" sub="Recent clinic appointments">
-              <DTable
-                headers={['ID', 'Patient', 'Doctor', 'Date', 'Time', 'Reason', 'Status']}
-                rows={data.appointments}
-                empty="No appointments found."
-                renderRow={r => (
-                  <tr key={r.AppointmentID}>
-                    <td style={td}><IBadge>{r.AppointmentID}</IBadge></td>
-                    <td style={td}>{r.PatientLastName}, {r.PatientFirstName}</td>
-                    <td style={td}>Dr. {r.DoctorLastName}</td>
-                    <td style={td}>{fmtDate(r.AppointmentDate)}</td>
-                    <td style={td}>{fmtTime(r.AppointmentDate, r.AppointmentTime)}</td>
-                    <td style={td}>{r.ReasonForVisit || '—'}</td>
-                    <td style={td}><SBadge s={r.StatusText || r.StatusCode} /></td>
-                  </tr>
-                )}
-              />
-            </Card>
+                <Field label="Doctor">
+                  <select
+                    style={inputStyle}
+                    value={bookForm.doctorId}
+                    onChange={(event) => setBookForm({ ...bookForm, doctorId: event.target.value })}
+                    required
+                  >
+                    <option value="">Select doctor</option>
+                    {data.doctors.map((doctor) => (
+                      <option key={doctor.EmployeeID} value={doctor.EmployeeID}>
+                        Dr. {doctor.LastName}, {doctor.FirstName}{doctor.Specialty ? ` · ${doctor.Specialty}` : ''}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+
+                <Field label="Date and Time">
+                  <input
+                    type="datetime-local"
+                    style={inputStyle}
+                    value={bookForm.appointmentDate}
+                    onChange={(event) => setBookForm({ ...bookForm, appointmentDate: event.target.value })}
+                    required
+                  />
+                </Field>
+
+                <Field label="Reason for Visit">
+                  <input
+                    type="text"
+                    maxLength={20}
+                    style={inputStyle}
+                    placeholder="Check-up, follow-up, pain, cleaning..."
+                    value={bookForm.reasonForVisit}
+                    onChange={(event) => setBookForm({ ...bookForm, reasonForVisit: event.target.value })}
+                  />
+                </Field>
+
+                <Field label="Office ID">
+                  <input
+                    type="number"
+                    min="1"
+                    style={inputStyle}
+                    value={bookForm.officeId}
+                    onChange={(event) => setBookForm({ ...bookForm, officeId: event.target.value })}
+                    required
+                  />
+                </Field>
+
+                <button type="submit" style={primaryButton}>Book Appointment</button>
+              </form>
+            </SurfaceCard>
+
+            <div style={stackLayout}>
+              <SurfaceCard
+                title="Appointment Workspace"
+                subtitle="Search by patient, doctor, reason, or appointment ID"
+                aside={
+                  <div style={filterRow}>
+                    <input
+                      type="text"
+                      value={appointmentSearch}
+                      onChange={(event) => setAppointmentSearch(event.target.value)}
+                      placeholder="Search appointments"
+                      style={searchInput}
+                    />
+                    <select
+                      value={statusFilter}
+                      onChange={(event) => setStatusFilter(event.target.value)}
+                      style={filterSelect}
+                    >
+                      <option value="all">All statuses</option>
+                      <option value="scheduled">Scheduled</option>
+                      <option value="confirmed">Confirmed</option>
+                      <option value="completed">Completed</option>
+                      <option value="cancelled">Cancelled</option>
+                      <option value="paid">Paid</option>
+                    </select>
+                  </div>
+                }
+              >
+                <DataTable
+                  headers={['ID', 'Patient', 'Doctor', 'When', 'Created Via', 'Status', 'Action']}
+                  rows={filteredAppointments}
+                  empty="No appointments match the current filters."
+                  renderRow={(row) => (
+                    <tr key={row.AppointmentID}>
+                      <td style={tableCell}>
+                        <IdBadge>{row.AppointmentID}</IdBadge>
+                      </td>
+                      <td style={tableCellStrong}>
+                        {row.PatientLastName}, {row.PatientFirstName}
+                        <div style={microText}>{row.ReasonForVisit || 'No reason recorded'}</div>
+                      </td>
+                      <td style={tableCell}>
+                        Dr. {row.DoctorLastName}
+                        <div style={microText}>{row.Specialty || 'General'}</div>
+                      </td>
+                      <td style={tableCell}>
+                        {fmtDate(row.AppointmentDate)}
+                        <div style={microText}>{fmtTime(row.AppointmentDate, row.AppointmentTime)}</div>
+                      </td>
+                      <td style={tableCell}>{row.CreatedVia === 1 ? 'Staff' : 'Patient'}</td>
+                      <td style={tableCell}>
+                        <StatusBadge status={row.StatusText || row.StatusCode} />
+                      </td>
+                      <td style={tableCell}>
+                        {isScheduledStatus(row) ? (
+                          canConfirmAppointments ? (
+                            <button
+                              type="button"
+                              onClick={() => handleConfirmAppointment(row.AppointmentID)}
+                              disabled={confirmingId === String(row.AppointmentID)}
+                              style={secondaryActionButton}
+                            >
+                              {confirmingId === String(row.AppointmentID) ? 'Confirming...' : 'Confirm'}
+                            </button>
+                          ) : (
+                            <span style={microText}>Reception only</span>
+                          )
+                        ) : (
+                          <span style={microText}>No action</span>
+                        )}
+                      </td>
+                    </tr>
+                  )}
+                />
+              </SurfaceCard>
+            </div>
           </div>
         )}
 
-        {/* ── PAYMENTS ── */}
         {activeTab === 'payments' && (
-          <div style={{ display: 'grid', gridTemplateColumns: '340px 1fr', gap: '24px', alignItems: 'start' }}>
-            <Card title="Record Payment" sub="Post a new patient payment">
+          <div style={formLayout}>
+            <SurfaceCard title="Record Payment" subtitle="Payments now support DueDate so overdue invoice reporting can build on real transaction data">
               <form onSubmit={handlePayment}>
-                <FField label="Patient">
-                  <select style={inp} value={payForm.patientId}
-                    onChange={e => setPayForm({ ...payForm, patientId: e.target.value })} required>
-                    <option value="">Select patient…</option>
-                    {data.patients.map(p => (
-                      <option key={p.PatientID} value={p.PatientID}>
-                        {p.LastName}, {p.FirstName}
+                <Field label="Patient">
+                  <select
+                    style={inputStyle}
+                    value={payForm.patientId}
+                    onChange={(event) => setPayForm({ ...payForm, patientId: event.target.value })}
+                    required
+                  >
+                    <option value="">Select patient</option>
+                    {data.patients.map((patient) => (
+                      <option key={patient.PatientID} value={patient.PatientID}>
+                        {patient.LastName}, {patient.FirstName}
                       </option>
                     ))}
                   </select>
-                </FField>
-                <FField label="Appointment ID">
-                  <input style={inp} type="number" min="1" value={payForm.appointmentId}
-                    onChange={e => setPayForm({ ...payForm, appointmentId: e.target.value })} required />
-                </FField>
-                <FField label="Amount ($)">
-                  <input style={inp} type="number" step="0.01" min="0" value={payForm.amount}
-                    onChange={e => setPayForm({ ...payForm, amount: e.target.value })} required />
-                </FField>
-                <FField label="Payment Method">
-                  <select style={inp} value={payForm.paymentCode}
-                    onChange={e => setPayForm({ ...payForm, paymentCode: e.target.value })}>
-                    <option value="">Select method…</option>
-                    {data.paymentMethods.map(m => (
-                      <option key={m.PaymentCode} value={m.PaymentCode}>{m.PaymentText}</option>
+                </Field>
+
+                <Field label="Appointment ID">
+                  <input
+                    type="number"
+                    min="1"
+                    style={inputStyle}
+                    value={payForm.appointmentId}
+                    onChange={(event) => setPayForm({ ...payForm, appointmentId: event.target.value })}
+                    required
+                  />
+                </Field>
+
+                <Field label="Amount">
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    style={inputStyle}
+                    value={payForm.amount}
+                    onChange={(event) => setPayForm({ ...payForm, amount: event.target.value })}
+                    required
+                  />
+                </Field>
+
+                <Field label="Payment Method">
+                  <select
+                    style={inputStyle}
+                    value={payForm.paymentCode}
+                    onChange={(event) => setPayForm({ ...payForm, paymentCode: event.target.value })}
+                  >
+                    <option value="">Select method</option>
+                    {data.paymentMethods.map((method) => (
+                      <option key={method.PaymentCode} value={method.PaymentCode}>
+                        {method.PaymentText}
+                      </option>
                     ))}
                   </select>
-                </FField>
-                <FField label="Status">
-                  <select style={inp} value={payForm.status}
-                    onChange={e => setPayForm({ ...payForm, status: e.target.value })}>
+                </Field>
+
+                <Field label="Status">
+                  <select
+                    style={inputStyle}
+                    value={payForm.status}
+                    onChange={(event) => setPayForm({ ...payForm, status: event.target.value })}
+                  >
                     <option value="Posted">Posted</option>
                     <option value="Pending">Pending</option>
                     <option value="Void">Void</option>
                     <option value="Refunded">Refunded</option>
                   </select>
-                </FField>
-                <button style={btn} type="submit">Record Payment</button>
+                </Field>
+
+                <Field label="Due Date">
+                  <input
+                    type="date"
+                    style={inputStyle}
+                    value={payForm.dueDate}
+                    onChange={(event) => setPayForm({ ...payForm, dueDate: event.target.value })}
+                  />
+                </Field>
+
+                <button type="submit" style={primaryButton}>Record Payment</button>
               </form>
-            </Card>
+            </SurfaceCard>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              {/* Revenue summary */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
-                <MiniStat
-                  label="Total Revenue"
-                  value={`$${totalRevenue.toFixed(2)}`}
-                  color="#16a34a"
-                />
-                <MiniStat
-                  label="Transactions"
-                  value={data.transactions.length}
-                  color="#2563eb"
-                />
-                <MiniStat
-                  label="Posted"
-                  value={data.transactions.filter(t => t.Status === 'Posted').length}
-                  color="#7c3aed"
-                />
-              </div>
+            <div style={stackLayout}>
+              <section style={metricGrid}>
+                <MetricCard label="Posted Revenue" value={`$${totalRevenue.toFixed(2)}`} detail="Across recent transactions" tone="green" />
+                <MetricCard label="Overdue" value={overdueInvoices.length} detail="Invoices past due date" tone="amber" />
+                <MetricCard label="Late Fees" value={`$${currency(data.transactions.reduce((sum, transaction) => sum + Number(transaction.LateFeeAmount || 0), 0))}`} detail="Current accrued fees" tone="blue" />
+              </section>
 
-              <Card title="Transaction History" sub="Recent payment records">
-                <DTable
-                  headers={['ID', 'Appt', 'Patient', 'Method', 'Amount', 'Date', 'Status']}
+              <SurfaceCard title="Transaction History" subtitle="Includes DueDate and LateFeeAmount from the schema for overdue billing visibility">
+                <DataTable
+                  headers={['ID', 'Patient', 'Amount', 'Method', 'Due', 'Late Fee', 'Status']}
                   rows={data.transactions}
                   empty="No transactions found."
-                  renderRow={r => (
-                    <tr key={r.TransactionID}>
-                      <td style={td}><IBadge>{r.TransactionID}</IBadge></td>
-                      <td style={td}>{r.AppointmentID}</td>
-                      <td style={td}>{r.PatientLastName}, {r.PatientFirstName}</td>
-                      <td style={td}>{r.PaymentText || r.PaymentCode || '—'}</td>
-                      <td style={{ ...td, fontWeight: 600, color: '#111827' }}>${r.Amount}</td>
-                      <td style={td}>{fmtDate(r.TransactionDateTime)}</td>
-                      <td style={td}><SBadge s={r.Status} /></td>
+                  renderRow={(row) => (
+                    <tr key={row.TransactionID}>
+                      <td style={tableCell}>
+                        <IdBadge>{row.TransactionID}</IdBadge>
+                      </td>
+                      <td style={tableCellStrong}>
+                        {row.PatientLastName}, {row.PatientFirstName}
+                        <div style={microText}>Appointment #{row.AppointmentID}</div>
+                      </td>
+                      <td style={tableCell}>${currency(row.Amount)}</td>
+                      <td style={tableCell}>{row.PaymentText || row.PaymentCode || 'Not set'}</td>
+                      <td style={tableCell}>
+                        {fmtDate(row.DueDate)}
+                        {isOverdueTransaction(row) && <div style={microText}>{daysOverdue(row)} days overdue</div>}
+                      </td>
+                      <td style={tableCell}>${currency(row.LateFeeAmount)}</td>
+                      <td style={tableCell}>
+                        <StatusBadge status={row.Status} />
+                      </td>
                     </tr>
                   )}
                 />
-              </Card>
+              </SurfaceCard>
             </div>
           </div>
         )}
 
-        {/* ── SCHEDULE ── */}
         {activeTab === 'schedule' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            <Card>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <label style={{ fontSize: '13px', fontWeight: 600, color: '#374151', whiteSpace: 'nowrap' }}>
-                  Scheduling for:
-                </label>
+          <div style={stackLayout}>
+            <SurfaceCard
+              title="Staff Schedule"
+              subtitle="Choose an employee, then assign shifts for the week"
+              aside={
                 <select
                   value={schedEmpId}
-                  onChange={e => setSchedEmpId(e.target.value)}
-                  style={{ ...inp, maxWidth: '320px', marginBottom: 0 }}
+                  onChange={(event) => setSchedEmpId(event.target.value)}
+                  style={filterSelect}
                 >
-                  <option value="">— select an employee —</option>
-                  {data.employees.map(e => (
-                    <option key={e.EmployeeID} value={e.EmployeeID}>
-                      {e.LastName}, {e.FirstName} — {e.Role}
+                  <option value="">Select an employee</option>
+                  {data.employees.map((employee) => (
+                    <option key={employee.EmployeeID} value={employee.EmployeeID}>
+                      {employee.LastName}, {employee.FirstName} · {employee.Role}
                     </option>
                   ))}
                 </select>
-              </div>
-            </Card>
-
-            {schedEmpId ? (
-              <Card
-                title={(() => { const e = data.employees.find(x => String(x.EmployeeID) === schedEmpId); return e ? `${e.FirstName} ${e.LastName}'s Schedule` : 'Schedule'; })()}
-                sub="Click any day to set shift hours."
-              >
-                <WeekDayPicker
-                  shifts={data.availability}
-                  employeeId={schedEmpId}
-                  onSave={handleShiftSave}
-                />
-              </Card>
-            ) : (
-              <Card title="All Staff Shifts" sub="Select an employee above to edit their schedule.">
-                {data.availability.length === 0
-                  ? <Empty text="No shifts scheduled yet." />
-                  : <DTable
-                      headers={['Employee', 'Role', 'Date', 'Start', 'End']}
-                      rows={data.availability.slice(0, 25)}
-                      renderRow={(r, i) => (
-                        <tr key={r.ShiftID ?? i}>
-                          <td style={td}>{r.FirstName} {r.LastName}</td>
-                          <td style={td}><RoleBadge role={r.Role} /></td>
-                          <td style={td}>{fmtDate(r.ShiftDate)}</td>
-                          <td style={td}>{r.StartTime}</td>
-                          <td style={td}>{r.EndTime}</td>
-                        </tr>
-                      )}
-                    />
-                }
-              </Card>
-            )}
-          </div>
-        )}
-
-        {/* ── PATIENTS ── */}
-        {activeTab === 'patients' && (
-          <Card
-            title="Patient Registry"
-            sub={`${data.patients.length} registered patients`}
-          >
-            {data.patients.length === 0
-              ? <Empty text="No patients found." />
-              : <DTable
-                  headers={['ID', 'Last Name', 'First Name']}
-                  rows={data.patients}
-                  renderRow={p => (
-                    <tr key={p.PatientID}>
-                      <td style={td}><IBadge>{p.PatientID}</IBadge></td>
-                      <td style={{ ...td, fontWeight: 600 }}>{p.LastName}</td>
-                      <td style={td}>{p.FirstName}</td>
+              }
+            >
+              {schedEmpId ? (
+                <div>
+                  <div style={selectedEmployeeBanner}>
+                    Scheduling {selectedEmployee ? `${selectedEmployee.FirstName} ${selectedEmployee.LastName}` : 'employee'} ({selectedEmployee?.Role || 'Role not set'})
+                  </div>
+                  <WeekDayPicker
+                    shifts={data.availability}
+                    employeeId={schedEmpId}
+                    onSave={handleShiftSave}
+                  />
+                </div>
+              ) : (
+                <DataTable
+                  headers={['Employee', 'Role', 'Shift Date', 'Start', 'End']}
+                  rows={data.availability}
+                  empty="No shifts scheduled yet."
+                  renderRow={(row, index) => (
+                    <tr key={row.ShiftID || `${row.EmployeeID}-${index}`}>
+                      <td style={tableCellStrong}>{row.FirstName} {row.LastName}</td>
+                      <td style={tableCell}><RoleBadge role={row.Role} /></td>
+                      <td style={tableCell}>{fmtDate(row.ShiftDate)}</td>
+                      <td style={tableCell}>{row.StartTime || '—'}</td>
+                      <td style={tableCell}>{row.EndTime || '—'}</td>
                     </tr>
                   )}
                 />
-            }
-          </Card>
+              )}
+            </SurfaceCard>
+          </div>
         )}
 
-        {/* ── STAFF ── */}
+        {activeTab === 'patients' && (
+          <SurfaceCard
+            title="Patient Directory"
+            subtitle="Search patients by name or ID from the employee and receptionist view"
+            aside={
+              <input
+                type="text"
+                value={patientSearch}
+                onChange={(event) => setPatientSearch(event.target.value)}
+                placeholder="Search patient name or ID"
+                style={searchInput}
+              />
+            }
+          >
+            <DataTable
+              headers={['ID', 'Last Name', 'First Name']}
+              rows={filteredPatients}
+              empty="No patients match that search."
+              renderRow={(row) => (
+                <tr key={row.PatientID}>
+                  <td style={tableCell}>
+                    <IdBadge>{row.PatientID}</IdBadge>
+                  </td>
+                  <td style={tableCellStrong}>{row.LastName}</td>
+                  <td style={tableCell}>{row.FirstName}</td>
+                </tr>
+              )}
+            />
+          </SurfaceCard>
+        )}
+
         {activeTab === 'staff' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
-              <MiniStat label="Total Staff"  value={data.employees.length} color="#7c3aed" />
-              <MiniStat label="Doctors"      value={data.doctors.length}   color="#2563eb" />
-              <MiniStat label="Other Staff"  value={data.employees.length - data.doctors.length} color="#d97706" />
-            </div>
-            <Card title="All Staff" sub="Clinic employees and their roles">
-              <DTable
+          <div style={stackLayout}>
+            <section style={metricGrid}>
+              <MetricCard label="Total Staff" value={data.employees.length} detail="Employee records in scope" tone="plum" />
+              <MetricCard label="Doctors" value={staffRoleCounts.Doctor || 0} detail="Practitioners in the employee table" tone="blue" />
+              <MetricCard label="Receptionists" value={staffRoleCounts.Receptionist || 0} detail="Front-desk staff now modeled as a distinct role" tone="amber" />
+              <MetricCard label="Nurses" value={staffRoleCounts.Nurse || 0} detail="Clinical support staff" tone="green" />
+            </section>
+
+            <SurfaceCard title="Staff Directory" subtitle="Role breakdown aligned with the employee table">
+              <DataTable
                 headers={['ID', 'Name', 'Role']}
                 rows={data.employees}
-                renderRow={e => (
-                  <tr key={e.EmployeeID}>
-                    <td style={td}><IBadge>{e.EmployeeID}</IBadge></td>
-                    <td style={{ ...td, fontWeight: 600 }}>{e.LastName}, {e.FirstName}</td>
-                    <td style={td}><RoleBadge role={e.Role} /></td>
+                empty="No employees found."
+                renderRow={(row) => (
+                  <tr key={row.EmployeeID}>
+                    <td style={tableCell}>
+                      <IdBadge>{row.EmployeeID}</IdBadge>
+                    </td>
+                    <td style={tableCellStrong}>
+                      {row.LastName}, {row.FirstName}
+                    </td>
+                    <td style={tableCell}>
+                      <RoleBadge role={row.Role} />
+                    </td>
                   </tr>
                 )}
               />
-            </Card>
+            </SurfaceCard>
           </div>
         )}
-
       </div>
     </div>
   );
 }
 
-/* ── UI Helpers ────────────────────────────────────────────────── */
-
-function StatCard({ icon, value, label, sub, color, bg, onClick }) {
+function HeroStat({ label, value }) {
   return (
-    <div
-      onClick={onClick}
-      style={{
-        background: 'white', borderRadius: '14px', padding: '20px 22px',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.05)', cursor: 'pointer',
-        border: '1px solid #f3f4f6', transition: 'box-shadow 0.15s',
-        display: 'flex', alignItems: 'flex-start', gap: '14px',
-      }}
-      onMouseEnter={e => e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.1)'}
-      onMouseLeave={e => e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)'}
-    >
-      <div style={{ width: '44px', height: '44px', borderRadius: '10px', background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color }}>
-        {icon}
-      </div>
-      <div>
-        <div style={{ fontSize: '26px', fontWeight: 700, color: '#111827', lineHeight: 1.1 }}>{value}</div>
-        <div style={{ fontSize: '13px', fontWeight: 600, color: '#374151', marginTop: '3px' }}>{label}</div>
-        {sub && <div style={{ fontSize: '12px', color: '#9ca3af', marginTop: '2px' }}>{sub}</div>}
-      </div>
+    <div style={heroStat}>
+      <div style={heroStatValue}>{value}</div>
+      <div style={heroStatLabel}>{label}</div>
     </div>
   );
 }
 
-function MiniStat({ label, value, color }) {
+function MetricCard({ label, value, detail, tone }) {
+  const palette = toneStyles[tone] || toneStyles.blue;
   return (
-    <div style={{ background: 'white', borderRadius: '12px', padding: '16px 20px', border: `2px solid ${color}20`, boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
-      <div style={{ fontSize: '22px', fontWeight: 700, color }}>{value}</div>
-      <div style={{ fontSize: '12px', color: '#6b7280', fontWeight: 600, marginTop: '3px' }}>{label}</div>
-    </div>
+    <article style={{ ...metricCard, background: palette.card }}>
+      <div style={{ ...metricValue, color: palette.strong }}>{value}</div>
+      <div style={metricLabel}>{label}</div>
+      <div style={metricDetail}>{detail}</div>
+    </article>
   );
 }
 
-function ActionBtn({ onClick, children }) {
+function SurfaceCard({ title, subtitle, aside, children }) {
   return (
-    <button onClick={onClick} style={{
-      padding: '9px 20px', borderRadius: '8px', border: '1.5px solid #e5e7eb',
-      background: 'white', cursor: 'pointer', fontSize: '13px', fontWeight: 600,
-      fontFamily: 'inherit', color: '#1e2b1b', transition: 'background 0.12s, border-color 0.12s',
-    }}
-      onMouseEnter={e => { e.currentTarget.style.background = '#1e2b1b'; e.currentTarget.style.color = 'white'; e.currentTarget.style.borderColor = '#1e2b1b'; }}
-      onMouseLeave={e => { e.currentTarget.style.background = 'white'; e.currentTarget.style.color = '#1e2b1b'; e.currentTarget.style.borderColor = '#e5e7eb'; }}
-    >
-      {children}
-    </button>
-  );
-}
-
-function Card({ title, sub, children, action }) {
-  return (
-    <div style={{ background: 'white', borderRadius: '14px', padding: '24px', boxShadow: '0 1px 3px rgba(0,0,0,0.05), 0 4px 16px rgba(0,0,0,0.04)', border: '1px solid #f3f4f6' }}>
-      {(title || sub || action) && (
-        <div style={{ marginBottom: '16px', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+    <section style={surfaceCard}>
+      {(title || subtitle || aside) && (
+        <div style={surfaceHeader}>
           <div>
-            {title && <h2 style={{ margin: '0 0 3px', fontSize: '16px', fontWeight: 700, color: '#111827' }}>{title}</h2>}
-            {sub && <p style={{ margin: 0, fontSize: '13px', color: '#6b7280' }}>{sub}</p>}
+            {title && <h2 style={surfaceTitle}>{title}</h2>}
+            {subtitle && <p style={surfaceSubtitle}>{subtitle}</p>}
           </div>
-          {action && (
-            <button onClick={action.onClick} style={{ padding: '5px 12px', borderRadius: '6px', border: '1.5px solid #e5e7eb', background: 'white', fontSize: '12px', fontWeight: 600, color: '#374151', cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>
-              {action.label}
-            </button>
-          )}
+          {aside}
         </div>
       )}
       {children}
-    </div>
+    </section>
   );
 }
 
-function Empty({ text }) {
-  return <p style={{ color: '#9ca3af', fontSize: '14px', textAlign: 'center', padding: '28px 0', margin: 0 }}>{text}</p>;
-}
+function DataTable({ headers, rows, renderRow, empty }) {
+  if (!rows.length) return <p style={emptyState}>{empty}</p>;
 
-function DTable({ headers, rows, renderRow, empty = 'No records.' }) {
-  if (!rows.length) return <Empty text={empty} />;
   return (
-    <div style={{ overflowX: 'auto' }}>
-      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+    <div style={tableWrap}>
+      <table style={tableStyle}>
         <thead>
           <tr>
-            {headers.map(h => (
-              <th key={h} style={{ background: '#f9fafb', textAlign: 'left', padding: '9px 12px', borderBottom: '1px solid #e5e7eb', fontSize: '11px', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.06em', whiteSpace: 'nowrap' }}>
-                {h}
-              </th>
+            {headers.map((header) => (
+              <th key={header} style={tableHead}>{header}</th>
             ))}
           </tr>
         </thead>
@@ -616,81 +777,499 @@ function DTable({ headers, rows, renderRow, empty = 'No records.' }) {
   );
 }
 
-function SBadge({ s }) {
-  const low = (s || '').toLowerCase();
-  let bg = '#f3f4f6', color = '#6b7280';
-  if (low.includes('scheduled') || low.includes('confirmed')) { bg = '#dbeafe'; color = '#1d4ed8'; }
-  else if (low.includes('complete') || low.includes('done'))  { bg = '#dcfce7'; color = '#166534'; }
-  else if (low.includes('cancel'))                            { bg = '#fee2e2'; color = '#b91c1c'; }
-  else if (low.includes('pending'))                           { bg = '#fef3c7'; color = '#d97706'; }
-  else if (low.includes('posted'))                            { bg = '#dcfce7'; color = '#166534'; }
-  else if (low.includes('void'))                              { bg = '#f3f4f6'; color = '#6b7280'; }
-  else if (low.includes('refund'))                            { bg = '#fef3c7'; color = '#d97706'; }
-  else if (low.includes('paid'))                              { bg = '#dcfce7'; color = '#166534'; }
-  return <span style={{ display: 'inline-block', padding: '3px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: 600, background: bg, color }}>{s || 'Unknown'}</span>;
-}
-
-function RoleBadge({ role }) {
-  const r = (role || '').toLowerCase();
-  let bg = '#f3f4f6', color = '#6b7280';
-  if (r === 'doctor')    { bg = '#dbeafe'; color = '#1d4ed8'; }
-  else if (r === 'nurse' || r === 'receptionist') { bg = '#fef3c7'; color = '#d97706'; }
-  return <span style={{ display: 'inline-block', padding: '3px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: 600, background: bg, color }}>{role || '—'}</span>;
-}
-
-function IBadge({ children }) {
-  return <span style={{ display: 'inline-block', padding: '2px 8px', background: '#f3f4f6', borderRadius: '6px', fontSize: '12px', fontWeight: 600, color: '#374151' }}>{children}</span>;
-}
-
-function FField({ label, children }) {
+function Field({ label, children }) {
   return (
-    <div style={{ marginBottom: '12px' }}>
-      <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#374151', marginBottom: '5px' }}>{label}</label>
+    <label style={fieldWrap}>
+      <span style={fieldLabel}>{label}</span>
       {children}
-    </div>
+    </label>
   );
 }
 
-/* ── Icons ─────────────────────────────────────────────────────── */
-function CalendarIcon() {
-  return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>;
-}
-function DollarIcon() {
-  return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>;
-}
-function PersonIcon() {
-  return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>;
-}
-function TeamIcon() {
-  return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>;
+function StatusBadge({ status }) {
+  const text = String(status || 'Unknown');
+  const normalized = text.toLowerCase();
+  let style = badgeNeutral;
+
+  if (normalized.includes('confirm')) style = badgePurple;
+  else if (normalized.includes('schedule')) style = badgeBlue;
+  else if (normalized.includes('cancel')) style = badgeRed;
+  else if (normalized.includes('paid') || normalized.includes('complete') || normalized.includes('posted')) style = badgeGreen;
+  else if (normalized.includes('pending')) style = badgeAmber;
+
+  return <span style={{ ...badgeBase, ...style }}>{text}</span>;
 }
 
-/* ── Styles ────────────────────────────────────────────────────── */
-const td  = { textAlign: 'left', padding: '11px 12px', borderBottom: '1px solid #f3f4f6', fontSize: '14px', color: '#374151', verticalAlign: 'top' };
-const inp = { width: '100%', padding: '9px 12px', border: '1.5px solid #e5e7eb', borderRadius: '8px', boxSizing: 'border-box', fontSize: '14px', color: '#1a1a1a', background: 'white', fontFamily: 'inherit' };
-const btn = { width: '100%', marginTop: '16px', background: '#1e2b1b', color: 'white', border: 'none', padding: '12px', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit' };
+function RoleBadge({ role }) {
+  const normalized = String(role || '').toLowerCase();
+  const style = normalized === 'doctor'
+    ? badgeBlue
+    : normalized === 'receptionist'
+      ? badgePurple
+      : normalized === 'nurse'
+        ? badgeAmber
+        : normalized === 'admin'
+          ? badgeGreen
+          : badgeNeutral;
 
-const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-
-function fmtDate(val) {
-  if (!val) return '—';
-  const datePart = String(val).includes('T') ? val.split('T')[0] : val;
-  const [y, m, d] = datePart.split('-').map(Number);
-  if (!y || !m || !d) return val;
-  return `${MONTHS_SHORT[m - 1]} ${d}, ${y}`;
+  return <span style={{ ...badgeBase, ...style }}>{role || 'Unknown'}</span>;
 }
 
-function fmtTime(dateVal, timeVal) {
-  let h, min;
-  if (timeVal) {
-    [h, min] = String(timeVal).split(':').map(Number);
-  } else if (dateVal && String(dateVal).includes('T')) {
-    const t = dateVal.split('T')[1];
-    [h, min] = t.split(':').map(Number);
-    if (h === 0 && min === 0) return '—';
-  } else {
-    return '—';
+function IdBadge({ children }) {
+  return <span style={idBadge}>{children}</span>;
+}
+
+function normalizeStatus(status) {
+  const text = String(status || '').toLowerCase();
+  if (text.includes('confirm')) return 'confirmed';
+  if (text.includes('schedule') || text === '1') return 'scheduled';
+  if (text.includes('cancel') || text === '3') return 'cancelled';
+  if (text.includes('complete') || text === '4') return 'completed';
+  if (text.includes('paid') || text === '2') return 'paid';
+  return text;
+}
+
+function isScheduledStatus(appointment) {
+  return normalizeStatus(appointment.StatusText || appointment.StatusCode) === 'scheduled';
+}
+
+function isConfirmedStatus(appointment) {
+  return normalizeStatus(appointment.StatusText || appointment.StatusCode) === 'confirmed';
+}
+
+function fmtDate(value) {
+  if (!value) return '—';
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return String(value).split('T')[0] || String(value);
+  return parsed.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function fmtTime(dateValue, timeValue) {
+  if (timeValue) {
+    const [hours = 0, minutes = 0] = String(timeValue).split(':').map(Number);
+    const tempDate = new Date();
+    tempDate.setHours(hours, minutes, 0, 0);
+    return tempDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
   }
-  const ampm = h >= 12 ? 'PM' : 'AM';
-  return `${h % 12 || 12}:${String(min).padStart(2, '0')} ${ampm}`;
+
+  if (!dateValue) return '—';
+  const parsed = new Date(dateValue);
+  if (Number.isNaN(parsed.getTime())) return '—';
+  return parsed.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
 }
+
+function currency(value) {
+  return Number(value || 0).toFixed(2);
+}
+
+function isOverdueTransaction(transaction) {
+  if (!transaction.DueDate) return false;
+  const due = new Date(transaction.DueDate);
+  const today = new Date();
+  due.setHours(0, 0, 0, 0);
+  today.setHours(0, 0, 0, 0);
+  return due < today && String(transaction.Status || '').toLowerCase() !== 'posted';
+}
+
+function daysOverdue(transaction) {
+  if (!transaction.DueDate) return 0;
+  const due = new Date(transaction.DueDate);
+  const today = new Date();
+  due.setHours(0, 0, 0, 0);
+  today.setHours(0, 0, 0, 0);
+  return Math.max(0, Math.round((today - due) / 86400000));
+}
+
+const toneStyles = {
+  blue: { card: 'linear-gradient(135deg, #eef2ff 0%, #ffffff 100%)', strong: '#3730a3' },
+  amber: { card: 'linear-gradient(135deg, #fffbeb 0%, #ffffff 100%)', strong: '#b45309' },
+  green: { card: 'linear-gradient(135deg, #ecfdf5 0%, #ffffff 100%)', strong: '#047857' },
+  plum: { card: 'linear-gradient(135deg, #faf5ff 0%, #ffffff 100%)', strong: '#7e22ce' },
+};
+
+const pageShell = {
+  minHeight: '100vh',
+  background: 'radial-gradient(circle at top right, #fde68a 0%, #fff7ed 28%, #eef2ff 62%, #f8fafc 100%)',
+  fontFamily: '"Poppins", sans-serif',
+};
+
+const pageInner = {
+  maxWidth: '1280px',
+  margin: '0 auto',
+  padding: '28px 24px 64px',
+};
+
+const heroCard = {
+  position: 'relative',
+  overflow: 'hidden',
+  borderRadius: '28px',
+  background: 'linear-gradient(135deg, #3b2f73 0%, #284b8f 48%, #0f766e 100%)',
+  color: '#ffffff',
+  boxShadow: '0 24px 56px rgba(41, 62, 133, 0.22)',
+};
+
+const heroOrb = {
+  position: 'absolute',
+  right: '-50px',
+  top: '-60px',
+  width: '220px',
+  height: '220px',
+  borderRadius: '999px',
+  background: 'rgba(255, 255, 255, 0.1)',
+};
+
+const heroContent = {
+  position: 'relative',
+  display: 'grid',
+  gridTemplateColumns: 'minmax(0, 2fr) minmax(260px, 1fr)',
+  gap: '20px',
+  alignItems: 'end',
+  padding: '30px',
+};
+
+const eyebrow = {
+  margin: 0,
+  fontSize: '11px',
+  textTransform: 'uppercase',
+  letterSpacing: '0.18em',
+  fontWeight: 700,
+  opacity: 0.82,
+};
+
+const heroTitle = {
+  margin: '10px 0 12px',
+  fontSize: 'clamp(28px, 4vw, 42px)',
+  lineHeight: 1,
+};
+
+const heroText = {
+  margin: 0,
+  maxWidth: '650px',
+  lineHeight: 1.65,
+  color: 'rgba(255, 255, 255, 0.88)',
+};
+
+const heroHighlights = {
+  display: 'grid',
+  gap: '12px',
+};
+
+const heroStat = {
+  borderRadius: '18px',
+  padding: '14px 16px',
+  background: 'rgba(255, 255, 255, 0.12)',
+  border: '1px solid rgba(255, 255, 255, 0.18)',
+};
+
+const heroStatValue = {
+  fontSize: '26px',
+  fontWeight: 700,
+  lineHeight: 1,
+};
+
+const heroStatLabel = {
+  marginTop: '6px',
+  fontSize: '12px',
+  letterSpacing: '0.06em',
+  textTransform: 'uppercase',
+  opacity: 0.82,
+};
+
+const tabRow = {
+  display: 'flex',
+  flexWrap: 'wrap',
+  gap: '10px',
+  margin: '24px 0 18px',
+};
+
+const tabButton = {
+  border: '1px solid rgba(15, 23, 42, 0.08)',
+  borderRadius: '999px',
+  background: 'rgba(255, 255, 255, 0.84)',
+  color: '#475569',
+  padding: '10px 18px',
+  fontSize: '14px',
+  fontWeight: 700,
+  cursor: 'pointer',
+  fontFamily: 'inherit',
+};
+
+const activeTabButton = {
+  background: '#312e81',
+  color: '#ffffff',
+  boxShadow: '0 12px 26px rgba(49, 46, 129, 0.24)',
+};
+
+const successBanner = {
+  marginBottom: '18px',
+  padding: '14px 16px',
+  borderRadius: '16px',
+  background: '#ecfdf5',
+  border: '1px solid #bbf7d0',
+  color: '#166534',
+  fontSize: '14px',
+  fontWeight: 600,
+};
+
+const errorBanner = {
+  marginBottom: '18px',
+  padding: '14px 16px',
+  borderRadius: '16px',
+  background: '#fef2f2',
+  border: '1px solid #fecaca',
+  color: '#991b1b',
+  fontSize: '14px',
+  fontWeight: 600,
+};
+
+const stackLayout = {
+  display: 'grid',
+  gap: '18px',
+};
+
+const metricGrid = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+  gap: '16px',
+};
+
+const metricCard = {
+  borderRadius: '22px',
+  padding: '20px 22px',
+  border: '1px solid rgba(148, 163, 184, 0.14)',
+  boxShadow: '0 16px 34px rgba(15, 23, 42, 0.07)',
+};
+
+const metricValue = {
+  fontSize: '30px',
+  lineHeight: 1,
+  fontWeight: 700,
+};
+
+const metricLabel = {
+  marginTop: '12px',
+  fontSize: '15px',
+  color: '#0f172a',
+  fontWeight: 600,
+};
+
+const metricDetail = {
+  marginTop: '4px',
+  fontSize: '13px',
+  color: '#64748b',
+};
+
+const twoColumnLayout = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))',
+  gap: '18px',
+};
+
+const formLayout = {
+  display: 'grid',
+  gridTemplateColumns: 'minmax(300px, 360px) minmax(0, 1fr)',
+  gap: '18px',
+  alignItems: 'start',
+};
+
+const surfaceCard = {
+  background: 'rgba(255, 255, 255, 0.88)',
+  borderRadius: '24px',
+  border: '1px solid rgba(255, 255, 255, 0.94)',
+  boxShadow: '0 18px 44px rgba(15, 23, 42, 0.09)',
+  padding: '24px',
+  backdropFilter: 'blur(10px)',
+};
+
+const surfaceHeader = {
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'flex-start',
+  gap: '12px',
+  flexWrap: 'wrap',
+  marginBottom: '16px',
+};
+
+const surfaceTitle = {
+  margin: 0,
+  color: '#0f172a',
+  fontSize: '18px',
+};
+
+const surfaceSubtitle = {
+  margin: '6px 0 0',
+  color: '#64748b',
+  fontSize: '13px',
+  lineHeight: 1.5,
+};
+
+const filterRow = {
+  display: 'flex',
+  gap: '10px',
+  flexWrap: 'wrap',
+};
+
+const searchInput = {
+  minWidth: '240px',
+  width: '100%',
+  maxWidth: '320px',
+  padding: '11px 14px',
+  borderRadius: '14px',
+  border: '1px solid #dbe4ea',
+  background: '#f8fafc',
+  color: '#0f172a',
+  fontSize: '14px',
+  fontFamily: 'inherit',
+};
+
+const filterSelect = {
+  minWidth: '190px',
+  padding: '11px 14px',
+  borderRadius: '14px',
+  border: '1px solid #dbe4ea',
+  background: '#f8fafc',
+  color: '#0f172a',
+  fontSize: '14px',
+  fontFamily: 'inherit',
+};
+
+const tableWrap = {
+  overflowX: 'auto',
+};
+
+const tableStyle = {
+  width: '100%',
+  borderCollapse: 'collapse',
+};
+
+const tableHead = {
+  textAlign: 'left',
+  padding: '11px 12px',
+  fontSize: '11px',
+  textTransform: 'uppercase',
+  letterSpacing: '0.08em',
+  color: '#64748b',
+  borderBottom: '1px solid #e2e8f0',
+  whiteSpace: 'nowrap',
+};
+
+const tableCell = {
+  padding: '13px 12px',
+  borderBottom: '1px solid #eef2f7',
+  color: '#334155',
+  fontSize: '14px',
+  verticalAlign: 'top',
+};
+
+const tableCellStrong = {
+  ...tableCell,
+  fontWeight: 600,
+  color: '#0f172a',
+};
+
+const microText = {
+  marginTop: '4px',
+  fontSize: '12px',
+  color: '#94a3b8',
+  fontWeight: 500,
+};
+
+const emptyState = {
+  margin: 0,
+  padding: '22px 8px',
+  textAlign: 'center',
+  color: '#94a3b8',
+  fontSize: '14px',
+};
+
+const fieldWrap = {
+  display: 'block',
+  marginBottom: '14px',
+};
+
+const fieldLabel = {
+  display: 'block',
+  marginBottom: '6px',
+  fontSize: '13px',
+  fontWeight: 600,
+  color: '#334155',
+};
+
+const inputStyle = {
+  width: '100%',
+  boxSizing: 'border-box',
+  borderRadius: '14px',
+  border: '1px solid #dbe4ea',
+  background: '#f8fafc',
+  padding: '12px 14px',
+  fontSize: '14px',
+  color: '#0f172a',
+  fontFamily: 'inherit',
+};
+
+const primaryButton = {
+  width: '100%',
+  border: 'none',
+  borderRadius: '16px',
+  background: 'linear-gradient(135deg, #312e81 0%, #0f766e 100%)',
+  color: '#ffffff',
+  padding: '13px 18px',
+  fontSize: '14px',
+  fontWeight: 700,
+  cursor: 'pointer',
+  fontFamily: 'inherit',
+  boxShadow: '0 14px 28px rgba(49, 46, 129, 0.18)',
+};
+
+const secondaryActionButton = {
+  border: 'none',
+  borderRadius: '12px',
+  background: '#312e81',
+  color: '#ffffff',
+  padding: '9px 12px',
+  fontSize: '12px',
+  fontWeight: 700,
+  cursor: 'pointer',
+  fontFamily: 'inherit',
+};
+
+const selectedEmployeeBanner = {
+  marginBottom: '16px',
+  display: 'inline-flex',
+  alignItems: 'center',
+  padding: '9px 12px',
+  borderRadius: '999px',
+  background: '#eef2ff',
+  color: '#3730a3',
+  fontSize: '12px',
+  fontWeight: 700,
+};
+
+const badgeBase = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  padding: '4px 10px',
+  borderRadius: '999px',
+  fontSize: '12px',
+  fontWeight: 700,
+};
+
+const badgeBlue = { background: '#dbeafe', color: '#1d4ed8' };
+const badgeGreen = { background: '#dcfce7', color: '#166534' };
+const badgePurple = { background: '#ede9fe', color: '#6d28d9' };
+const badgeRed = { background: '#fee2e2', color: '#b91c1c' };
+const badgeAmber = { background: '#fef3c7', color: '#b45309' };
+const badgeNeutral = { background: '#e2e8f0', color: '#475569' };
+
+const idBadge = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  minWidth: '34px',
+  padding: '4px 9px',
+  borderRadius: '10px',
+  background: '#f1f5f9',
+  color: '#334155',
+  fontSize: '12px',
+  fontWeight: 700,
+};
