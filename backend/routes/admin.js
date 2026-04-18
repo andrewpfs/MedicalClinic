@@ -206,12 +206,12 @@ router.get('/api/pullgrr', requireAdmin, async (req,res) => {
 
 router.get('/api/pullrevenue', requireAdmin, async (req,res) => {
     const q = `
-    SELECT T.TransactionID AS "Id", P.FName AS "PatFirst", P.LName AS "PatLast", E.FirstName AS "DocFirst", E.LastName AS "DocLast",D.DepartmentName,T.Amount,T.TransactionDateTime AS "Date",E.EmployeeID AS "DocID" 
-    FROM transaction AS T, patient AS P,appointment AS A, employee AS E, department AS D 
-    WHERE T.AppointmentID=A.AppointmentID AND T.PatientID=P.PatientID AND E.EmployeeID=A.DoctorID AND E.DepartmentID=D.DepartmentID AND T.Status="Posted`;
+    SELECT T.TransactionID AS "Id", P.FName AS "PatFirst", P.LName AS "PatLast", E.FirstName AS "DocFirst", E.LastName AS "DocLast",D.DepartmentName,T.Amount,T.TransactionDateTime AS "Date",E.EmployeeID AS "DocID"
+    FROM transaction AS T, patient AS P,appointment AS A, employee AS E, department AS D
+    WHERE T.AppointmentID=A.AppointmentID AND T.PatientID=P.PatientID AND E.EmployeeID=A.DoctorID AND E.DepartmentID=D.DepartmentID AND T.Status="Posted"`;
 
-    const [rows] = await db.query(q)
     try {
+        const [rows] = await db.query(q)
         res.json(rows)
     }catch(err) {
         res.status(500).json({error: 'Error pulling revenue'})
@@ -220,26 +220,26 @@ router.get('/api/pullrevenue', requireAdmin, async (req,res) => {
 
 router.get('/api/pullreviews', requireAdmin, async (req,res) => {
     const q = `
-    SELECT DR.ReviewID AS "Id", P.FName AS "PatFirst", P.LName AS "PatLast", E.FirstName AS "DocFirst", E.LastName AS "DocLast",D.DepartmentName,DR.Rating,DR.CreatedAt AS "Date",E.EmployeeID AS "DocID" 
-    FROM doctor_review AS DR, patient AS P,appointment AS A, employee AS E, department AS D 
+    SELECT DR.ReviewID AS "Id", P.FName AS "PatFirst", P.LName AS "PatLast", E.FirstName AS "DocFirst", E.LastName AS "DocLast",D.DepartmentName,DR.Rating,DR.CreatedAt AS "Date",E.EmployeeID AS "DocID"
+    FROM doctor_review AS DR, patient AS P,appointment AS A, employee AS E, department AS D
     WHERE DR.AppointmentID=A.AppointmentID AND DR.PatientID=P.PatientID AND E.EmployeeID=A.DoctorID AND E.DepartmentID=D.DepartmentID`;
 
-    const [rows] = await db.query(q)
     try {
+        const [rows] = await db.query(q)
         res.json(rows)
     }catch(err) {
         res.status(500).json({error: 'Error pulling reviews'})
     }
 })
 
-router.get('/api/pullinvoice', async (req,res) => {
+router.get('/api/pullinvoice', requireAdmin, async (req,res) => {
     const q = `
-    SELECT T.TransactionID AS "Id", P.FName AS "PatFirst", P.LName AS "PatLast", D.DepartmentName, T.Amount, T.TransactionDateTime AS "Date",T.LateFeeAmount AS Late, P.PatientID as PatID 
-    FROM transaction AS T, patient AS P,appointment AS A, employee AS E, department AS D 
+    SELECT T.TransactionID AS "Id", P.FName AS "PatFirst", P.LName AS "PatLast", D.DepartmentName, T.Amount, T.TransactionDateTime AS "Date",T.LateFeeAmount AS Late, P.PatientID as PatID
+    FROM transaction AS T, patient AS P,appointment AS A, employee AS E, department AS D
     WHERE T.AppointmentID=A.AppointmentID AND T.PatientID=P.PatientID AND E.EmployeeID=A.DoctorID AND E.DepartmentID=D.DepartmentID AND T.Status="Pending"`;
 
-    const [rows] = await db.query(q)
     try {
+        const [rows] = await db.query(q)
         res.json(rows)
     }catch(err) {
         res.status(500).json({error: 'Error pulling invoice'})
