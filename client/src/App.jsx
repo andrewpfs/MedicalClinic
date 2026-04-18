@@ -23,6 +23,9 @@ import RepGAR from './pages/admin/RepGAR';
 import RepGRR from './pages/admin/RepGRR';
 import RevenueReport from './pages/admin/RevenueReport';
 import ReviewsReport from './pages/admin/ReviewsReport';
+import Departments from './pages/admin/Departments';
+import DepartmentTable from './pages/admin/DepartmentTable';
+import AddD from './pages/admin/AddD';
 // Patient pages
 import Profile from './pages/patient/Profile';
 import Booking from './pages/patient/booking';
@@ -68,6 +71,7 @@ export default function App() {
         <Route path="/admin/add-employee" element={<AddE />} />
         <Route path="/admin/profile" element={<AdminProfile />} />
         <Route path="/admin/employees" element={<AdminEmployees />} />
+        <Route path="/admin/departments" element={<Departments />} />
         <Route path="/admin/report" element={<Report />} />
         <Route path="/admin/report/dar" element={<RepDAR />} />
         <Route path="/admin/report/gar" element={<RepGAR />} />

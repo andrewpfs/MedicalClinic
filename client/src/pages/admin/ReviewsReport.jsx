@@ -7,7 +7,9 @@ function ReviewsReport() {
     const [response, setResponse] = useState([])
     const [records, setRecords] = useState([])
     const [departments, setDepts]   = useState([])
+    const [docIds, setDocIds] = useState([])
     const [doctors,setDoctors] = useState([])
+    const [doctorList,setDoctorList] = useState([])
     const [loading, setLoading] = useState(false)
     const [filterCheck,setFilterCheck] = useState(true)
     const [best,setBest] = useState({
@@ -40,10 +42,36 @@ function ReviewsReport() {
         setLoading(false)
     }
 
+    async function fetchOtherData() {
+        try {
+            const response = await fetch('/admin/api/getdeptdoctors')
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const rows = await response.json();
+            const ids = [];
+            
+            if (Array.isArray(rows)) {
+                rows.forEach((row) => {
+                    ids.push(row.EmployeeID);
+                });
+            }
+            
+            setDocIds(ids)
+            setDoctors(rows)
+            setDoctorList(rows)
+        } catch(err) {
+            console.error('Error fetching doctors:', err);
+            return [];
+        }
+    }
+
     useEffect(() => { 
         fetchTableData() 
+        fetchDoctorData()
         getDepartments()
-        getDoctors("")
         getTop()
     }, [])
 
@@ -82,10 +110,8 @@ function ReviewsReport() {
 
     const getTop = () => {
         //setBest(prev => ({ ...prev, [totalRevenue]: 0 }))
-        const ids = fetchDoctorIDs()
-        const docs = fetchDoctorNames()
-        const docrev = new Array(docs.length).fill(0)
-        const docamount = new Array(docs.length).fill(0)
+        const docrev = new Array(docIds.length).fill(0)
+        const docamount = new Array(docIds.length).fill(0)
         const deps = fetchDepartmentNames()
         const deprev = new Array(deps.length).fill(0)
         const depamount = new Array(deps.length).fill(0)
@@ -93,7 +119,7 @@ function ReviewsReport() {
         var total = 0
         var amount = records.length
         records.forEach((row) => {
-            index = ids.indexOf(row.DocID)
+            index = docIds.indexOf(row.DocID)
             if (index > -1) {
                 docrev[index] += row.Rating
                 docamount[index] ++
@@ -106,18 +132,22 @@ function ReviewsReport() {
             total += row.Amount
 
         })
+        total = total / amount
         const maxdoc = Math.max(...docrev)
         index = docrev.indexOf(maxdoc);
-        const doc = index > -1 ? docs[index] : "None Found"
+        const doc = index > -1 ? doctorList[index].DocFirst+" "+doctorList[index].DocFirst : "None Found"
         const avgdoc = index > -1 ? maxdoc / docamount[index] : "None"
+        
         const maxdep = Math.max(...deprev)
         index = deprev.indexOf(maxdep);
         const dep = index > -1 ? deps[index] : "None Found"
-        setBest(prev => ({ ...prev, totalRevenue: total }))
+        const avgdep = index > -1 ? maxdep / depamount[index] : "None"
+        
+        setBest(prev => ({ ...prev, avgReview: total }))
         setBest(prev => ({ ...prev, topDoctor: doc }))
-        setBest(prev => ({ ...prev, topDocRevenue: maxdoc }))
+        setBest(prev => ({ ...prev, avgDocReview: avgdoc }))
         setBest(prev => ({ ...prev, topDepartment: dep }))
-        setBest(prev => ({ ...prev, topDepRevenue: maxdep }))
+        setBest(prev => ({ ...prev, avgDepReview: avgdep }))
     }
 
     const fetchDoctorIDs = async () => {
