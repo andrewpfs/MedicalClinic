@@ -5,18 +5,20 @@ import RepGAR from './RepGAR'
 import RepGRR from './RepGRR'
 import RepAllAppt from './RepAllAppt'
 import RepAllTrans from './RepAllTrans'
+import InvoiceReport from './InvoiceReport'
 import RevenueReport from './RevenueReport'
 import ReviewsReport from './ReviewsReport'
 import { useStaffAuth } from '../../hooks/useStaffAuth'
 import { topbar, page, content, heading, subheading } from './adminStyles'
 
 
+
 const REPORT_META = {
   AllAppt:  { title: 'All Appointments',              sub: 'Browse and filter all appointment records by department and date' },
   AllTrans: { title: 'All Transactions',              sub: 'Browse and filter all transaction records by department and date' },
-  RepDAR:   { title: 'Department Appointment Report', sub: 'Doctors within a department ranked by number of appointments' },
-  Revenue:   { title: 'Revenue Report',   sub: 'Departments ranked by appointment volume over a date range' },
-  Reviews:   { title: 'General Revenue Report',       sub: 'Departments ranked by revenue generated over a date range' },
+  Invoice:   { title: 'Invoice Report', sub: 'Invoices that have not been completed and the amount that each one is due' },
+  Revenue:   { title: 'Revenue Report',   sub: 'Transactions that have been completed and how much revenue has been achieved' },
+  Reviews:   { title: 'Reviews Report',       sub: 'Reviews created by patients' },
 }
 
 function Report() {
@@ -38,7 +40,7 @@ function Report() {
 
         {type === 'AllAppt'  && <RepAllAppt />}
         {type === 'AllTrans' && <RepAllTrans />}
-        {type === 'RepDAR'   && <RepDAR />}
+        {type === 'Invoice'   && <InvoiceReport />}
         {type === 'Revenue'   && <RevenueReport />}
         {type === 'Reviews'   && <ReviewsReport />}
       </div>

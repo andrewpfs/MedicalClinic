@@ -208,7 +208,7 @@ router.get('/api/pullrevenue', requireAdmin, async (req,res) => {
     const q = `
     SELECT T.TransactionID AS "Id", P.FName AS "PatFirst", P.LName AS "PatLast", E.FirstName AS "DocFirst", E.LastName AS "DocLast",D.DepartmentName,T.Amount,T.TransactionDateTime AS "Date",E.EmployeeID AS "DocID" 
     FROM transaction AS T, patient AS P,appointment AS A, employee AS E, department AS D 
-    WHERE T.AppointmentID=A.AppointmentID AND T.PatientID=P.PatientID AND E.EmployeeID=A.DoctorID AND E.DepartmentID=D.DepartmentID`;
+    WHERE T.AppointmentID=A.AppointmentID AND T.PatientID=P.PatientID AND E.EmployeeID=A.DoctorID AND E.DepartmentID=D.DepartmentID AND T.Status="Posted`;
 
     const [rows] = await db.query(q)
     try {
@@ -229,6 +229,20 @@ router.get('/api/pullreviews', requireAdmin, async (req,res) => {
         res.json(rows)
     }catch(err) {
         res.status(500).json({error: 'Error pulling reviews'})
+    }
+})
+
+router.get('/api/pullinvoice', async (req,res) => {
+    const q = `
+    SELECT T.TransactionID AS "Id", P.FName AS "PatFirst", P.LName AS "PatLast", D.DepartmentName, T.Amount, T.TransactionDateTime AS "Date",T.LateFeeAmount AS Late, P.PatientID as PatID 
+    FROM transaction AS T, patient AS P,appointment AS A, employee AS E, department AS D 
+    WHERE T.AppointmentID=A.AppointmentID AND T.PatientID=P.PatientID AND E.EmployeeID=A.DoctorID AND E.DepartmentID=D.DepartmentID AND T.Status="Pending"`;
+
+    const [rows] = await db.query(q)
+    try {
+        res.json(rows)
+    }catch(err) {
+        res.status(500).json({error: 'Error pulling invoice'})
     }
 })
 
@@ -317,8 +331,11 @@ router.get('/api/getdeptdoctors', async (req,res) => {
 router.get('/api/getdepartmentinfo', async (req,res) => {
     const q = `
     SELECT D.DepartmentID, D.DepartmentName, O.OfficeName, O.Street, O.City, O.State, O.ZipCode, O.PhoneNumber, COUNT(E.EmployeeID) AS Employees
-    FROM department AS D, office AS O, employee AS E
-    WHERE D.OfficeID=O.OfficeID AND E.DepartmentID=D.DepartmentID`
+    FROM department AS D 
+    JOIN office AS O ON D.OfficeID=O.OfficeID 
+    LEFT JOIN employee AS E ON E.DepartmentID=D.DepartmentID
+    GROUP BY D.DepartmentID
+    ORDER BY Employees DESC`
 
     try {
         const [rows] = await db.query(q)
@@ -327,4 +344,20 @@ router.get('/api/getdepartmentinfo', async (req,res) => {
         console.error(err)
     }
 })
+
+router.get('/api/getpatients', async (req,res) => {
+    const q = `
+    SELECT PatientID,FName,LName
+    FROM patient AS P 
+    JOIN transaction as T ON P.PatientID=T.PatientID`
+
+    try {
+        const [rows] = await db.query(q)
+        return res.json(rows)
+    }catch(err){
+        console.error(err)
+    }
+})
+
+
 module.exports = router;

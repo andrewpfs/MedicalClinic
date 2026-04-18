@@ -21,6 +21,7 @@ import Report from './pages/admin/Report';
 import RepDAR from './pages/admin/RepDAR';
 import RepGAR from './pages/admin/RepGAR';
 import RepGRR from './pages/admin/RepGRR';
+import InvoiceReport from './pages/admin/InvoiceReport';
 import RevenueReport from './pages/admin/RevenueReport';
 import ReviewsReport from './pages/admin/ReviewsReport';
 import Departments from './pages/admin/Departments';
@@ -78,6 +79,7 @@ export default function App() {
         <Route path="/admin/report/grr" element={<RepGRR />} />
         <Route path="/admin/report/revenue" element={<RevenueReport />} />
         <Route path="/admin/report/reviews" element={<ReviewsReport />} />
+        <Route path="/admin/report/invoice" element={<InvoiceReport />} />
       </Routes>
     </BrowserRouter>
   );

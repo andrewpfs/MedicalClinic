@@ -42,7 +42,7 @@ function ReviewsReport() {
         setLoading(false)
     }
 
-    async function fetchOtherData() {
+    async function fetchDoctorData() {
         try {
             const response = await fetch('/admin/api/getdeptdoctors')
 
@@ -135,7 +135,7 @@ function ReviewsReport() {
         total = total / amount
         const maxdoc = Math.max(...docrev)
         index = docrev.indexOf(maxdoc);
-        const doc = index > -1 ? doctorList[index].DocFirst+" "+doctorList[index].DocFirst : "None Found"
+        const doc = index > -1 ? doctors[index].DocFirst+" "+doctors[index].DocLast : "None Found"
         const avgdoc = index > -1 ? maxdoc / docamount[index] : "None"
         
         const maxdep = Math.max(...deprev)
@@ -390,15 +390,15 @@ function ReviewsReport() {
                 <p style={sectionLabel}>Summary</p>
                 <div style={filterGroup}>
                     <label style={filterLabel}>Total Revenue</label>
-                    {best.totalRevenue}
+                    $ {best.totalRevenue}
                 </div>
                 <div style={filterGroup}>
                     <label style={filterLabel}>Top Doctor</label>
-                    {best.topDoctor}: {best.topDocRevenue}
+                    {best.topDoctor}: $ {best.topDocRevenue}
                 </div>
                 <div style={filterGroup}>
                     <label style={filterLabel}>Top Department</label>
-                    {best.topDepartment}: {best.topDepRevenue}
+                    {best.topDepartment}: $ {best.topDepRevenue}
                 </div>
             </div>
             <div className="report-table">
