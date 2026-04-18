@@ -186,8 +186,8 @@ function InvoiceReport() {
         if (f.DepartmentName) result = result.filter(row => row.DepartmentName === f.DepartmentName)
         if (f.min)            result = result.filter(row => String(row.Date).slice(0, 10) >= f.min)
         if (f.max)            result = result.filter(row => String(row.Date).slice(0, 10) <= f.max)
-        if (f.PFirst)         result = result.filter(row => row.PatFirst.toLowerCase().includes(f.PFirst.toLowerCase()))
-        if (f.PLast)          result = result.filter(row => row.PatLast.toLowerCase().includes(f.PLast.toLowerCase()))
+        if (f.PFirst)         result = result.filter(row => row.PatFirst.toLowerCase().startsWith(f.PFirst.toLowerCase()))
+        if (f.PLast)          result = result.filter(row => row.PatLast.toLowerCase().startsWith(f.PLast.toLowerCase()))
         setRecords(result)
     }
 
