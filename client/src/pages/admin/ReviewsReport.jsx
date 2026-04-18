@@ -192,80 +192,26 @@ function ReviewsReport() {
     }
 
     const handleChange = (e) => {
-        console.log(e.target.value)
-        setRep(prev => ({ ...prev, [e.target.name]: e.target.value }));
-        console.log(rep)
-        handleFilters()
-        console.log(rep)
+        const newRep = { ...rep, [e.target.name]: e.target.value }
+        setRep(newRep)
+        applyFilters(newRep)
     };
 
-    function handleFilterFirst(event) {
-        setRecords(response.filter(row => row.PatFirst.toLowerCase().includes(event.target.value.toLowerCase())))
-    }
-
-    function handleFilterLast(event) {
-        setRecords(response.filter(row => row.PatLast.toLowerCase().includes(event.target.value.toLowerCase())))
-    }
-
-    function handleFilterDep(event) {
-        setRep(p => ({ ...p, [e.target.name]: e.target.value }))
-        if (event.target.value.length > 0) {
-            setRecords(response.filter(row => row.DepartmentName === (event.target.value)))
-            getDoctors(event.target.value)
-        }else {
-            setRecords(response)
+    function applyFilters(f) {
+        let result = response
+        if (f.DepartmentName) {
+            result = result.filter(row => row.DepartmentName === f.DepartmentName)
+            const docs = doctors.filter(doc => doc.DepartmentName === f.DepartmentName)
+            setDoctorList(docs)
+        } else {
+            setDoctorList(doctors)
         }
-    }
-
-    function handleFilterDoc(event) {
-        setRep(p => ({ ...p, [e.target.name]: e.target.value }))
-        if (event.target.value.length > 0) {
-            setRecords(response.filter(row => row.DocLast === (event.target.value)))
-        }else {
-            setRecords(response)
-        }
-    }
-
-    function handleFilterMin(event) {
-        setRep(p => ({ ...p, [e.target.name]: e.target.value }))
-        if (event.target.value.length > 0) {
-            setRecords(response.filter(row => row.Date >= event.target.value))
-        }else {
-            setRecords(response)
-        }
-    }
-
-    function handleFilterMax(event) {
-        setRep(p => ({ ...p, [e.target.name]: e.target.value }))
-        if (event.target.value.length > 0) {
-            setRecords(response.filter(row => row.Date <= event.target.value))
-        }else {
-            setRecords(response)
-        }
-    }
-
-    function handleFilters(event) {
-        setRecords(response)
-        if (rep.DepartmentName.length > 0) {
-            setRecords(records.filter(row => row.DepartmentName === (rep.DepartmentName)))
-            getDoctors()
-        }
-        if (rep.DoctorLast.length > 0) {
-            setRecords(records.filter(row => row.DocLast === (rep.DoctorLast)))
-        }
-        if (rep.min.length > 0) {
-            setRecords(records.filter(row => row.Date >= rep.min.length))
-        }
-        if (rep.max.length > 0) {
-            setRecords(records.filter(row => row.Date <= rep.max))
-        }
-        if (rep.PFirst.length > 0) {
-            setRecords(records.filter(row => row.PatFirst.toLowerCase().includes(rep.PFirst.toLowerCase())))
-        }
-        if (rep.PLast.length > 0) {
-            setRecords(records.filter(row => row.PatLast.toLowerCase().includes(rep.PLast.toLowerCase())))
-        }
-        getTop()
+        if (f.DoctorLast) result = result.filter(row => row.DocLast === f.DoctorLast)
+        if (f.min)        result = result.filter(row => String(row.Date).slice(0, 10) >= f.min)
+        if (f.max)        result = result.filter(row => String(row.Date).slice(0, 10) <= f.max)
+        if (f.PFirst)     result = result.filter(row => row.PatFirst.toLowerCase().includes(f.PFirst.toLowerCase()))
+        if (f.PLast)      result = result.filter(row => row.PatLast.toLowerCase().includes(f.PLast.toLowerCase()))
+        setRecords(result)
     }
 
     const handleClick = async e => {
@@ -286,23 +232,14 @@ function ReviewsReport() {
         }
     };
 
-    const resetFilters = () => {
-        setRep({
-            DepartmentName: "",
-            PFirst: "",
-            PLast: "",
-            DoctorLast: "",
-            min: "",
-            max: ""
-        })
-    }
-
-    const Reset = () => { 
-        fetchTableData() 
+    const Reset = () => {
+        fetchTableData()
         fetchDoctorData()
         fetchDepartmentData()
-        resetFilters()
-        getTop()
+        const blank = { DepartmentName: "", PFirst: "", PLast: "", DoctorLast: "", min: "", max: "" }
+        setRep(blank)
+        setRecords(response)
+        setDoctorList(doctors)
     }
 
     return (
