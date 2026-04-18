@@ -5,7 +5,7 @@ import WeekDayPicker from '../components/WeekDayPicker';
 
 const EMPLOYEE_API = '/api/employee';
 
-const TABS = [
+const EMPLOYEE_TABS = [
   { id: 'overview', label: 'Overview' },
   { id: 'appointments', label: 'Appointments' },
   { id: 'payments', label: 'Payments' },
@@ -14,11 +14,22 @@ const TABS = [
   { id: 'staff', label: 'Staff' },
 ];
 
-export default function EmployeePage() {
+const RECEPTIONIST_TABS = [
+  { id: 'overview', label: 'Overview' },
+  { id: 'appointments', label: 'Appointments' },
+  { id: 'payments', label: 'Payments' },
+  { id: 'patients', label: 'Patients' },
+  { id: 'schedule', label: 'My Schedule' },
+];
+
+export default function EmployeePage({ mode = 'employee' }) {
+  const isReceptionistPortal = mode === 'receptionist';
+  const tabs = isReceptionistPortal ? RECEPTIONIST_TABS : EMPLOYEE_TABS;
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
   const [staffName, setStaffName] = useState('');
   const [staffRole, setStaffRole] = useState('');
+  const [employeeId, setEmployeeId] = useState('');
   const [schedEmpId, setSchedEmpId] = useState('');
   const [patientSearch, setPatientSearch] = useState('');
   const [appointmentSearch, setAppointmentSearch] = useState('');
@@ -52,10 +63,17 @@ export default function EmployeePage() {
 
   const loadData = async () => {
     try {
-      const response = await fetch(EMPLOYEE_API, { credentials: 'include' });
+      const endpoint = isReceptionistPortal ? `${EMPLOYEE_API}/receptionist` : EMPLOYEE_API;
+      const response = await fetch(endpoint, { credentials: 'include' });
       const payload = await response.json();
-      if (!payload.success) throw new Error(payload.error || 'Failed to load employee workspace.');
-      setData(payload);
+      if (!payload.success) {
+        throw new Error(payload.error || `Failed to load ${isReceptionistPortal ? 'receptionist' : 'employee'} workspace.`);
+      }
+      setData((current) => ({
+        ...current,
+        ...payload,
+        employees: payload.employees || [],
+      }));
     } catch (err) {
       setMessage({ type: 'error', text: err.message });
     }
@@ -67,6 +85,19 @@ export default function EmployeePage() {
       .then(session => {
         if (!session.isLoggedIn) {
           navigate('/staff-login');
+          return;
+        }
+
+        if (session.role === 'Receptionist') {
+          if (!isReceptionistPortal) {
+            navigate('/receptionist');
+            return;
+          }
+        } else if (isReceptionistPortal) {
+          if (session.role === 'Doctor') navigate('/doctor');
+          else if (session.role === 'Nurse') navigate('/nurse');
+          else if (session.role === 'Admin') navigate('/admin');
+          else navigate('/employee');
           return;
         }
 
@@ -87,10 +118,11 @@ export default function EmployeePage() {
 
         setStaffName(session.name || '');
         setStaffRole(session.role || 'Employee');
+        setEmployeeId(String(session.id || ''));
         loadData();
       })
       .catch(() => navigate('/staff-login'));
-  }, [navigate]);
+  }, [isReceptionistPortal, navigate]);
 
   useEffect(() => {
     if (!message.text) return undefined;
@@ -148,13 +180,14 @@ export default function EmployeePage() {
   };
 
   const handleShiftSave = async (slot) => {
-    if (!schedEmpId) {
+    if (!isReceptionistPortal && !schedEmpId) {
       setMessage({ type: 'error', text: 'Select an employee before saving a shift.' });
       return;
     }
 
     try {
-      await post(`${EMPLOYEE_API}/availability`, { ...slot, employeeId: schedEmpId });
+      const targetEmployeeId = isReceptionistPortal ? employeeId : schedEmpId;
+      await post(`${EMPLOYEE_API}/availability`, { ...slot, employeeId: targetEmployeeId });
       setMessage({ type: 'success', text: 'Shift saved successfully.' });
       loadData();
     } catch (err) {
@@ -185,7 +218,7 @@ export default function EmployeePage() {
   const confirmedAppointments = data.appointments.filter(isConfirmedStatus);
   const overdueInvoices = data.transactions.filter(isOverdueTransaction);
   const totalRevenue = data.transactions.reduce((sum, transaction) => sum + Number(transaction.Amount || 0), 0);
-  const staffRoleCounts = data.employees.reduce((acc, employee) => {
+  const staffRoleCounts = (data.employees || []).reduce((acc, employee) => {
     const key = employee.Role || 'Unknown';
     acc[key] = (acc[key] || 0) + 1;
     return acc;
@@ -203,7 +236,7 @@ export default function EmployeePage() {
     return text.includes(patientSearch.trim().toLowerCase());
   });
 
-  const selectedEmployee = data.employees.find((employee) => String(employee.EmployeeID) === schedEmpId);
+  const selectedEmployee = (data.employees || []).find((employee) => String(employee.EmployeeID) === schedEmpId);
 
   return (
     <div style={pageShell}>
@@ -214,10 +247,12 @@ export default function EmployeePage() {
           <div style={heroOrb} />
           <div style={heroContent}>
             <div>
-              <p style={eyebrow}>{staffRole || 'Employee'} operations</p>
+              <p style={eyebrow}>{isReceptionistPortal ? 'Reception desk' : `${staffRole || 'Employee'} operations`}</p>
               <h1 style={heroTitle}>{staffName || 'Staff workspace'}</h1>
               <p style={heroText}>
-                This dashboard is tuned for front-desk workflow: book visits, confirm appointments, track payments, and keep the clinic schedule organized with data that matches the current schema.
+                {isReceptionistPortal
+                  ? 'This dashboard keeps the receptionist role focused on front-desk work: book visits, confirm appointments, manage payments, find patients, and review only your own schedule.'
+                  : 'This dashboard is tuned for front-desk workflow: book visits, confirm appointments, track payments, and keep the clinic schedule organized with data that matches the current schema.'}
               </p>
             </div>
             <div style={heroHighlights}>
@@ -229,7 +264,7 @@ export default function EmployeePage() {
         </section>
 
         <nav style={tabRow}>
-          {TABS.map((tab) => (
+          {tabs.map((tab) => (
             <button
               key={tab.id}
               type="button"
@@ -605,6 +640,18 @@ export default function EmployeePage() {
 
         {activeTab === 'schedule' && (
           <div style={stackLayout}>
+            {isReceptionistPortal ? (
+              <SurfaceCard
+                title="My Schedule"
+                subtitle="Review and add shifts only for your receptionist account."
+              >
+                <WeekDayPicker
+                  shifts={data.availability}
+                  employeeId={employeeId}
+                  onSave={handleShiftSave}
+                />
+              </SurfaceCard>
+            ) : (
             <SurfaceCard
               title="Staff Schedule"
               subtitle="Choose an employee, then assign shifts for the week"
@@ -651,6 +698,7 @@ export default function EmployeePage() {
                 />
               )}
             </SurfaceCard>
+            )}
           </div>
         )}
 
@@ -685,7 +733,7 @@ export default function EmployeePage() {
           </SurfaceCard>
         )}
 
-        {activeTab === 'staff' && (
+        {!isReceptionistPortal && activeTab === 'staff' && (
           <div style={stackLayout}>
             <section style={metricGrid}>
               <MetricCard label="Total Staff" value={data.employees.length} detail="Employee records in scope" tone="plum" />

@@ -21,6 +21,7 @@ export function useStaffAuth(requiredRole) {
           if (session.role === 'Doctor') navigate('/doctor');
           else if (session.role === 'Admin') navigate('/admin');
           else if (session.role === 'Nurse') navigate('/nurse');
+          else if (session.role === 'Receptionist') navigate('/receptionist');
           else navigate('/employee');
         }
       })
