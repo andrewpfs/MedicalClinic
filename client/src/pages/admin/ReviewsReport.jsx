@@ -7,6 +7,7 @@ function ReviewsReport() {
     const [response, setResponse] = useState([])
     const [records, setRecords] = useState([])
     const [departments, setDepts]   = useState([])
+    const [depNames,setDepNames] = useState([])
     const [docIds, setDocIds] = useState([])
     const [doctors,setDoctors] = useState([])
     const [doctorList,setDoctorList] = useState([])
@@ -68,12 +69,43 @@ function ReviewsReport() {
         }
     }
 
+    async function fetchDepartmentData() {
+        //console.log("fethcing patients")
+        try {
+            const response = await fetch('/admin/api/getdepartments',{credentials:"include"})
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const rows = await response.json();
+            let ids = [];
+            
+            if (Array.isArray(rows)) {
+                rows.forEach((row) => {
+                    ids.push(row.DepartmentName);
+                });
+            }
+            setDepNames(ids)
+            setDepts(rows)
+        } catch(err) {
+            console.error('Error fetching patients:', err);
+        }
+    }
+
     useEffect(() => { 
         fetchTableData() 
         fetchDoctorData()
-        getDepartments()
-        getTop()
+        fetchDepartmentData()
+        //getTop()
     }, [])
+
+    useEffect(() => {
+        getTop()
+    },[doctors])
+
+    useEffect(() => {
+        getTop()
+    },[records])
 
     const columns = [
         {
@@ -112,35 +144,35 @@ function ReviewsReport() {
         //setBest(prev => ({ ...prev, [totalRevenue]: 0 }))
         const docrev = new Array(docIds.length).fill(0)
         const docamount = new Array(docIds.length).fill(0)
-        const deps = fetchDepartmentNames()
-        const deprev = new Array(deps.length).fill(0)
-        const depamount = new Array(deps.length).fill(0)
+        const deprev = new Array(depNames.length).fill(0)
+        const depamount = new Array(depNames.length).fill(0)
         var index = 0
         var total = 0
         var amount = records.length
         records.forEach((row) => {
             index = docIds.indexOf(row.DocID)
             if (index > -1) {
-                docrev[index] += row.Rating
+                docrev[index] += Number(row.Rating)
                 docamount[index] ++
             }
-            index = deps.indexOf(row.DepartmentName)
+            index = depNames.indexOf(row.DepartmentName)
             if (index > -1) {
-                deprev[index] += row.Rating
+                deprev[index] += Number(row.Rating)
                 depamount[index] ++
             }
-            total += row.Amount
+            total += Number(row.Rating)
 
         })
         total = total / amount
-        const maxdoc = Math.max(...docrev)
+        console.log(doctors)
+        const maxdoc = (Math.max(...docrev) != '-Infinity' && Math.max(...docrev) != '0') ? Math.max(...docrev) : '0'
         index = docrev.indexOf(maxdoc);
-        const doc = index > -1 ? doctors[index].DocFirst+" "+doctors[index].DocLast : "None Found"
+        const doc = index > -1 ? doctors[index].FirstName+" "+doctors[index].LastName : "None Found"
         const avgdoc = index > -1 ? maxdoc / docamount[index] : "None"
         
-        const maxdep = Math.max(...deprev)
+        const maxdep = (Math.max(...deprev) != '-Infinity' && Math.max(...deprev) != '0') ? Math.max(...deprev) : '0'
         index = deprev.indexOf(maxdep);
-        const dep = index > -1 ? deps[index] : "None Found"
+        const dep = index > -1 ? depNames[index] : "None Found"
         const avgdep = index > -1 ? maxdep / depamount[index] : "None"
         
         setBest(prev => ({ ...prev, avgReview: total }))
@@ -150,79 +182,13 @@ function ReviewsReport() {
         setBest(prev => ({ ...prev, avgDepReview: avgdep }))
     }
 
-    const fetchDoctorIDs = async () => {
-        try {
-            const response = await fetch(`/admin/api/getdepdoctors?DepartmentName=${encodeURIComponent(rep.DepartmentName)}`);
-            
-            // Add error handling for HTTP responses
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            
-            const rows = await response.json();
-            const ids = [];
-            
-            if (Array.isArray(rows)) {
-                rows.forEach((row) => {
-                    ids.push(row.EmployeeID);
-                });
-            }
-            
-            return ids;
-        } catch(err) {
-            console.error('Error fetching doctor IDs:', err);
-            return [];
-        }
-    };
-
-    const fetchDoctorNames = async () => {
-        try { 
-            const response = await fetch('/admin/api/getdepdoctors', {DepartmentName: rep.DepartmentName})
-            const rows = await response.json()
-            const ids = []
-            if (Array.isArray(rows)) rows.forEach((row) => {
-                ids.push(row.FirstName+" "+row.LastName)
-            })
-            return ids
-        }catch(err) {
-            console.error(err)
-        }
-    }
-
-    const fetchDepartmentNames = async () => {
-        try { 
-            const rows = await fetch('/admin/api/getdepartments')
-            const ids = []
-            if (Array.isArray(rows)) rows.forEach((row) => {
-                ids.push(row.DepartmentName)
-            })
-            return ids
-        }catch(err) {
-            console.error(err)
-        }
-    }
-
-    const getDepartments = async () => {
-        await fetch('/admin/api/getdepartments', { credentials: 'include' })
-            .then(r => r.json())
-            .then(d => setDepts(Array.isArray(d) ? d : []))
-            .catch(console.error);
-    }
-
     async function getDoctors() {
-        const arr = []
         const docs = []
-        await fetch('/admin/api/getdepdoctors', {DepartmentName: rep.DepartmentName})
-            .then(r => r.json())
-            .then(d => arr.concat(Array.isArray(d) ? d : []))
-            .catch(console.error);
-        arr.forEach((row) => {
-            if (dep.length > 0) {
-                if (row.DepartmentName == rep.DepartmentName) docs.push(row)
-            }else docs.push(row)
+        if (Array.isArray(doctors))doctors.forEach((doc) => {
+            if (doc.DepartmentName === rep.DepartmentName) docs.push(doc)
         })
 
-        setDoctors(docs)
+        setDoctorList(docs)
     }
 
     const handleChange = (e) => {
@@ -333,8 +299,8 @@ function ReviewsReport() {
 
     const Reset = () => { 
         fetchTableData() 
-        getDepartments()
-        getDoctors("")
+        fetchDoctorData()
+        fetchDepartmentData()
         resetFilters()
         getTop()
     }
@@ -357,7 +323,7 @@ function ReviewsReport() {
                     <label style={filterLabel}>Doctor</label>
                     <select name="DoctorLast" value={rep.DoctorLast} onChange={handleChange} style={filterInput}>
                     <option value = "">Select</option>
-                    {doctors.map(d => (
+                    {doctorList.map(d => (
                         <option key={d.EmployeeID} value={d.LastName}>{d.FirstName} {d.LastName}</option>
                     ))}
                     </select>
@@ -389,16 +355,16 @@ function ReviewsReport() {
             <div style={filterCard}>
                 <p style={sectionLabel}>Summary</p>
                 <div style={filterGroup}>
-                    <label style={filterLabel}>Total Revenue</label>
-                    $ {best.totalRevenue}
+                    <label style={filterLabel}>Average Reviews</label>
+                    {best.avgReview}/5
                 </div>
                 <div style={filterGroup}>
                     <label style={filterLabel}>Top Doctor</label>
-                    {best.topDoctor}: $ {best.topDocRevenue}
+                    {best.topDoctor}: {best.avgDocReview}/5
                 </div>
                 <div style={filterGroup}>
                     <label style={filterLabel}>Top Department</label>
-                    {best.topDepartment}: $ {best.topDepRevenue}
+                    {best.topDepartment}: {best.avgDepReview}/5
                 </div>
             </div>
             <div className="report-table">

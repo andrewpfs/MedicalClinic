@@ -206,9 +206,9 @@ router.get('/api/pullgrr', requireAdmin, async (req,res) => {
 
 router.get('/api/pullrevenue', requireAdmin, async (req,res) => {
     const q = `
-    SELECT T.TransactionID AS "Id", P.FName AS "PatFirst", P.LName AS "PatLast", E.FirstName AS "DocFirst", E.LastName AS "DocLast",D.DepartmentName,T.Amount,T.TransactionDateTime AS "Date",E.EmployeeID AS "DocID"
+    SELECT T.TransactionID AS "Id", P.FName AS "PatFirst", P.LName AS "PatLast", E.FirstName AS "DocFirst", E.LastName AS "DocLast",D.DepartmentName,T.Amount,T.TransactionDateTime AS "Date",E.EmployeeID AS "DocID",T.Status,P.hasInsurance AS "Insurance" 
     FROM transaction AS T, patient AS P,appointment AS A, employee AS E, department AS D
-    WHERE T.AppointmentID=A.AppointmentID AND T.PatientID=P.PatientID AND E.EmployeeID=A.DoctorID AND E.DepartmentID=D.DepartmentID AND T.Status="Posted"`;
+    WHERE T.AppointmentID=A.AppointmentID AND T.PatientID=P.PatientID AND E.EmployeeID=A.DoctorID AND E.DepartmentID=D.DepartmentID`;
 
     try {
         const [rows] = await db.query(q)
@@ -347,9 +347,10 @@ router.get('/api/getdepartmentinfo', async (req,res) => {
 
 router.get('/api/getpatients', async (req,res) => {
     const q = `
-    SELECT PatientID,FName,LName
+    SELECT P.PatientID,P.FName,P.LName
     FROM patient AS P 
-    JOIN transaction as T ON P.PatientID=T.PatientID`
+    JOIN transaction as T ON P.PatientID=T.PatientID
+    GROUP BY P.PatientID`
 
     try {
         const [rows] = await db.query(q)

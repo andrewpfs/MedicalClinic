@@ -7,6 +7,7 @@ function InvoiceReport() {
     const [response, setResponse] = useState([])
     const [records, setRecords] = useState([])
     const [departments, setDepts]   = useState([])
+    const [depNames, setDepNames] = useState([])
     const [patIds, setPatIds] = useState([])
     const [patients,setPatients] = useState([])
     const [loading, setLoading] = useState(false)
@@ -40,36 +41,64 @@ function InvoiceReport() {
     }
 
     async function fetchPatientData() {
+        //console.log("fethcing patients")
         try {
             const response = await fetch('/admin/api/getpatients')
-
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
-
+            
             const rows = await response.json();
-            const ids = [];
+            let ids = [];
             
             if (Array.isArray(rows)) {
                 rows.forEach((row) => {
                     ids.push(row.PatientID);
                 });
             }
-            
             setPatIds(ids)
             setPatients(rows)
         } catch(err) {
             console.error('Error fetching patients:', err);
-            return [];
         }
     }
 
-    useEffect(() => { 
+    async function fetchDepartmentData() {
+        //console.log("fethcing patients")
+        try {
+            const response = await fetch('/admin/api/getdepartments',{credentials:"include"})
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const rows = await response.json();
+            let ids = [];
+            
+            if (Array.isArray(rows)) {
+                rows.forEach((row) => {
+                    ids.push(row.DepartmentName);
+                });
+            }
+            setDepNames(ids)
+            setDepts(rows)
+        } catch(err) {
+            console.error('Error fetching patients:', err);
+        }
+    }
+
+    useEffect(() => {
         fetchTableData() 
         fetchPatientData()
-        getDepartments()
-        getTop()
+        fetchDepartmentData()
     }, [])
+
+    useEffect(() => {
+        getTop()
+    }, [departments]);
+
+    useEffect(() => {
+        getTop()
+    }, [records]);
 
     const columns = [
         {
@@ -104,37 +133,40 @@ function InvoiceReport() {
         },
         {
             name: "Total Due",
-            selector: (row) => row.Amount + row.Late,
+            selector: (row) => Number(row.Amount) + Number(row.Late),
             sortable: true
         }
     ];
 
-    const getTop = () => {
+    const getTop = async () => {
         //setBest(prev => ({ ...prev, [totalRevenue]: 0 }))
         const patinv = new Array(patIds.length).fill(0)
-        const deps = fetchDepartmentNames()
-        const depinv = new Array(deps.length).fill(0)
+        const depinv = await new Array(depNames.length).fill(0)
+        console.log("Cleared if not empty:",depinv)
         var index = 0
         var total = 0
         records.forEach((row) => {
             index = patIds.indexOf(row.PatID)
             if (index > -1) {
-                patinv[index] += row.Amount + row.Late
+                patinv[index] += Number(row.Amount) + Number(row.Late)
             }
-            index = deps.indexOf(row.DepartmentName)
+            index = depNames.indexOf(row.DepartmentName)
             if (index > -1) {
-                depinv[index] += row.Amount + row.Late
+                depinv[index] += Number(row.Amount) + Number(row.Late)
             }
-            total += row.Amount
+            total += Number(row.Amount) + Number(row.Late)
 
         })
-        const maxpat = Math.max(...patinv)
+        console.log("Cleared if not empty:",depinv)
+        //console.log(patIds)
+        const maxpat = (Math.max(...patinv) != '-Infinity' && Math.max(...patinv) != '0') ? Math.max(...patinv) : '0'
         index = patinv.indexOf(maxpat);
         const pat = index > -1 ? patients[index].FName+" "+patients[index].LName : "None Found"
         
-        const maxdep = Math.max(...depinv)
+        //console.log(depinv)
+        const maxdep = (Math.max(...depinv) != '-Infinity' && Math.max(...depinv) != '0') ? Math.max(...depinv) : '0'
         index = depinv.indexOf(maxdep);
-        const dep = index > -1 ? deps[index] : "None Found"
+        const dep = index > -1 ? depNames[index] : "None Found"
         
         setBest(prev => ({ ...prev, totalInvoice: total }))
         setBest(prev => ({ ...prev, topPatient: pat }))
@@ -143,32 +175,11 @@ function InvoiceReport() {
         setBest(prev => ({ ...prev, topDepInvoice: maxdep }))
     }
 
-    const fetchDepartmentNames = async () => {
-        try { 
-            const rows = await fetch('/admin/api/getdepartments')
-            const ids = []
-            if (Array.isArray(rows)) rows.forEach((row) => {
-                ids.push(row.DepartmentName)
-            })
-            return ids
-        }catch(err) {
-            console.error(err)
-        }
-    }
-
-    const getDepartments = async () => {
-        await fetch('/admin/api/getdepartments', { credentials: 'include' })
-            .then(r => r.json())
-            .then(d => setDepts(Array.isArray(d) ? d : []))
-            .catch(console.error);
-    }
-
     const handleChange = (e) => {
         console.log(e.target.value)
         setRep(prev => ({ ...prev, [e.target.name]: e.target.value }));
         console.log(rep)
         handleFilters()
-        console.log(rep)
     };
 
     function handleFilterFirst(event) {
@@ -256,7 +267,7 @@ function InvoiceReport() {
 
     const Reset = () => { 
         fetchTableData() 
-        getDepartments()
+        fetchDepartmentData()
         resetFilters()
         getTop()
     }
@@ -303,15 +314,15 @@ function InvoiceReport() {
                 <p style={sectionLabel}>Summary</p>
                 <div style={filterGroup}>
                     <label style={filterLabel}>Total Invoice</label>
-                    {best.totalInvoice}
+                    ${best.totalInvoice}
                 </div>
                 <div style={filterGroup}>
                     <label style={filterLabel}>Patient with the largest invoice</label>
-                    {best.topPatient}: {best.topPatInvoice}
+                    {best.topPatient}: ${best.topPatInvoice}
                 </div>
                 <div style={filterGroup}>
                     <label style={filterLabel}>Department with the largest invoice</label>
-                    {best.topDepartment}: {best.topDepInvoice}
+                    {best.topDepartment}: ${best.topDepInvoice}
                 </div>
             </div>
             <div className="report-table">
