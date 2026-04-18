@@ -118,7 +118,7 @@ function InvoiceReport() {
         },
         {
             name: "Due Date",
-            selector: (row) => row.Date,
+            selector: (row) => row.Date != null ? String(row.Date).slice(0, 10) : "Not Posted",
             sortable: true
         },
         {
@@ -133,7 +133,7 @@ function InvoiceReport() {
         },
         {
             name: "Total Due",
-            selector: (row) => Number(row.Amount) + Number(row.Late),
+            selector: (row) => (Number(row.Amount) + Number(row.Late)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
             sortable: true
         }
     ];

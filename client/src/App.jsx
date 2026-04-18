@@ -14,7 +14,6 @@ import NursePage from './pages/NursePage';
 import StaffLogin from './pages/StaffLogin';
 // Admin pages
 import AdminHome from './pages/admin/Home';
-import AddE from './pages/admin/AddE';
 import AdminProfile from './pages/admin/Profile';
 import AdminEmployees from './pages/admin/Employees';
 import Report from './pages/admin/Report';
@@ -25,8 +24,6 @@ import InvoiceReport from './pages/admin/InvoiceReport';
 import RevenueReport from './pages/admin/RevenueReport';
 import ReviewsReport from './pages/admin/ReviewsReport';
 import Departments from './pages/admin/Departments';
-import DepartmentTable from './pages/admin/DepartmentTable';
-import AddD from './pages/admin/AddD';
 // Patient pages
 import Profile from './pages/patient/Profile';
 import Booking from './pages/patient/booking';
@@ -69,7 +66,6 @@ export default function App() {
         {/* Admin portal */}
         <Route path="/admin" element={<AdminHome />} />
         <Route path="/admin/home" element={<AdminHome />} />
-        <Route path="/admin/add-employee" element={<AddE />} />
         <Route path="/admin/profile" element={<AdminProfile />} />
         <Route path="/admin/employees" element={<AdminEmployees />} />
         <Route path="/admin/departments" element={<Departments />} />

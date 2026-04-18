@@ -10,6 +10,7 @@ const AddE = ({ onSuccess }) => {
   const navigate = useNavigate()
   const [departments, setDepartments] = useState([])
   const [doctors, setDoctors] = useState([])
+  const [employees,setEmployees] = useState([])
   const [emp, setEmp] = useState({
     FirstName: '', LastName: '', BirthDate: '', GenderCode: '',
     RaceCode: '', EthnicityCode: '', Role: '', DepartmentID: '',
@@ -17,16 +18,19 @@ const AddE = ({ onSuccess }) => {
     Specialty: '', IsPrimaryCare: '', AssignedDoctorID: ''
   })
   const [check, setCheck] = useState({ Doctor: false, Nurse: false })
+  const [checkEmail,setCheckEmail] = useState(true)
   const [open, setOpen] = useState(false)
   const [error, setError] = useState('')
 
   useEffect(() => {
     fetch(`${API}/admin/api/getdepartments`).then(r => r.json()).then(setDepartments).catch(console.error)
     fetch(`${API}/admin/api/getdoctors`).then(r => r.json()).then(setDoctors).catch(console.error)
+    fetch(`${API}/admin/api/getemployees`).then(r => r.json()).then(setEmployees).catch(console.error)
   }, [])
 
   const handleChange = (e) => {
     setEmp(prev => ({ ...prev, [e.target.name]: e.target.value }))
+    setCheckEmail(true)
   }
 
   const handleRoleChange = (e) => {
@@ -38,43 +42,47 @@ const AddE = ({ onSuccess }) => {
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
-    try {
-      // Step 1: create base employee record
-      const empRes = await fetch(`${API}/admin/api/addemployee`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(emp)
-      })
-      const empData = await empRes.json()
-      if (!empRes.ok) throw new Error(empData.error || 'Failed to create employee')
-
-      const newId = empData.employeeId
-
-      // Step 2: if Doctor, insert into doctor table
-      if (check.Doctor) {
-        const drRes = await fetch(`${API}/admin/api/adddoctor`, {
+    employees.forEach((row) => {
+      if (row.Email === emp.Email) setCheckEmail(false)}) 
+    if (checkEmail) {
+        try {
+        // Step 1: create base employee record
+        const empRes = await fetch(`${API}/admin/api/addemployee`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ EmployeeID: newId, Specialty: emp.Specialty, IsPrimaryCare: emp.IsPrimaryCare })
+          body: JSON.stringify(emp)
         })
-        if (!drRes.ok) throw new Error('Employee created but failed to save doctor details')
-      }
+        const empData = await empRes.json()
+        if (!empRes.ok) throw new Error(empData.error || 'Failed to create employee')
 
-      // Step 3: if Nurse, insert into nurse table
-      if (check.Nurse) {
-        const nurseRes = await fetch(`${API}/admin/api/addnurse`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ EmployeeID: newId, AssignedDoctorID: emp.AssignedDoctorID || null })
-        })
-        if (!nurseRes.ok) throw new Error('Employee created but failed to save nurse details')
-      }
+        const newId = empData.employeeId
 
-      setOpen(false)
-      if (onSuccess) onSuccess()
-      else navigate('/admin/employees')
-    } catch (err) {
-      setError(err.message)
+        // Step 2: if Doctor, insert into doctor table
+        if (check.Doctor) {
+          const drRes = await fetch(`${API}/admin/api/adddoctor`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ EmployeeID: newId, Specialty: emp.Specialty, IsPrimaryCare: emp.IsPrimaryCare })
+          })
+          if (!drRes.ok) throw new Error('Employee created but failed to save doctor details')
+        }
+
+        // Step 3: if Nurse, insert into nurse table
+        if (check.Nurse) {
+          const nurseRes = await fetch(`${API}/admin/api/addnurse`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ EmployeeID: newId, AssignedDoctorID: emp.AssignedDoctorID || null })
+          })
+          if (!nurseRes.ok) throw new Error('Employee created but failed to save nurse details')
+        }
+
+        setOpen(false)
+        if (onSuccess) onSuccess()
+        else navigate('/admin/employees')
+      } catch (err) {
+        setError(err.message)
+      }
     }
   }
 
@@ -92,10 +100,9 @@ const AddE = ({ onSuccess }) => {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
             <p style={sectionLabel}>New employee</p>
           </div>
-
           {error && (
             <div style={{ marginBottom: '12px', padding: '10px 14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', fontSize: '13px', color: '#991b1b' }}>
-              {error}
+              {error}{!checkEmail && (", Email already in use")}
             </div>
           )}
 
@@ -259,5 +266,14 @@ const AddE = ({ onSuccess }) => {
     </div>
   )
 }
+
+const errorBox = { 
+  marginBottom: '12px', 
+  padding: '10px 14px', 
+  background: '#fef2f2', 
+  border: '1px solid #fecaca', 
+  borderRadius: '8px', 
+  fontSize: '13px', 
+  color: '#991b1b' };
 
 export default AddE

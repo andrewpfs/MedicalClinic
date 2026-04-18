@@ -137,7 +137,7 @@ function RevenueReport() {
         },
         {
             name: "Transaction Date",
-            selector: (row) => row.Date,
+            selector: (row) => row.Date != null ? String(row.Date).slice(0, 10) : "Not Posted",
             sortable: true
         },
         {

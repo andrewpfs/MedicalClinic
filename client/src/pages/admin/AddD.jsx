@@ -9,6 +9,8 @@ const AddD = ({ onSuccess }) => {
   useStaffAuth('Admin')
   const navigate = useNavigate()
   const [offices, setOffices] = useState([])
+  const [departments,setDepts] = useState([])
+  const [check,setCheck] = useState(true)
   const [emp, setEmp] = useState({
     DepartmentName: '', OfficeID: ''
   })
@@ -17,6 +19,7 @@ const AddD = ({ onSuccess }) => {
 
   useEffect(() => {
     fetch(`${API}/admin/api/getoffices`).then(r => r.json()).then(setOffices).catch(console.error)
+    fetch(`${API}/admin/api/getdepartments`).then(r => r.json()).then(setDepts).catch(console.error)
   }, [])
 
   const handleChange = (e) => {
@@ -32,21 +35,25 @@ const AddD = ({ onSuccess }) => {
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
-    try {
-      // Step 1: create base employee record
-      const empRes = await fetch(`${API}/admin/api/adddepartment`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(emp)
-      })
-      const empData = await empRes.json()
-      if (!empRes.ok) throw new Error(empData.error || 'Failed to create department')
+    departments.forEach((row) => {
+      if (row.DepartmentName === emp.DepartmentName && row.OfficeID === emp.OfficeID) setCheckEmail(false)}) 
+    if (check) {
+      try {
+        // Step 1: create department record
+        const empRes = await fetch(`${API}/admin/api/adddepartment`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(emp)
+        })
+        const empData = await empRes.json()
+        if (!empRes.ok) throw new Error(empData.error || 'Failed to create department')
 
-      setOpen(false)
-      if (onSuccess) onSuccess()
-      else navigate('/admin/departments')
-    } catch (err) {
-      setError(err.message)
+        setOpen(false)
+        if (onSuccess) onSuccess()
+        else navigate('/admin/departments')
+      } catch (err) {
+        setError(err.message)
+      }
     }
   }
 
@@ -67,7 +74,7 @@ const AddD = ({ onSuccess }) => {
 
           {error && (
             <div style={{ marginBottom: '12px', padding: '10px 14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', fontSize: '13px', color: '#991b1b' }}>
-              {error}
+              {error}{!check && ", That Department already exists in that Office"}
             </div>
           )}
 

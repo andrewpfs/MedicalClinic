@@ -135,7 +135,7 @@ function ReviewsReport() {
         },
         {
             name: "Date Created",
-            selector: (row) => row.Date,
+            selector: (row) => String(row.Date).slice(0, 10),
             sortable: true
         },
     ];

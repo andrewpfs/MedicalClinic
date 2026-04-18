@@ -259,6 +259,24 @@ router.get('/api/getEmployees', async (req,res) => {
     
 })
 
+router.get('/api/getdeptEmployees', async (req,res) => {
+    const {DepartmentID} = req.query
+    
+    const q = `
+    SELECT E.EmployeeID,E.FirstName,E.LastName,E.Role,E.Email,E.PhoneNumber,D.DepartmentID,D.DepartmentName 
+    FROM employee AS E,department as D
+    WHERE D.DepartmentID=E.DepartmentID AND D.DepartmentID=?`;
+    
+    try {
+        const [rows] = await db.query(q,[DepartmentID])
+
+        return res.json(rows)
+    }catch(err) {
+        res.status(500).json({error: "Error getting Department Employees"})
+    }
+    
+})
+
 router.post('/api/updateEmployee', async (req,res) => {
     const q = 'UPDATE employee SET FirstName=?,LastName=?,Address=?,PhoneNumber=?,Email=? WHERE EmployeeID=?';
     const r = [
@@ -354,6 +372,22 @@ router.get('/api/getpatients', async (req,res) => {
 
     try {
         const [rows] = await db.query(q)
+        return res.json(rows)
+    }catch(err){
+        console.error(err)
+    }
+})
+
+router.post('/api/transferdepartment', async (req,res) => {
+    const {DepartmentID,EmployeeID} = req.body
+
+    const q = `
+    UPDATE employee
+    SET DepartmentID=? 
+    WHERE EmployeeID=?`
+
+    try {
+        const [rows] = await db.query(q,[DepartmentID,EmployeeID])
         return res.json(rows)
     }catch(err){
         console.error(err)
