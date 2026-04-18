@@ -123,6 +123,14 @@ const styles = {
   helperText: { fontSize: '12px', color: '#6b7280', marginTop: '0.5rem', lineHeight: 1.5 },
   reviewSummary: { display: 'grid', gap: '4px' },
   reviewComment: { color: '#6b7280', lineHeight: 1.55, maxWidth: '320px' },
+  summaryBtn: { fontSize: '11px', padding: '5px 10px', background: '#eef2ff', color: '#4338ca', border: '1px solid #c7d2fe', borderRadius: '6px', cursor: 'pointer', width: 'auto', fontWeight: 600 },
+  summaryBody: { background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '14px 16px', fontSize: '14px', color: '#1e293b', lineHeight: 1.7, whiteSpace: 'pre-wrap', marginBottom: '0.5rem' },
+  messageBtn: { fontSize: '11px', padding: '5px 10px', background: '#f0fdf4', color: '#166534', border: '1px solid #86efac', borderRadius: '6px', cursor: 'pointer', width: 'auto', fontWeight: 600 },
+  chatWrap: { maxHeight: '260px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px', padding: '10px', background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0', marginBottom: '12px' },
+  bubblePatient: { padding: '8px 12px', borderRadius: '10px', background: '#EAF3DE', color: '#1e293b', fontSize: '13px', marginLeft: 'auto', maxWidth: '80%' },
+  bubbleDoctor: { padding: '8px 12px', borderRadius: '10px', background: '#eef2ff', color: '#1e293b', fontSize: '13px', marginRight: 'auto', maxWidth: '80%' },
+  bubbleSender: { fontWeight: 600, fontSize: '10px', color: '#64748b', marginBottom: '3px' },
+  bubbleTime: { fontSize: '10px', color: '#94a3b8', marginTop: '3px' },
 };
 
 export default function Visits() {
@@ -140,6 +148,12 @@ export default function Visits() {
   const [reviewError, setReviewError] = useState('');
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
   const [reviewForm, setReviewForm] = useState({ rating: 5, comment: '' });
+  const [summaryVisit, setSummaryVisit] = useState(null);
+  const [messageTarget, setMessageTarget] = useState(null);
+  const [threadMessages, setThreadMessages] = useState([]);
+  const [messageDraft, setMessageDraft] = useState('');
+  const [isSendingMessage, setIsSendingMessage] = useState(false);
+  const [messageError, setMessageError] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -269,6 +283,44 @@ export default function Visits() {
       setReviewError(err.message);
     } finally {
       setIsSubmittingReview(false);
+    }
+  };
+
+  const loadThread = async (appointmentId) => {
+    try {
+      const res = await fetch(`/patient/api/messages/${appointmentId}`, { credentials: 'include' });
+      const data = await res.json();
+      if (Array.isArray(data)) setThreadMessages(data);
+    } catch {}
+  };
+
+  const handleOpenThread = (visit) => {
+    setMessageTarget(visit);
+    setMessageDraft('');
+    setMessageError('');
+    setThreadMessages([]);
+    loadThread(visit.AppointmentID);
+  };
+
+  const handleSendMessage = async () => {
+    if (!messageDraft.trim() || !messageTarget) return;
+    setIsSendingMessage(true);
+    setMessageError('');
+    try {
+      const res = await fetch(`/patient/api/messages/${messageTarget.AppointmentID}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ body: messageDraft }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to send');
+      setMessageDraft('');
+      loadThread(messageTarget.AppointmentID);
+    } catch (err) {
+      setMessageError(err.message);
+    } finally {
+      setIsSendingMessage(false);
     }
   };
 
@@ -489,28 +541,104 @@ export default function Visits() {
                     )}
                   </td>
                   <td style={styles.td}>
-                    {Number(visit.HasReview) === 1 ? (
-                      <span style={{ color: '#64748b', fontSize: '12px' }}>Review submitted</span>
-                    ) : Number(visit.CanReview) === 1 ? (
-                      <button
-                        type="button"
-                        style={styles.reviewBtn}
-                        onClick={() => {
-                          setReviewTarget(visit);
-                          setReviewForm({ rating: 5, comment: '' });
-                          setReviewError('');
-                        }}
-                      >
-                        Leave review
-                      </button>
-                    ) : (
-                      <span style={{ color: '#9ca3af', fontSize: '12px' }}>No action</span>
-                    )}
+                    <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
+                      {visit.Status !== 'Cancelled' && (
+                        <button type="button" style={styles.messageBtn} onClick={() => handleOpenThread(visit)}>
+                          Message
+                        </button>
+                      )}
+                      {visit.PatientSummary && (
+                        <button
+                          type="button"
+                          style={styles.summaryBtn}
+                          onClick={() => setSummaryVisit(visit)}
+                        >
+                          View summary
+                        </button>
+                      )}
+                      {Number(visit.HasReview) === 1 ? (
+                        <span style={{ color: '#64748b', fontSize: '12px' }}>Review submitted</span>
+                      ) : Number(visit.CanReview) === 1 ? (
+                        <button
+                          type="button"
+                          style={styles.reviewBtn}
+                          onClick={() => {
+                            setReviewTarget(visit);
+                            setReviewForm({ rating: 5, comment: '' });
+                            setReviewError('');
+                          }}
+                        >
+                          Leave review
+                        </button>
+                      ) : (
+                        !visit.PatientSummary && <span style={{ color: '#9ca3af', fontSize: '12px' }}>No action</span>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
+        )}
+
+        {summaryVisit && (
+          <div style={styles.modal}>
+            <div style={styles.modalBox}>
+              <h3 style={styles.modalHeading}>Visit summary</h3>
+              <p style={styles.modalSub}>
+                <strong>Dr. {summaryVisit.FirstName} {summaryVisit.LastName}</strong> · {formatDate(summaryVisit.AppointmentDate)}
+              </p>
+              <div style={styles.summaryBody}>
+                {summaryVisit.PatientSummary}
+              </div>
+              <div style={styles.modalBtns}>
+                <button style={styles.dismissBtn} onClick={() => setSummaryVisit(null)}>Close</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {messageTarget && (
+          <div style={styles.modal}>
+            <div style={{ ...styles.modalBox, maxWidth: '540px' }}>
+              <h3 style={styles.modalHeading}>Messages — Dr. {messageTarget.FirstName} {messageTarget.LastName}</h3>
+              <p style={styles.modalSub}>Appointment · {formatDate(messageTarget.AppointmentDate)}</p>
+
+              <div style={styles.chatWrap}>
+                {threadMessages.length === 0 ? (
+                  <p style={{ color: '#9ca3af', fontSize: '13px', textAlign: 'center', padding: '1rem 0' }}>
+                    No messages yet. Start the conversation below.
+                  </p>
+                ) : threadMessages.map((msg) => (
+                  <div key={msg.MessageID} style={msg.SenderType === 'patient' ? styles.bubblePatient : styles.bubbleDoctor}>
+                    <div style={styles.bubbleSender}>{msg.SenderType === 'patient' ? 'You' : `Dr. ${messageTarget.LastName}`}</div>
+                    {msg.Body}
+                    <div style={styles.bubbleTime}>
+                      {new Date(msg.SentAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <textarea
+                style={styles.textarea}
+                value={messageDraft}
+                onChange={(e) => setMessageDraft(e.target.value)}
+                placeholder="Write a message to your doctor..."
+                rows={3}
+              />
+              {messageError && <p style={{ color: '#993C1D', fontSize: '12px', marginTop: '4px' }}>{messageError}</p>}
+
+              <div style={styles.modalBtns}>
+                <button style={styles.saveBtn} onClick={handleSendMessage} disabled={isSendingMessage || !messageDraft.trim()}>
+                  {isSendingMessage ? 'Sending...' : 'Send'}
+                </button>
+                <button style={styles.dismissBtn} onClick={() => { setMessageTarget(null); setThreadMessages([]); }}>
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
         )}
 
         {cancelTarget && (

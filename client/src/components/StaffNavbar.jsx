@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "./Navbar.css";
+import StaffNotificationBell from "./StaffNotificationBell";
 
 
 import API from '../api';
@@ -70,6 +71,7 @@ export default function StaffNavbar() {
         <div className="navbar-main__auth">
           {session.isLoggedIn ? (
             <div className="navbar-main__auth-logged-in">
+              {session.role === 'Doctor' && <StaffNotificationBell />}
               <div className="navbar-main__user" ref={dropdownRef}>
                 <button
                   className="navbar-main__user-btn"

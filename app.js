@@ -29,9 +29,9 @@ app.use(session({
 
 const patientRoutes = require('./routes/patient');
 const adminRoutes = require('./routes/admin');
-const homeRoutes = require('./routes/home');
+const homeRoutes = require('./backend/routes/home');
 const employeeApiRoutes = require('./routes/api/employee');
-const doctorApiRoutes = require('./routes/api/doctor');
+const doctorApiRoutes = require('./backend/routes/api/doctor');
 
 app.use('/patient', patientRoutes);
 app.use('/admin', adminRoutes);
