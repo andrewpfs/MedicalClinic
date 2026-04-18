@@ -1,96 +1,129 @@
-import React from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStaffAuth } from '../../hooks/useStaffAuth'
+import StaffNavbar from '../../components/StaffNavbar'
 import API from '../../api'
+import {
+  shellPage, shellInner,
+  adminHeroCard, adminHeroAccent, adminHeroContent,
+  adminEyebrow, adminHeroTitle, adminHeroText,
+  sectionLabel,
+} from './adminStyles'
 
-const styles = {
-  page: { background: '#f5f3ee', minHeight: '100vh', fontFamily: 'Poppins, sans-serif' },
-  topbar: { background: '#1e2b1b', padding: '0 2rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '56px' },
-  topbarTitle: { color: '#d4e6b5', fontSize: '15px', fontWeight: 500, letterSpacing: '0.02em' },
-  topbarNav: { display: 'flex', gap: '8px' },
-  navBtn: { fontSize: '13px', padding: '6px 16px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.15)', background: 'transparent', color: '#d4e6b5', cursor: 'pointer', fontFamily: 'Poppins, sans-serif' },
-  content: { maxWidth: '900px', margin: '0 auto', padding: '2.5rem 1.5rem' },
-  welcome: { fontSize: '22px', fontWeight: 500, color: '#1e2b1b', marginBottom: '0.25rem' },
-  welcomeSub: { fontSize: '13px', color: '#6b7280', marginBottom: '2rem' },
-  sectionLabel: { fontSize: '11px', fontWeight: 500, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '0.75rem' },
-  quickGrid: { display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '12px', marginBottom: '2rem' },
-  quickCard: { background: 'white', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '20px', cursor: 'pointer' },
-  cardIcon: { width: '36px', height: '36px', borderRadius: '8px', background: '#EAF3DE', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '12px', fontSize: '16px' },
-  cardTitle: { fontSize: '14px', fontWeight: 500, color: '#1e2b1b', marginBottom: '3px' },
-  cardSub: { fontSize: '12px', color: '#9ca3af' },
-  reportsCard: { background: 'white', border: '1px solid #e5e7eb', borderRadius: '12px', overflow: 'hidden', marginBottom: '2rem' },
-  reportRow: { display: 'flex', alignItems: 'center', gap: '14px', padding: '16px 20px', borderBottom: '1px solid #f3f4f6', cursor: 'pointer' },
-  reportRowLast: { display: 'flex', alignItems: 'center', gap: '14px', padding: '16px 20px', cursor: 'pointer' },
-  reportIcon: { width: '36px', height: '36px', borderRadius: '8px', background: '#EAF3DE', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '16px' },
-  reportText: { flex: 1 },
-  reportTitle: { fontSize: '14px', fontWeight: 500, color: '#1e2b1b', margin: 0 },
-  reportSub: { fontSize: '12px', color: '#9ca3af', margin: '2px 0 0' },
-  arrow: { fontSize: '18px', color: '#9ca3af' },
-  startBtn: { padding: '11px 28px', background: '#1e2b1b', color: 'white', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: 500, cursor: 'pointer', fontFamily: 'Poppins, sans-serif' },
+const quickCard = {
+  background: 'rgba(255,255,255,0.88)', border: '1px solid rgba(255,255,255,0.9)',
+  borderRadius: '24px', padding: '20px', cursor: 'pointer',
+  boxShadow: '0 18px 44px rgba(15,23,42,0.09)',
+}
+const cardIcon = {
+  width: '36px', height: '36px', borderRadius: '8px', background: '#EAF3DE',
+  display: 'flex', alignItems: 'center', justifyContent: 'center',
+  marginBottom: '12px', fontSize: '16px',
+}
+const cardTitle = { fontSize: '14px', fontWeight: 500, color: '#1e2b1b', marginBottom: '3px', margin: 0 }
+const cardSub   = { fontSize: '12px', color: '#9ca3af', margin: '3px 0 0' }
+const reportsCard = {
+  background: 'rgba(255,255,255,0.88)', border: '1px solid rgba(255,255,255,0.9)',
+  borderRadius: '24px', overflow: 'hidden',
+  boxShadow: '0 18px 44px rgba(15,23,42,0.09)',
+}
+const reportRow = {
+  display: 'flex', alignItems: 'center', gap: '14px', padding: '16px 20px',
+  borderBottom: '1px solid #f3f4f6', cursor: 'pointer',
+}
+const reportRowLast = {
+  display: 'flex', alignItems: 'center', gap: '14px', padding: '16px 20px', cursor: 'pointer',
+}
+const reportIcon = {
+  width: '36px', height: '36px', borderRadius: '8px', background: '#EAF3DE',
+  display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '16px',
 }
 
 const reports = [
-  { icon: '💰', title: 'Invoice Report', sub: 'Invoices that have been left unpaid and the amount that each is due', type: 'Invoice' },
-  { icon: '📋', title: 'Revenue Report', sub: 'Doctors within a department ranked by appointments', type: 'Revenue' },
-  { icon: '💳', title: 'Reviews Report', sub: 'Full transaction log with filters by department and date', type: 'Reviews' },
+  { icon: '💰', title: 'Invoice Report',  sub: 'Invoices that have been left unpaid and the amount that each is due',   type: 'Invoice'  },
+  { icon: '📋', title: 'Revenue Report',  sub: 'Transactions that have been completed and how much revenue has been achieved', type: 'Revenue'  },
+  { icon: '⭐', title: 'Reviews Report',  sub: 'Patient satisfaction ratings filtered by department, doctor, and date', type: 'Reviews'  },
 ]
-
 
 function AdminHome() {
   useStaffAuth('Admin')
   const navigate = useNavigate()
+  const [adminName, setAdminName] = useState('')
 
-  const handleLogout = async () => {
-    await fetch(`${API}/admin/logout`, { credentials: 'include' })
-    navigate('/')
-  }
+  useEffect(() => {
+    fetch(`${API}/api/employee/session`, { credentials: 'include' })
+      .then(r => r.json())
+      .then(s => { if (s.isLoggedIn) setAdminName(s.name || '') })
+      .catch(() => {})
+  }, [])
 
   return (
-    <div style={styles.page}>
-      <div style={styles.topbar}>
-        <span style={styles.topbarTitle}>Admin Portal</span>
-        <div style={styles.topbarNav}>
-            <button style={styles.navBtn} onClick={handleLogout}>Sign out</button>
-        </div>
-      </div>
+    <div style={shellPage}>
+      <StaffNavbar />
+      <div style={shellInner}>
 
-      <div style={styles.content}>
-        <h1 style={styles.welcome}>Welcome back</h1>
-        <p style={styles.welcomeSub}>Here's an overview of your admin tools</p>
-
-        <p style={styles.sectionLabel}>Quick access</p>
-        <div style={styles.quickGrid}>
-          <div style={styles.quickCard} onClick={() => navigate('/admin/employees')}>
-            <div style={styles.cardIcon}>👥</div>
-            <p style={styles.cardTitle}>Employees</p>
-            <p style={styles.cardSub}>View, add, and edit staff records</p>
-          </div>
-          <div style={styles.quickCard} onClick={() => navigate('/admin/report')}>
-            <div style={styles.cardIcon}>📅</div>
-            <p style={styles.cardTitle}>All appointments</p>
-            <p style={styles.cardSub}>Browse and filter appointment records</p>
+        <div style={adminHeroCard}>
+          <div style={adminHeroAccent} />
+          <div style={adminHeroContent}>
+            <p style={adminEyebrow}>Admin workspace</p>
+            <h1 style={adminHeroTitle}>Welcome back{adminName ? `, ${adminName}` : ''}</h1>
+            <p style={adminHeroText}>
+              Manage employees, departments, appointments, and review clinic-wide reports all from one place.
+            </p>
           </div>
         </div>
 
-        <p style={styles.sectionLabel}>Reports</p>
-        <div style={styles.reportsCard}>
+        <p style={{ ...sectionLabel, marginBottom: '12px' }}>Quick access</p>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '12px', marginBottom: '28px' }}>
+          <div style={quickCard}
+            onClick={() => navigate('/admin/employees')}
+            onMouseEnter={e => e.currentTarget.style.boxShadow = '0 22px 54px rgba(15,23,42,0.14)'}
+            onMouseLeave={e => e.currentTarget.style.boxShadow = '0 18px 44px rgba(15,23,42,0.09)'}
+          >
+            <div style={cardIcon}>👥</div>
+            <p style={cardTitle}>Employees</p>
+            <p style={cardSub}>View, add, and edit staff records</p>
+          </div>
+          <div style={quickCard}
+            onClick={() => navigate('/admin/departments')}
+            onMouseEnter={e => e.currentTarget.style.boxShadow = '0 22px 54px rgba(15,23,42,0.14)'}
+            onMouseLeave={e => e.currentTarget.style.boxShadow = '0 18px 44px rgba(15,23,42,0.09)'}
+          >
+            <div style={cardIcon}>🏥</div>
+            <p style={cardTitle}>Departments</p>
+            <p style={cardSub}>Manage clinic departments and staff</p>
+          </div>
+          <div style={quickCard}
+            onClick={() => navigate('/admin/report?type=AllAppt')}
+            onMouseEnter={e => e.currentTarget.style.boxShadow = '0 22px 54px rgba(15,23,42,0.14)'}
+            onMouseLeave={e => e.currentTarget.style.boxShadow = '0 18px 44px rgba(15,23,42,0.09)'}
+          >
+            <div style={cardIcon}>📅</div>
+            <p style={cardTitle}>All Appointments</p>
+            <p style={cardSub}>Browse and filter appointment records</p>
+          </div>
+        </div>
+
+        <p style={{ ...sectionLabel, marginBottom: '12px' }}>Reports</p>
+        <div style={reportsCard}>
           {reports.map((r, i) => (
             <div
               key={r.title}
-              style={i === reports.length - 1 ? styles.reportRowLast : styles.reportRow}
+              style={i === reports.length - 1 ? reportRowLast : reportRow}
               onClick={() => navigate(`/admin/report?type=${r.type}`)}
               onMouseEnter={e => e.currentTarget.style.background = '#f9fafb'}
-              onMouseLeave={e => e.currentTarget.style.background = 'white'}
+              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
             >
-              <div style={styles.reportIcon}>{r.icon}</div>
-              <div style={styles.reportText}>
-                <p style={styles.reportTitle}>{r.title}</p>
-                <p style={styles.reportSub}>{r.sub}</p>
+              <div style={reportIcon}>{r.icon}</div>
+              <div style={{ flex: 1 }}>
+                <p style={cardTitle}>{r.title}</p>
+                <p style={cardSub}>{r.sub}</p>
               </div>
-              <span style={styles.arrow}>›</span>
+              <span style={{ fontSize: '18px', color: '#9ca3af' }}>›</span>
             </div>
           ))}
         </div>
+
       </div>
     </div>
   )

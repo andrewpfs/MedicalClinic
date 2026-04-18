@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import DataTable from 'react-data-table-component'
-import { tableCustomStyles, filterCard, filterRow, filterGroup, filterLabel, filterInput, primaryBtn, sectionLabel } from './adminStyles'
+import { tableCustomStyles, filterCard, filterRow, filterGroup, filterLabel, filterInput, primaryBtn, resetBtn, sectionLabel, statCardsRow, statCard, statCardAccent, statLabel, statLabelLight, statValue, statValueLight, statSub, statSubLight, pageHeader, pageHeaderTitle, pageHeaderSub } from './adminStyles'
 
 function InvoiceReport() {
     const [response, setResponse] = useState([])
@@ -274,6 +274,23 @@ function InvoiceReport() {
 
     return (
         <>
+            <div style={statCardsRow}>
+                <div style={statCardAccent}>
+                    <p style={statLabelLight}>Total Outstanding</p>
+                    <p style={statValueLight}>${Number(best.totalInvoice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                    <p style={statSubLight}>Across all filtered invoices</p>
+                </div>
+                <div style={statCard}>
+                    <p style={statLabel}>Highest Patient Balance</p>
+                    <p style={statValue}>{best.topPatient}</p>
+                    <p style={statSub}>${Number(best.topPatInvoice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} owed</p>
+                </div>
+                <div style={statCard}>
+                    <p style={statLabel}>Top Department</p>
+                    <p style={statValue}>{best.topDepartment}</p>
+                    <p style={statSub}>${Number(best.topDepInvoice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} owed</p>
+                </div>
+            </div>
             <div style={filterCard}>
                 <p style={sectionLabel}>Filters</p>
                 <div style={filterRow}>
@@ -306,31 +323,19 @@ function InvoiceReport() {
                     <input type="date" name="max" value={rep.max} onChange={handleChange} style={filterInput} />
                     </div>
                     <div style={filterGroup}>
-                        <button onClick={Reset}>Reset</button>
+                        <label style={filterLabel}>&nbsp;</label>
+                        <button onClick={Reset} style={resetBtn}>Reset</button>
                     </div>
-                </div>
-            </div>
-            <div style={filterCard}>
-                <p style={sectionLabel}>Summary</p>
-                <div style={filterGroup}>
-                    <label style={filterLabel}>Total Invoice</label>
-                    ${best.totalInvoice}
-                </div>
-                <div style={filterGroup}>
-                    <label style={filterLabel}>Patient with the largest invoice</label>
-                    {best.topPatient}: ${best.topPatInvoice}
-                </div>
-                <div style={filterGroup}>
-                    <label style={filterLabel}>Department with the largest invoice</label>
-                    {best.topDepartment}: ${best.topDepInvoice}
                 </div>
             </div>
             <div className="report-table">
                 <DataTable
-                    title="General Revenue Report"
+                    title="Invoice Report"
                     columns={columns}
                     data={records}
                     progressPending={loading}
+                    customStyles={tableCustomStyles}
+                    pagination
                     fixedHeader />
             </div>
         </>

@@ -9,16 +9,19 @@ import InvoiceReport from './InvoiceReport'
 import RevenueReport from './RevenueReport'
 import ReviewsReport from './ReviewsReport'
 import { useStaffAuth } from '../../hooks/useStaffAuth'
-import { topbar, page, content, heading, subheading } from './adminStyles'
-
-
+import StaffNavbar from '../../components/StaffNavbar'
+import {
+  shellPage, shellInner,
+  adminHeroCard, adminHeroAccent, adminHeroContent,
+  adminEyebrow, adminHeroTitle, adminHeroText,
+} from './adminStyles'
 
 const REPORT_META = {
-  AllAppt:  { title: 'All Appointments',              sub: 'Browse and filter all appointment records by department and date' },
-  AllTrans: { title: 'All Transactions',              sub: 'Browse and filter all transaction records by department and date' },
-  Invoice:   { title: 'Invoice Report', sub: 'Invoices that have not been completed and the amount that each one is due' },
-  Revenue:   { title: 'Revenue Report',   sub: 'Transactions that have been completed and how much revenue has been achieved' },
-  Reviews:   { title: 'Reviews Report',       sub: 'Reviews created by patients' },
+  AllAppt:  { title: 'All Appointments', sub: 'Browse and filter all appointment records by department and date', eyebrow: 'Appointments' },
+  AllTrans: { title: 'All Transactions', sub: 'Browse and filter all transaction records by department and date', eyebrow: 'Transactions' },
+  Invoice:  { title: 'Invoice Report',   sub: 'Outstanding patient invoices filtered by department, patient, and date range', eyebrow: 'Invoices' },
+  Revenue:  { title: 'Revenue Report',   sub: 'Clinic revenue transactions filtered by department, doctor, patient, and date', eyebrow: 'Revenue' },
+  Reviews:  { title: 'Reviews Report',   sub: 'Patient satisfaction ratings filtered by department, doctor, patient, and date', eyebrow: 'Reviews' },
 }
 
 function Report() {
@@ -26,23 +29,34 @@ function Report() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const [type] = useState(searchParams.get('type') || 'AllAppt')
+  const meta = REPORT_META[type] || REPORT_META.AllAppt
 
   return (
-    <div style={page}>
-      <div style={topbar.bar}>
-        <span style={topbar.title}>Admin Portal</span>
-        <button style={topbar.btn} onClick={() => navigate('/admin/home')}>← Home</button>
-      </div>
+    <div style={shellPage}>
+      <StaffNavbar />
+      <div style={shellInner}>
 
-      <div style={content}>
-        <h1 style={heading}>{REPORT_META[type].title}</h1>
-        <p style={subheading}>{REPORT_META[type].sub}</p>
+        <div style={adminHeroCard}>
+          <div style={adminHeroAccent} />
+          <div style={adminHeroContent}>
+            <p style={adminEyebrow}>{meta.eyebrow}</p>
+            <h1 style={adminHeroTitle}>{meta.title}</h1>
+            <p style={adminHeroText}>{meta.sub}</p>
+            <button
+              onClick={() => navigate('/admin/home')}
+              style={{ marginTop: '18px', background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.25)', borderRadius: '8px', color: 'white', padding: '8px 16px', fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit' }}
+            >
+              ← Back to home
+            </button>
+          </div>
+        </div>
 
         {type === 'AllAppt'  && <RepAllAppt />}
         {type === 'AllTrans' && <RepAllTrans />}
-        {type === 'Invoice'   && <InvoiceReport />}
-        {type === 'Revenue'   && <RevenueReport />}
-        {type === 'Reviews'   && <ReviewsReport />}
+        {type === 'Invoice'  && <InvoiceReport />}
+        {type === 'Revenue'  && <RevenueReport />}
+        {type === 'Reviews'  && <ReviewsReport />}
+
       </div>
     </div>
   )

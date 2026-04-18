@@ -3,7 +3,12 @@ import { useNavigate } from 'react-router-dom'
 import AddD from './AddD'
 import DepartmentTable from './DepartmentTable'
 import { useStaffAuth } from '../../hooks/useStaffAuth'
-import { topbar, page, content, heading, subheading } from './adminStyles'
+import StaffNavbar from '../../components/StaffNavbar'
+import {
+  shellPage, shellInner,
+  adminHeroCard, adminHeroAccent, adminHeroContent,
+  adminEyebrow, adminHeroTitle, adminHeroText,
+} from './adminStyles'
 
 function Departments() {
   useStaffAuth('Admin')
@@ -11,16 +16,28 @@ function Departments() {
   const [refreshKey, setRefreshKey] = useState(0)
 
   return (
-    <div style={page}>
-      <div style={topbar.bar}>
-        <span style={topbar.title}>Admin Portal</span>
-        <button style={topbar.btn} onClick={() => navigate('/admin/home')}>← Home</button>
-      </div>
-      <div style={content}>
-        <h1 style={heading}>Departments</h1>
-        <p style={subheading}>Manage staff records, add new departments, and edit existing ones</p>
+    <div style={shellPage}>
+      <StaffNavbar />
+      <div style={shellInner}>
+
+        <div style={adminHeroCard}>
+          <div style={adminHeroAccent} />
+          <div style={adminHeroContent}>
+            <p style={adminEyebrow}>Clinic structure</p>
+            <h1 style={adminHeroTitle}>Departments</h1>
+            <p style={adminHeroText}>Manage clinic departments, assign staff, and keep department records up to date.</p>
+            <button
+              onClick={() => navigate('/admin/home')}
+              style={{ marginTop: '18px', background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.25)', borderRadius: '8px', color: 'white', padding: '8px 16px', fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit' }}
+            >
+              ← Back to home
+            </button>
+          </div>
+        </div>
+
         <AddD onSuccess={() => setRefreshKey(k => k + 1)} />
         <DepartmentTable refreshKey={refreshKey} />
+
       </div>
     </div>
   )

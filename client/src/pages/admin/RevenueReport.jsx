@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import DataTable from 'react-data-table-component'
-import { tableCustomStyles, filterCard, filterRow, filterGroup, filterLabel, filterInput, primaryBtn, sectionLabel } from './adminStyles'
+import { tableCustomStyles, filterCard, filterRow, filterGroup, filterLabel, filterInput, primaryBtn, resetBtn, sectionLabel, statCardsRow, statCard, statCardAccent, statLabel, statLabelLight, statValue, statValueLight, statSub, statSubLight, pageHeader, pageHeaderTitle, pageHeaderSub } from './adminStyles'
 
 function RevenueReport() {
     const [response, setResponse] = useState([])
@@ -285,8 +285,38 @@ function RevenueReport() {
         }
     };
 
+    const resetFilters = () => {
+        setRep({ DepartmentName: "", PFirst: "", PLast: "", DoctorLast: "", min: "", max: "", status: "", insure: "" })
+        setRecords(response)
+        setDoctorList(doctors)
+    }
+
+    const Reset = () => {
+        fetchTableData()
+        fetchDepartmentData()
+        fetchDoctorData()
+        resetFilters()
+    }
+
     return (
         <>
+            <div style={statCardsRow}>
+                <div style={statCardAccent}>
+                    <p style={statLabelLight}>Total Revenue</p>
+                    <p style={statValueLight}>${Number(best.totalRevenue).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                    <p style={statSubLight}>Across all filtered records</p>
+                </div>
+                <div style={statCard}>
+                    <p style={statLabel}>Top Doctor</p>
+                    <p style={statValue}>{best.topDoctor}</p>
+                    <p style={statSub}>${Number(best.topDocRevenue).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} in revenue</p>
+                </div>
+                <div style={statCard}>
+                    <p style={statLabel}>Top Department</p>
+                    <p style={statValue}>{best.topDepartment}</p>
+                    <p style={statSub}>${Number(best.topDepRevenue).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} in revenue</p>
+                </div>
+            </div>
             <div style={filterCard}>
                 <p style={sectionLabel}>Filters</p>
                 <div style={filterRow}>
@@ -344,29 +374,20 @@ function RevenueReport() {
                     <label style={filterLabel}>To</label>
                     <input type="date" name="max" onChange={handleChange} style={filterInput} />
                     </div>
+                    <div style={filterGroup}>
+                        <label style={filterLabel}>&nbsp;</label>
+                        <button onClick={Reset} style={resetBtn}>Reset</button>
+                    </div>
                 </div>
                 </div>
-            <div style={filterCard}>
-                <p style={sectionLabel}>Summary</p>
-                <div style={filterGroup}>
-                    <label style={filterLabel}>Total Revenue</label>
-                    ${best.totalRevenue}
-                </div>
-                <div style={filterGroup}>
-                    <label style={filterLabel}>Top Doctor</label>
-                    {best.topDoctor}: ${best.topDocRevenue}
-                </div>
-                <div style={filterGroup}>
-                    <label style={filterLabel}>Top Department</label>
-                    {best.topDepartment}: ${best.topDepRevenue}
-                </div>
-            </div>
             <div className="report-table">
                 <DataTable
-                    title="General Revenue Report"
+                    title="Revenue Report"
                     columns={columns}
                     data={records}
                     progressPending={loading}
+                    customStyles={tableCustomStyles}
+                    pagination
                     fixedHeader />
             </div>
         </>
