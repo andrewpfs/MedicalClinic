@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const jwt = require('jsonwebtoken');
+const DEFAULT_EMPLOYEE_PASSWORD = 'admin123';
 
 const getStaff = (req) => {
     try {
@@ -116,7 +117,7 @@ router.post('/api/addemployee', async (req,res) => {
         req.body.Address || null,
         req.body.PhoneNumber || null,
         req.body.Email,
-        req.body.Password,
+        DEFAULT_EMPLOYEE_PASSWORD,
         req.body.DepartmentID || null,
     ];
 

@@ -18,7 +18,66 @@ const getStaff = (req) => {
   }
 };
 
-// ── Staff Login ───────────────────────────────────────────────────────────────
+const staffCookieOptions = {
+  httpOnly: true,
+  secure: IS_PRODUCTION,
+  sameSite: IS_PRODUCTION ? 'none' : 'lax',
+};
+
+async function loadReceptionistWorkspace(staffId) {
+  const [patients] = await db.query(`
+    SELECT PatientID, FName AS FirstName, LName AS LastName
+    FROM patient ORDER BY LName, FName
+  `);
+
+  const [doctors] = await db.query(`
+    SELECT d.EmployeeID, e.FirstName, e.LastName, d.Specialty
+    FROM doctor d JOIN employee e ON d.EmployeeID = e.EmployeeID
+    ORDER BY e.LastName, e.FirstName
+  `);
+
+  const [paymentMethods] = await db.query(`
+    SELECT PaymentCode, PaymentText FROM paymentmethod ORDER BY PaymentCode
+  `);
+
+  const [appointments] = await db.query(`
+    SELECT a.AppointmentID, a.PatientID, a.DoctorID, a.OfficeID,
+      a.AppointmentDate, a.AppointmentTime, a.ReasonForVisit, a.StatusCode, a.CreatedVia,
+      p.FName AS PatientFirstName, p.LName AS PatientLastName,
+      e.FirstName AS DoctorFirstName, e.LastName AS DoctorLastName,
+      e.Role AS DoctorRole, d.Specialty, s.AppointmentText AS StatusText
+    FROM appointment a
+    JOIN patient p ON a.PatientID = p.PatientID
+    JOIN employee e ON a.DoctorID = e.EmployeeID
+    LEFT JOIN doctor d ON a.DoctorID = d.EmployeeID
+    LEFT JOIN appointmentstatus s ON a.StatusCode = s.AppointmentCode
+    ORDER BY a.AppointmentDate DESC, a.AppointmentTime DESC LIMIT 25
+  `);
+
+  const [transactions] = await db.query(`
+    SELECT t.TransactionID, t.AppointmentID, t.PatientID,
+      p.FName AS PatientFirstName, p.LName AS PatientLastName,
+      t.PaymentCode, pm.PaymentText, t.Amount, t.TransactionDateTime, t.Status,
+      t.DueDate, t.LateFeeAmount
+    FROM transaction t
+    JOIN patient p ON t.PatientID = p.PatientID
+    LEFT JOIN paymentmethod pm ON t.PaymentCode = pm.PaymentCode
+    ORDER BY t.TransactionID DESC LIMIT 25
+  `);
+
+  const [availability] = await db.query(`
+    SELECT es.ShiftID, es.EmployeeID, e.FirstName, e.LastName, e.Role,
+      es.OfficeID, es.ShiftDate, es.StartTime, es.EndTime
+    FROM employee_shift es
+    JOIN employee e ON es.EmployeeID = e.EmployeeID
+    WHERE es.EmployeeID = ?
+    ORDER BY es.ShiftDate DESC, es.StartTime DESC LIMIT 25
+  `, [staffId]);
+
+  return { patients, doctors, paymentMethods, appointments, transactions, availability };
+}
+
+// Staff Login
 router.post('/login', async (req, res) => {
   const { employeeId, password } = req.body;
   try {
@@ -41,37 +100,38 @@ router.post('/login', async (req, res) => {
       STAFF_SECRET,
       { expiresIn: '24h' }
     );
-    res.cookie('staffToken', token, {
-      httpOnly: true,
-      secure: IS_PRODUCTION,
-      sameSite: IS_PRODUCTION ? 'none' : 'lax',
-    })
-       .json({ success: true, role: rows[0].Role, name: rows[0].FirstName });
+
+    res.cookie('staffToken', token, staffCookieOptions)
+      .json({ success: true, role: rows[0].Role, name: rows[0].FirstName });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server error.' });
   }
 });
 
-// ── Staff Session ─────────────────────────────────────────────────────────────
+// Staff Session
 router.get('/session', (req, res) => {
   const staff = getStaff(req);
   if (!staff) return res.json({ isLoggedIn: false });
   res.json({ isLoggedIn: true, id: staff.id, role: staff.role, name: staff.name });
 });
 
-// ── Staff Logout ──────────────────────────────────────────────────────────────
+// Staff Logout
 router.get('/logout', (req, res) => {
-  res.clearCookie('staffToken', {
-    httpOnly: true,
-    secure: IS_PRODUCTION,
-    sameSite: IS_PRODUCTION ? 'none' : 'lax',
-  }).json({ success: true });
+  res.clearCookie('staffToken', staffCookieOptions).json({ success: true });
 });
 
-// ── Get all data ──────────────────────────────────────────────────────────────
+// Broad employee workspace
 router.get('/', async (req, res) => {
-  if (!getStaff(req)) return res.status(401).json({ success: false, error: 'Not logged in' });
+  const staff = getStaff(req);
+  if (!staff) return res.status(401).json({ success: false, error: 'Not logged in' });
+  if (staff.role === 'Receptionist') {
+    return res.status(403).json({
+      success: false,
+      error: 'Receptionists must use the receptionist workspace endpoint.',
+    });
+  }
+
   try {
     const [patients] = await db.query(`
       SELECT PatientID, FName AS FirstName, LName AS LastName
@@ -133,6 +193,23 @@ router.get('/', async (req, res) => {
   }
 });
 
+// Receptionist workspace
+router.get('/receptionist', async (req, res) => {
+  const staff = getStaff(req);
+  if (!staff) return res.status(401).json({ success: false, error: 'Not logged in' });
+  if (staff.role !== 'Receptionist') {
+    return res.status(403).json({ success: false, error: 'Receptionist access only.' });
+  }
+
+  try {
+    const payload = await loadReceptionistWorkspace(staff.id);
+    res.json({ success: true, ...payload });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 router.post('/appointments/:appointmentId/confirm', async (req, res) => {
   const staff = getStaff(req);
   if (!staff) return res.status(401).json({ success: false, error: 'Not logged in' });
@@ -154,7 +231,7 @@ router.post('/appointments/:appointmentId/confirm', async (req, res) => {
     if (!confirmedStatus) {
       return res.status(409).json({
         success: false,
-        error: 'Confirmed status is missing from appointmentstatus. Run backend/sql/appointment-status-confirmed.sql first.'
+        error: 'Confirmed status is missing from appointmentstatus. Run backend/sql/appointment-status-confirmed.sql first.',
       });
     }
 
@@ -177,7 +254,7 @@ router.post('/appointments/:appointmentId/confirm', async (req, res) => {
     if (appointment.StatusCode === 3 || appointment.StatusCode === 4) {
       return res.status(400).json({
         success: false,
-        error: `Appointments marked ${appointment.StatusText || 'with this status'} cannot be confirmed.`
+        error: `Appointments marked ${appointment.StatusText || 'with this status'} cannot be confirmed.`,
       });
     }
 
@@ -193,13 +270,13 @@ router.post('/appointments/:appointmentId/confirm', async (req, res) => {
   }
 });
 
-// ── Nurse dashboard data ──────────────────────────────────────────────────────
+// Nurse dashboard data
 router.get('/nurse', async (req, res) => {
   const staff = getStaff(req);
   if (!staff) return res.status(401).json({ success: false, error: 'Not logged in' });
   const nurseId = staff.id;
+
   try {
-    // Get nurse's assigned doctor
     const [[nurseRow]] = await db.query(
       'SELECT n.AssignedDoctorID, e.FirstName AS DoctorFirst, e.LastName AS DoctorLast FROM nurse n JOIN employee e ON n.AssignedDoctorID = e.EmployeeID WHERE n.EmployeeID = ?',
       [nurseId]
@@ -207,7 +284,6 @@ router.get('/nurse', async (req, res) => {
 
     const assignedDoctorId = nurseRow ? nurseRow.AssignedDoctorID : null;
 
-    // Appointments for the assigned doctor (or all if none assigned)
     const apptQuery = assignedDoctorId
       ? `SELECT a.AppointmentID, a.PatientID, a.DoctorID, a.OfficeID,
            a.AppointmentDate, a.AppointmentTime, a.ReasonForVisit, a.StatusCode,
@@ -261,21 +337,26 @@ router.get('/nurse', async (req, res) => {
 router.post('/book', async (req, res) => {
   const staff = getStaff(req);
   if (!staff) return res.status(401).json({ success: false, error: 'Not logged in' });
+
   try {
     const { patientId, doctorId, appointmentDate, officeId, reasonForVisit } = req.body;
     if (!patientId || !doctorId || !appointmentDate || !officeId) {
       return res.status(400).json({ success: false, error: 'Missing required appointment fields' });
     }
+
     const dt = new Date(appointmentDate);
     if (Number.isNaN(dt.getTime())) {
       return res.status(400).json({ success: false, error: 'Invalid appointment date and time' });
     }
+
     const sqlDate = dt.toISOString().split('T')[0];
     const sqlTime = dt.toTimeString().split(' ')[0];
+
     await db.query(`
       INSERT INTO appointment (PatientID, DoctorID, OfficeID, AppointmentDate, AppointmentTime, ReasonForVisit, StatusCode, CreatedVia)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `, [patientId, doctorId, officeId, sqlDate, sqlTime, reasonForVisit || null, 1, 1]);
+
     res.json({ success: true, message: 'Appointment booked successfully' });
   } catch (err) {
     console.error(err);
@@ -284,16 +365,20 @@ router.post('/book', async (req, res) => {
 });
 
 router.post('/payment', async (req, res) => {
-  if (!getStaff(req)) return res.status(401).json({ success: false, error: 'Not logged in' });
+  const staff = getStaff(req);
+  if (!staff) return res.status(401).json({ success: false, error: 'Not logged in' });
+
   try {
     const { appointmentId, patientId, paymentCode, amount, status, dueDate } = req.body;
     if (!appointmentId || !patientId || !amount) {
       return res.status(400).json({ success: false, error: 'Missing required payment fields' });
     }
+
     await db.query(`
       INSERT INTO transaction (AppointmentID, PatientID, PaymentCode, Amount, TransactionDateTime, Status, DueDate)
       VALUES (?, ?, ?, ?, NOW(), ?, ?)
     `, [appointmentId, patientId, paymentCode || null, amount, status || 'Posted', dueDate || null]);
+
     res.json({ success: true, message: 'Payment recorded successfully' });
   } catch (err) {
     console.error(err);
@@ -304,18 +389,25 @@ router.post('/payment', async (req, res) => {
 router.post('/availability', async (req, res) => {
   const staff = getStaff(req);
   if (!staff) return res.status(401).json({ success: false, error: 'Not logged in' });
+
   try {
     const { officeId, shiftDate, startTime, endTime } = req.body;
-    // Use employeeId from body if provided, otherwise fall back to the logged-in staff's own ID
-    const employeeId = req.body.employeeId || staff.id;
-    if (!employeeId || !officeId || !shiftDate || !startTime || !endTime) {
+    const requestedEmployeeId = req.body.employeeId || staff.id;
+
+    if (!requestedEmployeeId || !officeId || !shiftDate || !startTime || !endTime) {
       return res.status(400).json({ success: false, error: 'Missing required availability fields' });
     }
+
+    if (staff.role !== 'Admin' && Number(requestedEmployeeId) !== Number(staff.id)) {
+      return res.status(403).json({ success: false, error: 'You are not allowed to create shifts for another employee.' });
+    }
+
     await db.query(`
       INSERT INTO employee_shift (EmployeeID, OfficeID, ShiftDate, StartTime, EndTime)
       VALUES (?, ?, ?, ?, ?)
-    `, [employeeId, officeId, shiftDate, startTime, endTime]);
-    res.json({ success: true, message: 'Availability saved successfully' });
+    `, [requestedEmployeeId, officeId, shiftDate, startTime, endTime]);
+
+    res.json({ success: true, message: 'Availability saved successfully.' });
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, error: err.message });

@@ -75,6 +75,7 @@ export default function DoctorPage() {
         if (session.role !== 'Doctor') {
           if (session.role === 'Admin') navigate('/admin');
           else if (session.role === 'Nurse') navigate('/nurse');
+          else if (session.role === 'Receptionist') navigate('/receptionist');
           else navigate('/employee');
           return;
         }

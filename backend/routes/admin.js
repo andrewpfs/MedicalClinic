@@ -3,6 +3,7 @@ const router = express.Router();
 const db = require('../db');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
+const DEFAULT_EMPLOYEE_PASSWORD = 'admin123';
 
 const getStaff = (req) => {
     try {
@@ -105,7 +106,7 @@ router.post('/api/adddoctor', async (req,res) => {
 
 router.post('/api/addemployee', async (req,res) => {
     const q = "INSERT INTO employee (`FirstName`,`LastName`,`Birthdate`,`GenderCode`,`RaceCode`,`EthnicityCode`,`Role`,`Address`,`PhoneNumber`,`Email`,`Password`,`DepartmentID`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)";
-    const hashedPassword = await bcrypt.hash(req.body.Password, 10);
+    const hashedPassword = await bcrypt.hash(DEFAULT_EMPLOYEE_PASSWORD, 10);
 
     const r = [
         req.body.FirstName,

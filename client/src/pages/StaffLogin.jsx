@@ -24,6 +24,7 @@ export default function StaffLogin() {
       if (res.ok && data.success) {
         if (data.role === 'Doctor') navigate('/doctor');
         else if (data.role === 'Nurse') navigate('/nurse');
+        else if (data.role === 'Receptionist') navigate('/receptionist');
         else if (data.role === 'Admin') navigate('/admin');
         else navigate('/employee');
       } else {

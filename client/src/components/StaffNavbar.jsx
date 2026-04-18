@@ -42,6 +42,7 @@ export default function StaffNavbar() {
   const homeLink =
     session.role === "Doctor" ? "/doctor" :
     session.role === "Nurse"  ? "/nurse"  :
+    session.role === "Receptionist" ? "/receptionist" :
     session.role === "Admin"  ? "/admin"  : "/employee";
 
   const displayName = session.role === "Doctor"

@@ -13,7 +13,7 @@ const AddE = ({ onSuccess }) => {
   const [emp, setEmp] = useState({
     FirstName: '', LastName: '', BirthDate: '', GenderCode: '',
     RaceCode: '', EthnicityCode: '', Role: '', DepartmentID: '',
-    Address: '', PhoneNumber: '', Email: '', Password: '',
+    Address: '', PhoneNumber: '', Email: '', Password: 'admin123',
     Specialty: '', IsPrimaryCare: '', AssignedDoctorID: ''
   })
   const [check, setCheck] = useState({ Doctor: false, Nurse: false })
@@ -43,7 +43,7 @@ const AddE = ({ onSuccess }) => {
       const empRes = await fetch(`${API}/admin/api/addemployee`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(emp)
+        body: JSON.stringify({ ...emp, Password: 'admin123' })
       })
       const empData = await empRes.json()
       if (!empRes.ok) throw new Error(empData.error || 'Failed to create employee')
@@ -203,8 +203,8 @@ const AddE = ({ onSuccess }) => {
                 <input style={filterInput} type="text" name="Address" onChange={handleChange} maxLength="100" />
               </div>
               <div style={filterGroup}>
-                <label style={filterLabel}>Password *</label>
-                <input style={filterInput} type="password" placeholder="Password" name="Password" onChange={handleChange} required />
+                <label style={filterLabel}>Default password</label>
+                <input style={{ ...filterInput, background: '#f8fafc', color: '#475569' }} type="text" value="admin123" readOnly />
               </div>
             </div>
 
