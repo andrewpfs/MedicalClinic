@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Navbar from '../../components/Navbar';
 import './patient-layout.css';
 import { formatDoctorRating, getDoctorImageUrl, getDoctorInitials } from '../../utils/doctorProfiles';
+import API from '../../api';
 
 const HOURS = [9, 10, 11, 12, 13, 14, 15, 16];
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -58,7 +59,7 @@ export default function Booking() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetch('/patient/api/doctors', { credentials: 'include' })
+    fetch(`${API}/patient/api/doctors`, { credentials: 'include' })
       .then((res) => {
         if (res.status === 401) {
           navigate('/login');
@@ -80,11 +81,11 @@ export default function Booking() {
     if (!selectedDoctor) return;
     const startDate = toLocalDateString(weekDates[0]);
     const endDate = toLocalDateString(weekDates[4]);
-    fetch(`/patient/api/booked-slots?doctorId=${selectedDoctor}&start=${startDate}&end=${endDate}`, { credentials: 'include' })
+    fetch(`${API}/patient/api/booked-slots?doctorId=${selectedDoctor}&start=${startDate}&end=${endDate}`, { credentials: 'include' })
       .then((res) => res.json())
       .then((data) => setBookedSlots(data))
       .catch(() => {});
-    fetch(`/patient/api/doctor-shifts?doctorId=${selectedDoctor}&start=${startDate}&end=${endDate}`, { credentials: 'include' })
+    fetch(`${API}/patient/api/doctor-shifts?doctorId=${selectedDoctor}&start=${startDate}&end=${endDate}`, { credentials: 'include' })
       .then((res) => res.json())
       .then((data) => setDoctorShifts(data))
       .catch(() => {});
@@ -165,7 +166,7 @@ export default function Booking() {
     const hourStr = String(hour).padStart(2, '0');
     const datetime = `${dateStr}T${hourStr}:00`;
 
-    const response = await fetch('/patient/book', {
+    const response = await fetch(`${API}/patient/book`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

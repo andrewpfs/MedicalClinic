@@ -45,7 +45,7 @@ export default function Navbar() {
   }, []);
 
   const handleLogout = async () => {
-    await fetch('/patient/logout', { credentials: 'include' });
+    await fetch(`${API}/patient/logout`, { credentials: 'include' });
     setSession({ isLoggedIn: false, firstName: '' });
     setDropdownOpen(false);
     navigate('/');

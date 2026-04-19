@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../../components/Navbar';
 import './patient-layout.css';
+import API from '../../api';
 
 const HOURS = [9, 10, 11, 12, 13, 14, 15, 16];
 const SHORT_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
@@ -179,7 +180,7 @@ export default function Visits() {
   }, [weekOffset]);
 
   const loadVisits = () => {
-    fetch('/patient/api/visits', { credentials: 'include' })
+    fetch(`${API}/patient/api/visits`, { credentials: 'include' })
       .then((res) => {
         if (res.status === 401) {
           navigate('/login');
@@ -217,7 +218,7 @@ export default function Visits() {
     const startDate = toLocalDateString(weekDates[0]);
     const endDate = toLocalDateString(weekDates[4]);
 
-    fetch(`/patient/api/booked-slots?doctorId=${rescheduleTarget.DoctorID}&start=${startDate}&end=${endDate}`, {
+    fetch(`${API}/patient/api/booked-slots?doctorId=${rescheduleTarget.DoctorID}&start=${startDate}&end=${endDate}`, {
       credentials: 'include',
     })
       .then((res) => res.json())
@@ -226,7 +227,7 @@ export default function Visits() {
   }, [rescheduleTarget, weekDates]);
 
   const handleCancel = async () => {
-    const response = await fetch('/patient/cancel-appointment', {
+    const response = await fetch(`${API}/patient/cancel-appointment`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ appointmentId: cancelTarget.AppointmentID }),
@@ -246,7 +247,7 @@ export default function Visits() {
     const hourStr = String(hour).padStart(2, '0');
     const newDate = `${dateStr}T${hourStr}:00`;
 
-    const response = await fetch('/patient/reschedule-appointment', {
+    const response = await fetch(`${API}/patient/reschedule-appointment`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ appointmentId: rescheduleTarget.AppointmentID, newDate }),
@@ -270,7 +271,7 @@ export default function Visits() {
     setReviewError('');
 
     try {
-      const response = await fetch('/patient/api/reviews', {
+      const response = await fetch(`${API}/patient/api/reviews`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -296,7 +297,7 @@ export default function Visits() {
 
   const loadThread = async (appointmentId) => {
     try {
-      const res = await fetch(`/patient/api/messages/${appointmentId}`, { credentials: 'include' });
+      const res = await fetch(`${API}/patient/api/messages/${appointmentId}`, { credentials: 'include' });
       const data = await res.json();
       if (Array.isArray(data)) setThreadMessages(data);
     } catch {}
@@ -315,7 +316,7 @@ export default function Visits() {
     setIsSendingMessage(true);
     setMessageError('');
     try {
-      const res = await fetch(`/patient/api/messages/${messageTarget.AppointmentID}`, {
+      const res = await fetch(`${API}/patient/api/messages/${messageTarget.AppointmentID}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',

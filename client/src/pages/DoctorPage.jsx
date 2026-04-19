@@ -109,7 +109,7 @@ export default function DoctorPage() {
   };
 
   useEffect(() => {
-    fetch('/api/employee/session', { credentials: 'include' })
+    fetch(`${API}/api/employee/session`, { credentials: 'include' })
       .then((res) => res.json())
       .then((session) => {
         if (!session.isLoggedIn) {
