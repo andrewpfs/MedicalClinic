@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const db = require('../db'); 
-const { register, login, logout } = require('../auth');
+const db = require('../backend/db');
+const { register, login, logout } = require('../backend/auth');
 const jwt = require('jsonwebtoken');
 
 // ── JWT middleware ────────────────────────────────────────────────────────────
@@ -115,13 +115,28 @@ router.get('/api/visits', async (req, res) => {
     if (!patientId) return res.status(401).json({ error: 'Not logged in' });
     try {
         const [rows] = await db.query(
-            `SELECT a.AppointmentID, a.AppointmentDate, e.FirstName, e.LastName, s.AppointmentText AS Status 
+            `SELECT
+               a.AppointmentID,
+               a.AppointmentDate,
+               a.AppointmentTime,
+               a.StatusCode,
+               a.ReasonForVisit,
+               a.PatientSummary,
+               a.DoctorID,
+               e.FirstName,
+               e.LastName,
+               s.AppointmentText AS Status,
+               IF(a.StatusCode = 4 AND dr.ReviewID IS NULL, 1, 0) AS CanReview,
+               IF(dr.ReviewID IS NOT NULL, 1, 0) AS HasReview,
+               dr.Rating AS ReviewRating,
+               dr.Comment AS ReviewComment
              FROM appointment a
              JOIN appointmentstatus s ON a.StatusCode = s.AppointmentCode
              JOIN employee e ON a.DoctorID = e.EmployeeID
-             WHERE a.PatientID = ? 
-             ORDER BY a.AppointmentDate DESC`, 
-            [patientId]
+             LEFT JOIN doctor_review dr ON dr.AppointmentID = a.AppointmentID AND dr.PatientID = ?
+             WHERE a.PatientID = ?
+             ORDER BY a.AppointmentDate DESC`,
+            [patientId, patientId]
         );
         res.json(rows);
     } catch (err) { res.status(500).json({ error: 'Error fetching visits' }); }
@@ -185,14 +200,25 @@ router.get('/api/payments', async (req, res) => {
     const patientId = getPatientId(req);
     if (!patientId) return res.status(401).json({ error: 'Not logged in' });
     try {
+        // Run the late-fee procedure before fetching — keeps fees current
+        // even without the MySQL Event Scheduler (Azure MySQL limitation).
+        await db.query('CALL sp_apply_late_fees()').catch(() => {});
+
         const [invoices] = await db.query(
-            `SELECT DISTINCT t.TransactionID, t.Amount, a.AppointmentDate, e.LastName as DoctorName
+            `SELECT DISTINCT
+               t.TransactionID,
+               t.Amount,
+               t.DueDate,
+               COALESCE(t.LateFeeAmount, 0) AS LateFeeAmount,
+               GREATEST(0, DATEDIFF(CURDATE(), t.DueDate)) AS DaysOverdue,
+               a.AppointmentDate,
+               e.LastName AS DoctorName
              FROM transaction t
              JOIN appointment a ON t.AppointmentID = a.AppointmentID
              JOIN employee e ON a.DoctorID = e.EmployeeID
-             WHERE t.PatientID = ? 
-             AND t.Status = 'Pending' 
-             AND a.StatusCode = 1`,
+             WHERE t.PatientID = ?
+               AND t.Status = 'Pending'
+               AND a.StatusCode = 1`,
             [patientId]
         );
         res.json(invoices);
@@ -329,6 +355,87 @@ router.patch('/api/notifications/read-all', async (req, res) => {
         res.json({ success: true });
     } catch (err) {
         res.status(500).json({ error: 'Error marking all as read' });
+    }
+});
+
+// ── API: submit doctor review ─────────────────────────────────────────────────
+router.post('/api/reviews', async (req, res) => {
+    const patientId = getPatientId(req);
+    if (!patientId) return res.status(401).json({ error: 'Not logged in' });
+    const { appointmentId, rating, comment } = req.body;
+    if (!appointmentId || !rating) return res.status(400).json({ error: 'Missing required fields.' });
+    try {
+        const [appt] = await db.query(
+            'SELECT AppointmentID, DoctorID FROM appointment WHERE AppointmentID = ? AND PatientID = ? AND StatusCode = 4',
+            [appointmentId, patientId]
+        );
+        if (appt.length === 0) return res.status(403).json({ error: 'Appointment not found or not completed.' });
+        const [existing] = await db.query(
+            'SELECT ReviewID FROM doctor_review WHERE AppointmentID = ? AND PatientID = ?',
+            [appointmentId, patientId]
+        );
+        if (existing.length > 0) return res.status(409).json({ error: 'Review already submitted for this appointment.' });
+        await db.query(
+            'INSERT INTO doctor_review (AppointmentID, PatientID, DoctorID, Rating, Comment) VALUES (?, ?, ?, ?, ?)',
+            [appointmentId, patientId, appt[0].DoctorID, rating, comment || null]
+        );
+        res.json({ success: true });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Failed to submit review.' });
+    }
+});
+
+// ── API: get message thread for an appointment ────────────────────────────────
+router.get('/api/messages/:appointmentId', async (req, res) => {
+    const patientId = getPatientId(req);
+    if (!patientId) return res.status(401).json({ error: 'Not logged in' });
+    const appointmentId = Number(req.params.appointmentId);
+    try {
+        const [appt] = await db.query(
+            'SELECT AppointmentID FROM appointment WHERE AppointmentID = ? AND PatientID = ?',
+            [appointmentId, patientId]
+        );
+        if (appt.length === 0) return res.status(403).json({ error: 'Not authorized' });
+        await db.query(
+            "UPDATE appointment_message SET IsRead = 1 WHERE AppointmentID = ? AND SenderType = 'doctor'",
+            [appointmentId]
+        );
+        const [messages] = await db.query(
+            'SELECT * FROM appointment_message WHERE AppointmentID = ? ORDER BY SentAt ASC',
+            [appointmentId]
+        );
+        res.json(messages);
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to load messages' });
+    }
+});
+
+// ── API: send message (patient → doctor) ──────────────────────────────────────
+router.post('/api/messages/:appointmentId', async (req, res) => {
+    const patientId = getPatientId(req);
+    if (!patientId) return res.status(401).json({ error: 'Not logged in' });
+    const appointmentId = Number(req.params.appointmentId);
+    const body = typeof req.body.body === 'string' ? req.body.body.trim() : '';
+    if (!body) return res.status(400).json({ error: 'Message cannot be empty.' });
+    try {
+        const [appt] = await db.query(
+            'SELECT AppointmentID, DoctorID FROM appointment WHERE AppointmentID = ? AND PatientID = ?',
+            [appointmentId, patientId]
+        );
+        if (appt.length === 0) return res.status(403).json({ error: 'Not authorized' });
+        await db.query(
+            'INSERT INTO appointment_message (AppointmentID, SenderType, SenderID, Body) VALUES (?, ?, ?, ?)',
+            [appointmentId, 'patient', patientId, body]
+        );
+        await db.query(
+            `INSERT INTO staff_notification (EmployeeID, Message, Type, Link)
+             VALUES (?, CONCAT('A patient sent you a message regarding appointment #', ?), 'message', '/doctor?tab=messages')`,
+            [appt[0].DoctorID, appointmentId]
+        );
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to send message' });
     }
 });
 

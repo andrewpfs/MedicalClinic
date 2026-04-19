@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../../components/Navbar';
+import './patient-layout.css';
 
 export default function Billing() {
   const [totalDue, setTotalDue] = useState(0);

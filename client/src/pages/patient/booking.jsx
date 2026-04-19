@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../../components/Navbar';
+import './patient-layout.css';
 import { formatDoctorRating, getDoctorImageUrl, getDoctorInitials } from '../../utils/doctorProfiles';
 
 const HOURS = [9, 10, 11, 12, 13, 14, 15, 16];

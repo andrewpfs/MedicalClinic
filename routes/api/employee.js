@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const db = require('../../db');
+const db = require('../../backend/db');
 const jwt = require('jsonwebtoken');
 
 const STAFF_SECRET = 'staffsecret';
@@ -238,6 +238,46 @@ router.post('/availability', async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ── Staff notifications ───────────────────────────────────────────────────────
+router.get('/notifications', async (req, res) => {
+  const staff = getStaff(req);
+  if (!staff) return res.status(401).json({ error: 'Not logged in' });
+  try {
+    const [rows] = await db.query(
+      'SELECT * FROM staff_notification WHERE EmployeeID = ? ORDER BY CreatedAt DESC LIMIT 20',
+      [staff.id]
+    );
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: 'Error loading notifications' });
+  }
+});
+
+router.patch('/notifications/read-all', async (req, res) => {
+  const staff = getStaff(req);
+  if (!staff) return res.status(401).json({ error: 'Not logged in' });
+  try {
+    await db.query('UPDATE staff_notification SET IsRead = 1 WHERE EmployeeID = ?', [staff.id]);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Error marking all as read' });
+  }
+});
+
+router.patch('/notifications/:id/read', async (req, res) => {
+  const staff = getStaff(req);
+  if (!staff) return res.status(401).json({ error: 'Not logged in' });
+  try {
+    await db.query(
+      'UPDATE staff_notification SET IsRead = 1 WHERE NotificationID = ? AND EmployeeID = ?',
+      [req.params.id, staff.id]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Error marking notification as read' });
   }
 });
 

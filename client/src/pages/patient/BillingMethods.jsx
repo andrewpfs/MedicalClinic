@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../../components/Navbar';
+import './patient-layout.css';
 
 import API from '../../api';
 const CARD_TYPES = ['Visa', 'Mastercard', 'American Express', 'Discover'];
@@ -86,8 +87,24 @@ export default function BillingMethods() {
   };
 
   return (
-    <>
+    <div className="pt-page">
       <Navbar />
+
+      <div className="pt-banner">
+        <div className="pt-banner__inner">
+          <div className="pt-banner__icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+              <line x1="1" y1="10" x2="23" y2="10"/>
+            </svg>
+          </div>
+          <div>
+            <h1 className="pt-banner__title">Payment Methods</h1>
+            <p className="pt-banner__sub">Manage your saved cards</p>
+          </div>
+        </div>
+      </div>
+
       <div style={styles.wrap}>
       <h1 style={styles.heading}>Payment methods</h1>
 
@@ -152,6 +169,6 @@ export default function BillingMethods() {
 
       <a href="/patient/billing" style={styles.backLink}>← Back to billing</a>
     </div>
-    </>
+    </div>
   );
 }

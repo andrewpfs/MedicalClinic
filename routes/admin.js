@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const db = require('../db');
+const db = require('../backend/db');
 const jwt = require('jsonwebtoken');
 const DEFAULT_EMPLOYEE_PASSWORD = 'admin123';
 
