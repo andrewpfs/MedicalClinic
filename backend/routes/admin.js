@@ -206,7 +206,7 @@ router.get('/api/pullgrr', requireAdmin, async (req,res) => {
 
 router.get('/api/pullrevenue', requireAdmin, async (req,res) => {
     const q = `
-    SELECT T.TransactionID AS "Id", P.FName AS "PatFirst", P.LName AS "PatLast", E.FirstName AS "DocFirst", E.LastName AS "DocLast",D.DepartmentName,T.Amount,T.TransactionDateTime AS "Date",E.EmployeeID AS "DocID",T.Status,P.hasInsurance AS "Insurance" 
+    SELECT T.TransactionID AS "Id", P.FName AS "PatFirst", P.LName AS "PatLast", E.FirstName AS "DocFirst", E.LastName AS "DocLast",D.DepartmentName,T.Amount,DATE_FORMAT(T.TransactionDateTime, '%Y-%m-%d') AS "Date",E.EmployeeID AS "DocID",T.Status,P.hasInsurance AS "Insurance"
     FROM transaction AS T, patient AS P,appointment AS A, employee AS E, department AS D
     WHERE T.AppointmentID=A.AppointmentID AND T.PatientID=P.PatientID AND E.EmployeeID=A.DoctorID AND E.DepartmentID=D.DepartmentID`;
 
@@ -220,7 +220,7 @@ router.get('/api/pullrevenue', requireAdmin, async (req,res) => {
 
 router.get('/api/pullreviews', requireAdmin, async (req,res) => {
     const q = `
-    SELECT DR.ReviewID AS "Id", P.FName AS "PatFirst", P.LName AS "PatLast", E.FirstName AS "DocFirst", E.LastName AS "DocLast",D.DepartmentName,DR.Rating,DR.CreatedAt AS "Date",E.EmployeeID AS "DocID"
+    SELECT DR.ReviewID AS "Id", P.FName AS "PatFirst", P.LName AS "PatLast", E.FirstName AS "DocFirst", E.LastName AS "DocLast",D.DepartmentName,DR.Rating,DATE_FORMAT(DR.CreatedAt, '%Y-%m-%d') AS "Date",E.EmployeeID AS "DocID"
     FROM doctor_review AS DR, patient AS P,appointment AS A, employee AS E, department AS D
     WHERE DR.AppointmentID=A.AppointmentID AND DR.PatientID=P.PatientID AND E.EmployeeID=A.DoctorID AND E.DepartmentID=D.DepartmentID`;
 
@@ -234,7 +234,7 @@ router.get('/api/pullreviews', requireAdmin, async (req,res) => {
 
 router.get('/api/pullinvoice', requireAdmin, async (req,res) => {
     const q = `
-    SELECT T.TransactionID AS "Id", P.FName AS "PatFirst", P.LName AS "PatLast", D.DepartmentName, T.Amount, T.TransactionDateTime AS "Date",T.LateFeeAmount AS Late, P.PatientID as PatID
+    SELECT T.TransactionID AS "Id", P.FName AS "PatFirst", P.LName AS "PatLast", D.DepartmentName, T.Amount, DATE_FORMAT(T.TransactionDateTime, '%Y-%m-%d') AS "Date",T.LateFeeAmount AS Late, P.PatientID as PatID
     FROM transaction AS T, patient AS P,appointment AS A, employee AS E, department AS D
     WHERE T.AppointmentID=A.AppointmentID AND T.PatientID=P.PatientID AND E.EmployeeID=A.DoctorID AND E.DepartmentID=D.DepartmentID AND T.Status="Pending"`;
 
@@ -366,7 +366,7 @@ router.get('/api/getdepartmentinfo', async (req,res) => {
 router.get('/api/getpatients', async (req,res) => {
     const q = `
     SELECT P.PatientID,P.FName,P.LName
-    FROM patient AS P 
+    FROM patient AS P
     JOIN transaction as T ON P.PatientID=T.PatientID
     GROUP BY P.PatientID`
 
@@ -378,19 +378,27 @@ router.get('/api/getpatients', async (req,res) => {
     }
 })
 
-router.post('/api/transferdepartment', async (req,res) => {
-    const {DepartmentID,EmployeeID} = req.body
-
-    const q = `
-    UPDATE employee
-    SET DepartmentID=? 
-    WHERE EmployeeID=?`
-
+router.get('/api/getemployeesbydept/:deptId', async (req,res) => {
+    const q = 'SELECT EmployeeID, FirstName, LastName, Role, Email, PhoneNumber FROM employee WHERE DepartmentID = ?';
     try {
-        const [rows] = await db.query(q,[DepartmentID,EmployeeID])
-        return res.json(rows)
-    }catch(err){
-        console.error(err)
+        const [rows] = await db.query(q, [req.params.deptId]);
+        return res.json(rows);
+    } catch(err) {
+        res.status(500).json({ error: 'Error fetching employees' });
+    }
+})
+
+router.post('/api/transferdepartment', async (req,res) => {
+    const { EmployeeIDs, DepartmentID } = req.body;
+    if (!Array.isArray(EmployeeIDs) || !EmployeeIDs.length || !DepartmentID)
+        return res.status(400).json({ error: 'Invalid payload' });
+    try {
+        await Promise.all(
+            EmployeeIDs.map(id => db.query('UPDATE employee SET DepartmentID=? WHERE EmployeeID=?', [DepartmentID, id]))
+        );
+        return res.json({ message: 'Transfer complete' });
+    } catch(err) {
+        res.status(500).json({ error: 'Error transferring employees' });
     }
 })
 
