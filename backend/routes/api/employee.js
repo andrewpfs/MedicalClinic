@@ -41,7 +41,7 @@ async function loadReceptionistWorkspace(staffId) {
   `);
 
   const [appointments] = await db.query(`
-    SELECT a.AppointmentID, a.PatientID, a.DoctorID, a.OfficeID,
+    SELECT a.AppointmentID, a.PatientID, a.DoctorID,
       a.AppointmentDate, a.AppointmentTime, a.ReasonForVisit, a.StatusCode, a.CreatedVia,
       p.FName AS PatientFirstName, p.LName AS PatientLastName,
       e.FirstName AS DoctorFirstName, e.LastName AS DoctorLastName,
@@ -67,7 +67,7 @@ async function loadReceptionistWorkspace(staffId) {
 
   const [availability] = await db.query(`
     SELECT es.ShiftID, es.EmployeeID, e.FirstName, e.LastName, e.Role,
-      es.OfficeID, es.ShiftDate, es.StartTime, es.EndTime
+      es.ShiftDate, es.StartTime, es.EndTime
     FROM employee_shift es
     JOIN employee e ON es.EmployeeID = e.EmployeeID
     WHERE es.EmployeeID = ?
@@ -154,7 +154,7 @@ router.get('/', async (req, res) => {
     `);
 
     const [appointments] = await db.query(`
-      SELECT a.AppointmentID, a.PatientID, a.DoctorID, a.OfficeID,
+      SELECT a.AppointmentID, a.PatientID, a.DoctorID,
         a.AppointmentDate, a.AppointmentTime, a.ReasonForVisit, a.StatusCode, a.CreatedVia,
         p.FName AS PatientFirstName, p.LName AS PatientLastName,
         e.FirstName AS DoctorFirstName, e.LastName AS DoctorLastName,
@@ -180,7 +180,7 @@ router.get('/', async (req, res) => {
 
     const [availability] = await db.query(`
       SELECT es.ShiftID, es.EmployeeID, e.FirstName, e.LastName, e.Role,
-        es.OfficeID, es.ShiftDate, es.StartTime, es.EndTime
+        es.ShiftDate, es.StartTime, es.EndTime
       FROM employee_shift es
       JOIN employee e ON es.EmployeeID = e.EmployeeID
       ORDER BY es.ShiftDate DESC, es.StartTime DESC LIMIT 25
@@ -315,7 +315,7 @@ router.get('/nurse', async (req, res) => {
     const [doctors] = await db.query('SELECT d.EmployeeID, e.FirstName, e.LastName, d.Specialty FROM doctor d JOIN employee e ON d.EmployeeID = e.EmployeeID ORDER BY e.LastName, e.FirstName');
     const [paymentMethods] = await db.query('SELECT PaymentCode, PaymentText FROM paymentmethod ORDER BY PaymentCode');
     const [availability] = await db.query(
-      'SELECT es.ShiftID, es.EmployeeID, e.FirstName, e.LastName, e.Role, es.OfficeID, es.ShiftDate, es.StartTime, es.EndTime FROM employee_shift es JOIN employee e ON es.EmployeeID = e.EmployeeID WHERE es.EmployeeID = ? ORDER BY es.ShiftDate DESC LIMIT 25',
+      'SELECT es.ShiftID, es.EmployeeID, e.FirstName, e.LastName, e.Role, es.ShiftDate, es.StartTime, es.EndTime FROM employee_shift es JOIN employee e ON es.EmployeeID = e.EmployeeID WHERE es.EmployeeID = ? ORDER BY es.ShiftDate DESC LIMIT 25',
       [nurseId]
     );
 
@@ -339,8 +339,8 @@ router.post('/book', async (req, res) => {
   if (!staff) return res.status(401).json({ success: false, error: 'Not logged in' });
 
   try {
-    const { patientId, doctorId, appointmentDate, officeId, reasonForVisit } = req.body;
-    if (!patientId || !doctorId || !appointmentDate || !officeId) {
+    const { patientId, doctorId, appointmentDate, reasonForVisit } = req.body;
+    if (!patientId || !doctorId || !appointmentDate) {
       return res.status(400).json({ success: false, error: 'Missing required appointment fields' });
     }
 
@@ -353,9 +353,9 @@ router.post('/book', async (req, res) => {
     const sqlTime = dt.toTimeString().split(' ')[0];
 
     await db.query(`
-      INSERT INTO appointment (PatientID, DoctorID, OfficeID, AppointmentDate, AppointmentTime, ReasonForVisit, StatusCode, CreatedVia)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `, [patientId, doctorId, officeId, sqlDate, sqlTime, reasonForVisit || null, 1, 1]);
+      INSERT INTO appointment (PatientID, DoctorID, AppointmentDate, AppointmentTime, ReasonForVisit, StatusCode, CreatedVia)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `, [patientId, doctorId, sqlDate, sqlTime, reasonForVisit || null, 1, 1]);
 
     res.json({ success: true, message: 'Appointment booked successfully' });
   } catch (err) {
@@ -391,10 +391,10 @@ router.post('/availability', async (req, res) => {
   if (!staff) return res.status(401).json({ success: false, error: 'Not logged in' });
 
   try {
-    const { officeId, shiftDate, startTime, endTime } = req.body;
+    const { shiftDate, startTime, endTime } = req.body;
     const requestedEmployeeId = req.body.employeeId || staff.id;
 
-    if (!requestedEmployeeId || !officeId || !shiftDate || !startTime || !endTime) {
+    if (!requestedEmployeeId || !shiftDate || !startTime || !endTime) {
       return res.status(400).json({ success: false, error: 'Missing required availability fields' });
     }
 
@@ -403,13 +403,32 @@ router.post('/availability', async (req, res) => {
     }
 
     await db.query(`
-      INSERT INTO employee_shift (EmployeeID, OfficeID, ShiftDate, StartTime, EndTime)
-      VALUES (?, ?, ?, ?, ?)
-    `, [requestedEmployeeId, officeId, shiftDate, startTime, endTime]);
+      INSERT INTO employee_shift (EmployeeID, ShiftDate, StartTime, EndTime)
+      VALUES (?, ?, ?, ?)
+    `, [requestedEmployeeId, shiftDate, startTime, endTime]);
 
     res.json({ success: true, message: 'Availability saved successfully.' });
   } catch (err) {
     console.error(err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+router.get('/my-shifts', async (req, res) => {
+  const staff = getStaff(req);
+  if (!staff) return res.status(401).json({ success: false, error: 'Not logged in' });
+  try {
+    const [rows] = await db.query(
+      `SELECT es.ShiftID, es.EmployeeID, e.FirstName, e.LastName, e.Role,
+        es.ShiftDate, es.StartTime, es.EndTime
+       FROM employee_shift es
+       JOIN employee e ON es.EmployeeID = e.EmployeeID
+       WHERE es.EmployeeID = ?
+       ORDER BY es.ShiftDate ASC, es.StartTime ASC`,
+      [staff.id]
+    );
+    res.json({ success: true, shifts: rows });
+  } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
 });
@@ -487,6 +506,55 @@ router.get('/nurse-assignments', async (req, res) => {
       ORDER BY en.LastName, en.FirstName
     `);
     res.json({ success: true, assignments: rows });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+router.get('/today-schedule', async (req, res) => {
+  const staff = getStaff(req);
+  if (!staff) return res.status(401).json({ success: false, error: 'Not logged in' });
+  const { doctorId } = req.query;
+  try {
+    let q = `
+      SELECT a.AppointmentID, a.AppointmentDate, a.AppointmentTime,
+             a.ReasonForVisit, s.StatusText,
+             p.PatientID, p.FName AS PatFirst, p.LName AS PatLast,
+             e.EmployeeID AS DoctorID, e.FirstName AS DoctorFirst, e.LastName AS DoctorLast
+      FROM appointment a
+      JOIN patient p ON a.PatientID = p.PatientID
+      JOIN employee e ON a.DoctorID = e.EmployeeID
+      JOIN appointmentstatus s ON a.StatusCode = s.StatusCode
+      WHERE DATE(a.AppointmentDate) = CURDATE() AND a.StatusCode != 3`;
+    const params = [];
+    if (doctorId) { q += ' AND a.DoctorID = ?'; params.push(doctorId); }
+    q += ' ORDER BY a.AppointmentDate ASC';
+    const [rows] = await db.query(q, params);
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+router.post('/appointments/:appointmentId/cancel', async (req, res) => {
+  const staff = getStaff(req);
+  if (!staff) return res.status(401).json({ success: false, error: 'Not logged in' });
+  try {
+    await db.query('UPDATE appointment SET StatusCode = 3 WHERE AppointmentID = ?', [req.params.appointmentId]);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+router.put('/appointments/:appointmentId/reschedule', async (req, res) => {
+  const staff = getStaff(req);
+  if (!staff) return res.status(401).json({ success: false, error: 'Not logged in' });
+  const { newDate } = req.body;
+  if (!newDate) return res.status(400).json({ success: false, error: 'newDate required' });
+  try {
+    await db.query('UPDATE appointment SET AppointmentDate = ? WHERE AppointmentID = ?', [newDate, req.params.appointmentId]);
+    res.json({ success: true });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }

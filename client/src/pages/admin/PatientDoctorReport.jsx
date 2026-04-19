@@ -61,18 +61,16 @@ function PatientDoctorReport() {
     function calcStats(data) {
         const docMap = {}
         const patMap = {}
-        let total = 0
         data.forEach(row => {
-            const docKey = row.DocID
-            const patKey = row.PatientID
-            docMap[docKey] = { name: `${row.DocFirst} ${row.DocLast}`, visits: (docMap[docKey]?.visits || 0) + Number(row.Visits) }
-            patMap[patKey] = { name: `${row.PatFirst} ${row.PatLast}`, visits: (patMap[patKey]?.visits || 0) + Number(row.Visits) }
-            total += Number(row.Visits)
+            const dk = row.DocID
+            const pk = row.PatientID
+            docMap[dk] = { name: `Dr. ${row.DocFirst} ${row.DocLast}`, visits: (docMap[dk]?.visits || 0) + 1 }
+            patMap[pk] = { name: `${row.PatFirst} ${row.PatLast}`, visits: (patMap[pk]?.visits || 0) + 1 }
         })
         const topDoc = Object.values(docMap).sort((a, b) => b.visits - a.visits)[0]
         const topPat = Object.values(patMap).sort((a, b) => b.visits - a.visits)[0]
         setBest({
-            totalVisits: total,
+            totalVisits: data.length,
             topDoctor: topDoc?.name || '—',
             topDocVisits: topDoc?.visits || 0,
             topPatient: topPat?.name || '—',
@@ -97,8 +95,8 @@ function PatientDoctorReport() {
         if (f.DoctorLast) result = result.filter(row => row.DocLast === f.DoctorLast)
         if (f.PFirst)     result = result.filter(row => row.PatFirst.toLowerCase().startsWith(f.PFirst.toLowerCase()))
         if (f.PLast)      result = result.filter(row => row.PatLast.toLowerCase().startsWith(f.PLast.toLowerCase()))
-        if (f.min)        result = result.filter(row => row.LastVisit >= f.min)
-        if (f.max)        result = result.filter(row => row.LastVisit <= f.max)
+        if (f.min)        result = result.filter(row => row.VisitDate >= f.min)
+        if (f.max)        result = result.filter(row => row.VisitDate <= f.max)
         setRecords(result)
     }
 
@@ -110,11 +108,12 @@ function PatientDoctorReport() {
     }
 
     const columns = [
-        { name: 'Patient',      selector: row => `${row.PatFirst} ${row.PatLast}`, sortable: true },
-        { name: 'Doctor',       selector: row => `${row.DocFirst} ${row.DocLast}`, sortable: true },
-        { name: 'Department',   selector: row => row.DepartmentName, sortable: true },
-        { name: 'Total Visits', selector: row => Number(row.Visits), sortable: true },
-        { name: 'Last Visit',   selector: row => row.LastVisit, sortable: true },
+        { name: 'Date',           selector: row => row.VisitDate, sortable: true, width: '110px' },
+        { name: 'Patient',        selector: row => `${row.PatFirst} ${row.PatLast}`, sortable: true },
+        { name: 'Doctor',         selector: row => `Dr. ${row.DocFirst} ${row.DocLast}`, sortable: true },
+        { name: 'Department',     selector: row => row.DepartmentName, sortable: true },
+        { name: 'Reason',         selector: row => row.ReasonForVisit || '—', wrap: true },
+        { name: 'Status',         selector: row => row.StatusText, sortable: true, width: '120px' },
     ]
 
     return (

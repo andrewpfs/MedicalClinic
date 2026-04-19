@@ -27,7 +27,7 @@ export default function NursePage() {
   });
   const [message, setMessage] = useState({ type: '', text: '' });
   const [bookForm, setBookForm] = useState({
-    patientId: '', doctorId: '', appointmentDate: '', reasonForVisit: '', officeId: '1',
+    patientId: '', doctorId: '', appointmentDate: '', reasonForVisit: '',
   });
 
   const loadData = async () => {
@@ -75,7 +75,7 @@ export default function NursePage() {
     try {
       const r = await post(`${EMP_API}/book`, bookForm);
       setMessage({ type: 'success', text: r.message });
-      setBookForm({ patientId: '', doctorId: '', appointmentDate: '', reasonForVisit: '', officeId: '1' });
+      setBookForm({ patientId: '', doctorId: '', appointmentDate: '', reasonForVisit: '' });
       loadData();
     } catch (err) {
       setMessage({ type: 'error', text: err.message });

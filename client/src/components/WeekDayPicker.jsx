@@ -47,7 +47,7 @@ export default function WeekDayPicker({ shifts = [], employeeId, onSave, onDelet
         const key = shift.ShiftDate instanceof Date
           ? shift.ShiftDate.toISOString().split('T')[0]
           : String(shift.ShiftDate).split('T')[0];
-        map[key] = shift;
+        if (!map[key]) map[key] = shift; // keep first, duplicates visible in the list below
       }
     }
     return map;
@@ -60,11 +60,13 @@ export default function WeekDayPicker({ shifts = [], employeeId, onSave, onDelet
     setForm({ startTime: '', endTime: '' });
   };
 
+  const canSave = form.startTime && form.endTime;
+
   const handleSave = async () => {
-    if (!activeDate || !form.startTime || !form.endTime) return;
+    if (!activeDate || !canSave) return;
     setSaving(true);
     try {
-      await onSave({ shiftDate: activeDate, startTime: form.startTime, endTime: form.endTime, officeId: '1' });
+      await onSave({ shiftDate: activeDate, startTime: form.startTime, endTime: form.endTime });
       setActiveDate(null);
       setForm({ startTime: '', endTime: '' });
     } finally {
@@ -170,7 +172,7 @@ export default function WeekDayPicker({ shifts = [], employeeId, onSave, onDelet
             <>
               <p style={panelTitle}>Shift scheduled for {fmtLong(activeDate)}</p>
               <p style={panelText}>
-                {activeShift.StartTime} to {activeShift.EndTime} in office {activeShift.OfficeID || '1'}.
+                {activeShift.StartTime} to {activeShift.EndTime}.
                 {onDelete ? ' Remove it here and add a new shift if you need different hours.' : ''}
               </p>
               <div style={panelActions}>
@@ -228,12 +230,12 @@ export default function WeekDayPicker({ shifts = [], employeeId, onSave, onDelet
                 <button
                   type="button"
                   onClick={handleSave}
-                  disabled={saving || !form.startTime || !form.endTime}
+                  disabled={saving || !canSave}
                   style={{
                     ...primaryButton,
-                    background: form.startTime && form.endTime ? '#1e2b1b' : '#e5e7eb',
-                    color: form.startTime && form.endTime ? '#ffffff' : '#94a3b8',
-                    cursor: form.startTime && form.endTime && !saving ? 'pointer' : 'not-allowed',
+                    background: canSave ? '#1e2b1b' : '#e5e7eb',
+                    color: canSave ? '#ffffff' : '#94a3b8',
+                    cursor: canSave && !saving ? 'pointer' : 'not-allowed',
                   }}
                 >
                   {saving ? 'Saving...' : 'Save Shift'}

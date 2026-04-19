@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 
 export default function RoleSelect() {
   const navigate = useNavigate();
@@ -6,7 +6,7 @@ export default function RoleSelect() {
   return (
     <div style={pageShell}>
       <div style={topBar}>
-        <div style={brand}>Medical Clinic</div>
+        <Link to="/" style={{ ...brand, textDecoration: 'none' }}>Medical Clinic</Link>
       </div>
 
       <div style={pageBody}>

@@ -14,7 +14,7 @@ const AddE = ({ onSuccess }) => {
   const [emp, setEmp] = useState({
     FirstName: '', LastName: '', BirthDate: '', GenderCode: '',
     RaceCode: '', EthnicityCode: '', Role: '', DepartmentID: '',
-    Address: '', PhoneNumber: '', Email: '', Password: 'admin123',
+    Address: '', PhoneNumber: '', Email: '', Password: '',
     Specialty: '', IsPrimaryCare: '', AssignedDoctorID: ''
   })
   const [check, setCheck] = useState({ Doctor: false, Nurse: false })
@@ -23,9 +23,9 @@ const AddE = ({ onSuccess }) => {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    fetch(`${API}/admin/api/getdepartments`).then(r => r.json()).then(setDepartments).catch(console.error)
-    fetch(`${API}/admin/api/getdoctors`).then(r => r.json()).then(setDoctors).catch(console.error)
-    fetch(`${API}/admin/api/getemployees`).then(r => r.json()).then(setEmployees).catch(console.error)
+    fetch(`${API}/admin/api/getdepartments`, { credentials: 'include' }).then(r => r.json()).then(setDepartments).catch(console.error)
+    fetch(`${API}/admin/api/getdoctors`, { credentials: 'include' }).then(r => r.json()).then(setDoctors).catch(console.error)
+    fetch(`${API}/admin/api/getemployees`, { credentials: 'include' }).then(r => r.json()).then(setEmployees).catch(console.error)
   }, [])
 
   const handleChange = (e) => {
@@ -50,6 +50,7 @@ const AddE = ({ onSuccess }) => {
         const empRes = await fetch(`${API}/admin/api/addemployee`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
           body: JSON.stringify(emp)
         })
         const empData = await empRes.json()
@@ -62,6 +63,7 @@ const AddE = ({ onSuccess }) => {
           const drRes = await fetch(`${API}/admin/api/adddoctor`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
             body: JSON.stringify({ EmployeeID: newId, Specialty: emp.Specialty, IsPrimaryCare: emp.IsPrimaryCare })
           })
           if (!drRes.ok) throw new Error('Employee created but failed to save doctor details')
@@ -72,6 +74,7 @@ const AddE = ({ onSuccess }) => {
           const nurseRes = await fetch(`${API}/admin/api/addnurse`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
             body: JSON.stringify({ EmployeeID: newId, AssignedDoctorID: emp.AssignedDoctorID || null })
           })
           if (!nurseRes.ok) throw new Error('Employee created but failed to save nurse details')
@@ -210,8 +213,8 @@ const AddE = ({ onSuccess }) => {
                 <input style={filterInput} type="text" name="Address" onChange={handleChange} maxLength="100" />
               </div>
               <div style={filterGroup}>
-                <label style={filterLabel}>Default password</label>
-                <input style={{ ...filterInput, background: '#f8fafc', color: '#475569' }} type="text" value="admin123" readOnly />
+                <label style={filterLabel}>Password *</label>
+                <input style={filterInput} type="password" name="Password" onChange={handleChange} minLength="6" required />
               </div>
             </div>
 

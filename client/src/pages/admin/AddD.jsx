@@ -10,9 +10,7 @@ const AddD = ({ onSuccess }) => {
   const navigate = useNavigate()
   const [departments,setDepts] = useState([])
   const [check,setCheck] = useState(true)
-  const [emp, setEmp] = useState({
-    DepartmentName: ''
-  })
+  const [emp, setEmp] = useState({ DepartmentName: '' })
   const [open, setOpen] = useState(false)
   const [error, setError] = useState('')
 
@@ -22,24 +20,18 @@ const AddD = ({ onSuccess }) => {
 
   const handleChange = (e) => {
     setEmp(prev => ({ ...prev, [e.target.name]: e.target.value }))
-    console.log(emp)
-  }
-
-  const handleRoleChange = (e) => {
-    const role = e.target.value
-    setEmp(prev => ({ ...prev, Role: role }))
-    setCheck({ Doctor: role === 'Doctor', Nurse: role === 'Nurse' })
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
+    let duplicate = false
     departments.forEach((row) => {
-      if (row.DepartmentName === emp.DepartmentName) setCheckEmail(false)}) 
+      if (row.DepartmentName === emp.DepartmentName) duplicate = true
+    })
+    if (duplicate) { setError('That department already exists.'); return }
     if (check) {
       try {
-        // Step 1: create department record
-        console.log(emp)
         const empRes = await fetch(`${API}/admin/api/adddepartment`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -57,7 +49,6 @@ const AddD = ({ onSuccess }) => {
     }
   }
 
-  const grid2 = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }
   const select = { ...filterInput, width: '100%' }
 
   return (
@@ -74,13 +65,12 @@ const AddD = ({ onSuccess }) => {
 
           {error && (
             <div style={{ marginBottom: '12px', padding: '10px 14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', fontSize: '13px', color: '#991b1b' }}>
-              {error}{!check && ", That Department already exists"}
+              {error}
             </div>
           )}
 
           <form onSubmit={handleSubmit}>
-            {/* Row 1 — Name */}
-            <div style={grid2}>
+            <div style={{ marginBottom: '12px' }}>
               <div style={filterGroup}>
                 <label style={filterLabel}>Department Name *</label>
                 <input style={filterInput} type="text" name="DepartmentName" onChange={handleChange} maxLength="30" required />

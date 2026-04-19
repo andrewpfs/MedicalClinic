@@ -47,16 +47,15 @@ export default function DoctorPage() {
 
   const loadData = async () => {
     try {
-      const [doctorRes, employeeRes] = await Promise.all([
+      const [doctorRes, shiftsRes] = await Promise.all([
         fetch(DOCTOR_API, { credentials: 'include' }),
-        fetch(EMPLOYEE_API, { credentials: 'include' }),
+        fetch(`${EMPLOYEE_API}/my-shifts`, { credentials: 'include' }),
       ]);
 
       const doctorPayload = await doctorRes.json();
-      const employeePayload = await employeeRes.json();
+      const shiftsPayload = await shiftsRes.json();
 
       if (!doctorPayload.success) throw new Error(doctorPayload.error || 'Failed to load doctor dashboard.');
-      if (!employeePayload.success) throw new Error(employeePayload.error || 'Failed to load schedule data.');
 
       setData({
         profile: doctorPayload.profile,
@@ -69,7 +68,7 @@ export default function DoctorPage() {
         reviewSummary: doctorPayload.reviewSummary || { reviewCount: 0, averageRating: 0 },
       });
       setBioDraft(doctorPayload.profile?.Bio || '');
-      setShifts(employeePayload.availability || []);
+      setShifts(shiftsPayload.shifts || []);
     } catch (err) {
       setMessage({ type: 'error', text: err.message });
     }
@@ -297,13 +296,13 @@ export default function DoctorPage() {
     return haystack.includes(patientSearch.trim().toLowerCase());
   });
   const todayAppointments = data.upcomingAppointments.filter((appointment) => normalizeDateKey(appointment.AppointmentDate) === todayIso);
-  const doctorShifts = shifts
-    .filter((shift) => String(shift.EmployeeID) === employeeId)
-    .sort((left, right) => `${left.ShiftDate} ${left.StartTime}`.localeCompare(`${right.ShiftDate} ${right.StartTime}`));
-  const weeklyShiftCount = doctorShifts.filter((shift) => isInCurrentWeek(shift.ShiftDate)).length;
+  const doctorShifts = [...shifts].sort((left, right) =>
+    `${normalizeDateKey(left.ShiftDate)} ${left.StartTime}`.localeCompare(`${normalizeDateKey(right.ShiftDate)} ${right.StartTime}`)
+  );
+  const weeklyShiftCount = doctorShifts.filter((shift) => isInCurrentWeek(normalizeDateKey(shift.ShiftDate))).length;
   const activePatients = data.patientSummary.length;
   const upcomingAppointments = data.upcomingAppointments.filter((appointment) => normalizeDateKey(appointment.AppointmentDate) >= todayIso).length;
-  const upcomingShifts = doctorShifts.filter((shift) => shift.ShiftDate >= todayIso);
+  const upcomingShifts = doctorShifts.filter((shift) => normalizeDateKey(shift.ShiftDate) >= todayIso);
   const nextShift = upcomingShifts[0] || null;
   const totalPatientVisits = data.patientSummary.reduce((sum, patient) => sum + Number(patient.VisitCount || 0), 0);
   const profile = data.profile || {};
@@ -469,7 +468,7 @@ export default function DoctorPage() {
             <div style={twoColumnLayout}>
               <SurfaceCard
                 title="Availability Planner"
-                subtitle="Click an empty day to add a shift, or click an existing shift to review and remove it."
+                subtitle="Click an empty day to add a shift, or click a booked day to remove it."
                 aside={<span style={subtleTag}>Employee #{employeeId || 'Not set'}</span>}
               >
                 <WeekDayPicker
@@ -478,22 +477,101 @@ export default function DoctorPage() {
                   onSave={handleShiftSave}
                   onDelete={handleShiftDelete}
                 />
+                {doctorShifts.length > 0 && (
+                  <div style={{ marginTop: '20px', borderTop: '1px solid #e5e7eb', paddingTop: '16px' }}>
+                    <p style={{ margin: '0 0 10px', fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#6b7280' }}>
+                      All saved shifts
+                    </p>
+                    <div style={{ display: 'grid', gap: '6px', maxHeight: '240px', overflowY: 'auto' }}>
+                      {doctorShifts.map((shift) => (
+                        <div key={shift.ShiftID} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', background: '#f8fafc', borderRadius: '10px', border: '1px solid #e5e7eb' }}>
+                          <div>
+                            <span style={{ fontWeight: 700, fontSize: '13px', color: '#111827' }}>{fmtWeekday(normalizeDateKey(shift.ShiftDate))}</span>
+                            <span style={{ fontSize: '12px', color: '#6b7280', marginLeft: '8px' }}>{fmtDate(normalizeDateKey(shift.ShiftDate))}</span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <span style={{ fontSize: '12px', color: '#374151', fontWeight: 600 }}>{fmtClock(shift.StartTime)} – {fmtClock(shift.EndTime)}</span>
+                            <button
+                              type="button"
+                              onClick={() => handleShiftDelete(shift)}
+                              style={{ padding: '4px 10px', borderRadius: '8px', border: 'none', background: '#fee2e2', color: '#b91c1c', fontSize: '12px', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </SurfaceCard>
 
-              <SurfaceCard title="Upcoming Shift List" subtitle="A quick view of your upcoming hours">
-                <DataTable
-                  headers={['Date', 'Day', 'Hours', 'Office']}
-                  rows={upcomingShifts.slice(0, 8)}
-                  empty="No upcoming shifts scheduled."
-                  renderRow={(row) => (
-                    <tr key={row.ShiftID}>
-                      <td style={tableCellStrong}>{fmtDate(row.ShiftDate)}</td>
-                      <td style={tableCell}>{fmtWeekday(row.ShiftDate)}</td>
-                      <td style={tableCell}>{fmtClock(row.StartTime)} - {fmtClock(row.EndTime)}</td>
-                      <td style={tableCell}>Office {row.OfficeID || '1'}</td>
-                    </tr>
-                  )}
-                />
+              <SurfaceCard title="Upcoming Schedule" subtitle="Your shift hours and booked appointments for each day">
+                {upcomingShifts.length === 0 ? (
+                  <p style={emptyState}>No upcoming shifts scheduled.</p>
+                ) : (
+                  <div style={{ display: 'grid', gap: '12px' }}>
+                    {upcomingShifts.slice(0, 7).map((shift) => {
+                      const dateKey = normalizeDateKey(shift.ShiftDate);
+                      const dayAppts = data.upcomingAppointments
+                        .filter((a) => normalizeDateKey(a.AppointmentDate) === dateKey)
+                        .sort((a, b) => String(a.AppointmentTime).localeCompare(String(b.AppointmentTime)));
+                      const isToday = dateKey === todayIso;
+                      return (
+                        <div key={shift.ShiftID} style={{
+                          borderRadius: '14px',
+                          border: `1.5px solid ${isToday ? '#6ee7b7' : '#e5e7eb'}`,
+                          background: isToday ? '#f0fdf4' : '#fafafa',
+                          overflow: 'hidden',
+                        }}>
+                          {/* Day header */}
+                          <div style={{
+                            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                            padding: '10px 14px',
+                            background: isToday ? '#dcfce7' : '#f3f4f6',
+                            borderBottom: '1px solid #e5e7eb',
+                          }}>
+                            <div>
+                              <span style={{ fontWeight: 700, fontSize: '14px', color: '#111827' }}>
+                                {fmtWeekday(dateKey)}
+                              </span>
+                              <span style={{ fontSize: '12px', color: '#6b7280', marginLeft: '8px' }}>
+                                {fmtDate(dateKey)}
+                              </span>
+                              {isToday && <span style={{ marginLeft: '8px', fontSize: '11px', fontWeight: 700, color: '#059669', background: '#d1fae5', padding: '2px 8px', borderRadius: '999px' }}>Today</span>}
+                            </div>
+                            <span style={{ fontSize: '12px', fontWeight: 700, color: '#374151', background: '#ffffff', border: '1px solid #d1d5db', borderRadius: '999px', padding: '3px 10px' }}>
+                              {fmtClock(shift.StartTime)} – {fmtClock(shift.EndTime)}
+                            </span>
+                          </div>
+                          {/* Appointments */}
+                          <div style={{ padding: '8px 14px' }}>
+                            {dayAppts.length === 0 ? (
+                              <p style={{ margin: '6px 0', fontSize: '12px', color: '#9ca3af' }}>No appointments scheduled</p>
+                            ) : dayAppts.map((appt) => (
+                              <div key={appt.AppointmentID} style={{
+                                display: 'flex', alignItems: 'center', gap: '10px',
+                                padding: '6px 0',
+                                borderBottom: '1px solid #f3f4f6',
+                              }}>
+                                <span style={{ fontSize: '12px', fontWeight: 700, color: '#374151', minWidth: '60px' }}>
+                                  {fmtClock(appt.AppointmentTime)}
+                                </span>
+                                <span style={{ fontSize: '13px', color: '#111827', fontWeight: 600, flex: 1 }}>
+                                  {appt.PatientLastName}, {appt.PatientFirstName}
+                                </span>
+                                <span style={{ fontSize: '12px', color: '#6b7280' }}>
+                                  {appt.ReasonForVisit || '—'}
+                                </span>
+                                <StatusBadge status={appt.StatusText || appt.StatusCode} />
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </SurfaceCard>
             </div>
           </div>
@@ -874,9 +952,11 @@ function normalizeDateKey(value) {
 
 function fmtDate(value) {
   if (!value) return 'Not set';
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return normalizeDateKey(value) || value;
-  return parsed.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  const key = normalizeDateKey(String(value));
+  const [y, m, d] = key.split('-').map(Number);
+  if (!y || !m || !d) return String(value);
+  const local = new Date(y, m - 1, d);
+  return local.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
 function fmtDateShort(value) {
@@ -888,9 +968,11 @@ function fmtDateShort(value) {
 
 function fmtWeekday(value) {
   if (!value) return 'Not set';
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return 'Not set';
-  return parsed.toLocaleDateString('en-US', { weekday: 'long' });
+  const key = normalizeDateKey(value);
+  const [y, m, d] = key.split('-').map(Number);
+  const local = new Date(y, m - 1, d);
+  if (Number.isNaN(local.getTime())) return 'Not set';
+  return local.toLocaleDateString('en-US', { weekday: 'long' });
 }
 
 function fmtTime(dateValue, timeValue) {
@@ -935,7 +1017,8 @@ function isInCurrentWeek(dateKey) {
   weekEnd.setDate(weekStart.getDate() + 6);
   weekEnd.setHours(23, 59, 59, 999);
 
-  const target = new Date(dateKey);
+  const [y, m, d] = String(dateKey).split('-').map(Number);
+  const target = new Date(y, m - 1, d);
   if (Number.isNaN(target.getTime())) return false;
   return target >= weekStart && target <= weekEnd;
 }

@@ -69,7 +69,6 @@ router.get('/', async (req, res) => {
          a.AppointmentID,
          a.PatientID,
          a.DoctorID,
-         a.OfficeID,
          a.AppointmentDate,
          a.AppointmentTime,
          a.ReasonForVisit,

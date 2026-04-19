@@ -41,7 +41,7 @@ function fmtHour(hhmm) {
  *   existingShifts   – array of shift objects from DB (ShiftDate, StartTime, EndTime, EmployeeID)
  *   focusEmployeeId  – whose shifts to highlight for editing (null = show team heatmap only)
  *   showTeamView     – whether to render the "Team View" toggle
- *   onSave           – async (slots: {shiftDate, startTime, endTime, officeId}[]) => void
+ *   onSave           – async (slots: {shiftDate, startTime, endTime}[]) => void
  */
 export default function WeekScheduler({ existingShifts = [], focusEmployeeId, showTeamView = false, onSave }) {
   const [weekOffset, setWeekOffset] = useState(0);
@@ -49,7 +49,6 @@ export default function WeekScheduler({ existingShifts = [], focusEmployeeId, sh
   const [dragging, setDragging] = useState(false);
   const [paintMode, setPaintMode] = useState('add');
   const [view, setView] = useState('mine');
-  const [officeId, setOfficeId] = useState('1');
   const [saving, setSaving] = useState(false);
 
   const weekDates = getWeekDates(weekOffset);
@@ -134,11 +133,11 @@ export default function WeekScheduler({ existingShifts = [], focusEmployeeId, sh
         if (!start) { start = t; prev = t; continue; }
         if (t === addMins(prev, 30)) { prev = t; }
         else {
-          shifts.push({ shiftDate: date, startTime: start, endTime: addMins(prev, 30), officeId });
+          shifts.push({ shiftDate: date, startTime: start, endTime: addMins(prev, 30) });
           start = t; prev = t;
         }
       }
-      if (start) shifts.push({ shiftDate: date, startTime: start, endTime: addMins(prev, 30), officeId });
+      if (start) shifts.push({ shiftDate: date, startTime: start, endTime: addMins(prev, 30) });
     }
 
     await onSave(shifts);
@@ -171,12 +170,6 @@ export default function WeekScheduler({ existingShifts = [], focusEmployeeId, sh
           )}
           {view === 'mine' && (
             <>
-              <input
-                value={officeId}
-                onChange={e => setOfficeId(e.target.value)}
-                placeholder="Office ID"
-                style={{ width: '82px', padding: '7px 10px', border: '1.5px solid #e5e7eb', borderRadius: '8px', fontSize: '13px', fontFamily: 'inherit' }}
-              />
               <button
                 onClick={handleSave}
                 disabled={saving || !draft.size}

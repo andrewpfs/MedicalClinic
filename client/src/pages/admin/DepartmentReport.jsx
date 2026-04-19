@@ -22,8 +22,7 @@ import {
 } from './adminStyles'
 
 const blankFilters = {
-    PFirst: '',
-    PLast: '',
+    Dept: '',
     min: '',
     max: '',
     status: '',
@@ -129,6 +128,7 @@ function DepartmentReport() {
         let totalRevenue = 0
 
         revenueRecords.forEach(row => {
+            if (row.Status !== 'Posted') return
             const amount = Number(row.Amount) || 0
             const department = summary.get(String(row.DepartmentID))
             totalRevenue += amount
@@ -197,8 +197,7 @@ function DepartmentReport() {
         let result = revenue
         if (filters.min) result = result.filter(row => String(row.Date).slice(0, 10) >= filters.min)
         if (filters.max) result = result.filter(row => String(row.Date).slice(0, 10) <= filters.max)
-        if (filters.PFirst) result = result.filter(row => row.PatFirst.toLowerCase().startsWith(filters.PFirst.toLowerCase()))
-        if (filters.PLast) result = result.filter(row => row.PatLast.toLowerCase().startsWith(filters.PLast.toLowerCase()))
+        if (filters.Dept) result = result.filter(row => row.DepartmentName?.toLowerCase().includes(filters.Dept.toLowerCase()))
         if (filters.status) result = result.filter(row => row.Status === filters.status)
         if (filters.insure) result = result.filter(row => String(row.Insurance) === String(filters.insure))
         return result
@@ -208,8 +207,7 @@ function DepartmentReport() {
         let result = reviews
         if (filters.min) result = result.filter(row => String(row.Date).slice(0, 10) >= filters.min)
         if (filters.max) result = result.filter(row => String(row.Date).slice(0, 10) <= filters.max)
-        if (filters.PFirst) result = result.filter(row => row.PatFirst.toLowerCase().startsWith(filters.PFirst.toLowerCase()))
-        if (filters.PLast) result = result.filter(row => row.PatLast.toLowerCase().startsWith(filters.PLast.toLowerCase()))
+        if (filters.Dept) result = result.filter(row => row.DepartmentName?.toLowerCase().includes(filters.Dept.toLowerCase()))
         return result
     }
 
@@ -254,12 +252,8 @@ function DepartmentReport() {
                 <p style={sectionLabel}>Filters</p>
                 <div style={filterRow}>
                     <div style={filterGroup}>
-                        <label style={filterLabel}>Patient First</label>
-                        <input type="text" name="PFirst" value={rep.PFirst} onChange={handleChange} style={filterInput} />
-                    </div>
-                    <div style={filterGroup}>
-                        <label style={filterLabel}>Patient Last</label>
-                        <input type="text" name="PLast" value={rep.PLast} onChange={handleChange} style={filterInput} />
+                        <label style={filterLabel}>Department</label>
+                        <input type="text" name="Dept" value={rep.Dept} onChange={handleChange} style={filterInput} placeholder="Search department..." />
                     </div>
                     <div style={filterGroup}>
                         <label style={filterLabel}>Insurance</label>

@@ -50,8 +50,10 @@ export default function EmployeePage({ mode = 'employee' }) {
     doctorId: '',
     appointmentDate: '',
     reasonForVisit: '',
-    officeId: '1',
   });
+  const [todaySchedule, setTodaySchedule] = useState([]);
+  const [schedDoctorId, setSchedDoctorId] = useState('');
+  const [rescheduleData, setRescheduleData] = useState(null);
   const [payForm, setPayForm] = useState({
     appointmentId: '',
     patientId: '',
@@ -60,6 +62,11 @@ export default function EmployeePage({ mode = 'employee' }) {
     status: 'Posted',
     dueDate: '',
   });
+
+  const loadTodaySchedule = async (doctorId = '') => {
+    const url = `${EMPLOYEE_API}/today-schedule${doctorId ? `?doctorId=${doctorId}` : ''}`;
+    fetch(url, { credentials: 'include' }).then(r => r.json()).then(d => { if (Array.isArray(d)) setTodaySchedule(d) }).catch(() => {});
+  };
 
   const loadData = async () => {
     try {
@@ -121,6 +128,9 @@ export default function EmployeePage({ mode = 'employee' }) {
         setStaffRole(session.role || 'Employee');
         setEmployeeId(String(session.id || ''));
         loadData();
+        if (session.role === 'Receptionist') {
+          loadTodaySchedule();
+        }
       })
       .catch(() => navigate('/staff-login'));
   }, [isReceptionistPortal, navigate]);
@@ -152,7 +162,6 @@ export default function EmployeePage({ mode = 'employee' }) {
         doctorId: '',
         appointmentDate: '',
         reasonForVisit: '',
-        officeId: '1',
       });
       setMessage({ type: 'success', text: payload.message });
       loadData();
@@ -174,6 +183,16 @@ export default function EmployeePage({ mode = 'employee' }) {
         dueDate: '',
       });
       setMessage({ type: 'success', text: payload.message });
+      loadData();
+    } catch (err) {
+      setMessage({ type: 'error', text: err.message });
+    }
+  };
+
+  const handleShiftDelete = async (shift) => {
+    try {
+      await fetch(`${EMPLOYEE_API}/availability/${shift.ShiftID}`, { method: 'DELETE', credentials: 'include' });
+      setMessage({ type: 'success', text: 'Shift removed.' });
       loadData();
     } catch (err) {
       setMessage({ type: 'error', text: err.message });
@@ -291,7 +310,7 @@ export default function EmployeePage({ mode = 'employee' }) {
             <section style={metricGrid}>
               <MetricCard label="Appointments" value={data.appointments.length} detail="All recent bookings" tone="blue" />
               <MetricCard label="Need Confirmation" value={scheduledAppointments.length} detail="Scheduled but not confirmed" tone="amber" />
-              <MetricCard label="Revenue Posted" value={`$${totalRevenue.toFixed(2)}`} detail={`${data.transactions.length} transactions tracked`} tone="green" />
+              {!isReceptionistPortal && <MetricCard label="Revenue Posted" value={`$${totalRevenue.toFixed(2)}`} detail={`${data.transactions.length} transactions tracked`} tone="green" />}
               <MetricCard label="Patients" value={data.patients.length} detail="Searchable patient roster" tone="plum" />
             </section>
 
@@ -422,17 +441,6 @@ export default function EmployeePage({ mode = 'employee' }) {
                   />
                 </Field>
 
-                <Field label="Office ID">
-                  <input
-                    type="number"
-                    min="1"
-                    style={inputStyle}
-                    value={bookForm.officeId}
-                    onChange={(event) => setBookForm({ ...bookForm, officeId: event.target.value })}
-                    required
-                  />
-                </Field>
-
                 <button type="submit" style={primaryButton}>Book Appointment</button>
               </form>
             </SurfaceCard>
@@ -491,27 +499,113 @@ export default function EmployeePage({ mode = 'employee' }) {
                         <StatusBadge status={row.StatusText || row.StatusCode} />
                       </td>
                       <td style={tableCell}>
-                        {isScheduledStatus(row) ? (
-                          canConfirmAppointments ? (
+                        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                          {isScheduledStatus(row) && (
+                            canConfirmAppointments ? (
+                              <button
+                                type="button"
+                                onClick={() => handleConfirmAppointment(row.AppointmentID)}
+                                disabled={confirmingId === String(row.AppointmentID)}
+                                style={secondaryActionButton}
+                              >
+                                {confirmingId === String(row.AppointmentID) ? 'Confirming...' : 'Confirm'}
+                              </button>
+                            ) : (
+                              <span style={microText}>Reception only</span>
+                            )
+                          )}
+                          {isReceptionistPortal && normalizeStatus(row.StatusText || row.StatusCode) !== 'cancelled' && normalizeStatus(row.StatusText || row.StatusCode) !== 'completed' && (
                             <button
                               type="button"
-                              onClick={() => handleConfirmAppointment(row.AppointmentID)}
-                              disabled={confirmingId === String(row.AppointmentID)}
-                              style={secondaryActionButton}
+                              style={{ ...secondaryActionButton, background: '#fef2f2', color: '#b91c1c' }}
+                              onClick={async () => {
+                                if (!window.confirm('Cancel this appointment?')) return;
+                                await fetch(`${EMPLOYEE_API}/appointments/${row.AppointmentID}/cancel`, { method: 'POST', credentials: 'include' });
+                                loadData();
+                              }}
                             >
-                              {confirmingId === String(row.AppointmentID) ? 'Confirming...' : 'Confirm'}
+                              Cancel
                             </button>
-                          ) : (
-                            <span style={microText}>Reception only</span>
-                          )
-                        ) : (
-                          <span style={microText}>No action</span>
-                        )}
+                          )}
+                          {!isReceptionistPortal && !isScheduledStatus(row) && <span style={microText}>No action</span>}
+                        </div>
                       </td>
                     </tr>
                   )}
                 />
               </SurfaceCard>
+
+              {isReceptionistPortal && (
+                <SurfaceCard
+                  title="Today's Doctor Schedule"
+                  subtitle="All appointments for today — filter by doctor, reschedule or cancel"
+                  aside={
+                    <select
+                      style={filterSelect}
+                      value={schedDoctorId}
+                      onChange={(e) => { setSchedDoctorId(e.target.value); loadTodaySchedule(e.target.value); }}
+                    >
+                      <option value="">All doctors</option>
+                      {data.doctors.map(d => (
+                        <option key={d.EmployeeID} value={d.EmployeeID}>Dr. {d.LastName}, {d.FirstName}</option>
+                      ))}
+                    </select>
+                  }
+                >
+                  {rescheduleData && (
+                    <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '10px', padding: '14px 16px', marginBottom: '14px', display: 'flex', gap: '12px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+                      <div>
+                        <label style={{ fontSize: '11px', fontWeight: 700, color: '#374151', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>New date &amp; time</label>
+                        <input
+                          type="datetime-local"
+                          style={{ ...inputStyle, width: 'auto' }}
+                          value={rescheduleData.newDate}
+                          onChange={e => setRescheduleData({ ...rescheduleData, newDate: e.target.value })}
+                        />
+                      </div>
+                      <button style={primaryButton} onClick={async () => {
+                        await fetch(`${EMPLOYEE_API}/appointments/${rescheduleData.id}/reschedule`, {
+                          method: 'PUT', credentials: 'include',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ newDate: rescheduleData.newDate })
+                        });
+                        setRescheduleData(null);
+                        loadTodaySchedule(schedDoctorId);
+                        loadData();
+                      }}>Save</button>
+                      <button style={secondaryActionButton} onClick={() => setRescheduleData(null)}>Cancel</button>
+                    </div>
+                  )}
+                  <DataTable
+                    headers={['Time', 'Patient', 'Doctor', 'Reason', 'Status', 'Actions']}
+                    rows={todaySchedule}
+                    empty="No appointments scheduled for today."
+                    renderRow={(row) => (
+                      <tr key={row.AppointmentID}>
+                        <td style={tableCell}>{fmtTime(row.AppointmentDate, row.AppointmentTime)}</td>
+                        <td style={tableCellStrong}>{row.PatFirst} {row.PatLast}</td>
+                        <td style={tableCell}>Dr. {row.DoctorFirst} {row.DoctorLast}</td>
+                        <td style={tableCell}>{row.ReasonForVisit || '—'}</td>
+                        <td style={tableCell}><StatusBadge status={row.StatusText} /></td>
+                        <td style={tableCell}>
+                          <div style={{ display: 'flex', gap: '6px' }}>
+                            <button style={secondaryActionButton} onClick={() => setRescheduleData({ id: row.AppointmentID, newDate: '' })}>Reschedule</button>
+                            <button
+                              style={{ ...secondaryActionButton, background: '#fef2f2', color: '#b91c1c', borderColor: '#fecaca' }}
+                              onClick={async () => {
+                                if (!window.confirm('Cancel this appointment?')) return;
+                                await fetch(`${EMPLOYEE_API}/appointments/${row.AppointmentID}/cancel`, { method: 'POST', credentials: 'include' });
+                                loadTodaySchedule(schedDoctorId);
+                                loadData();
+                              }}
+                            >Cancel</button>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  />
+                </SurfaceCard>
+              )}
             </div>
           </div>
         )}
@@ -524,7 +618,7 @@ export default function EmployeePage({ mode = 'employee' }) {
                   <select
                     style={inputStyle}
                     value={payForm.patientId}
-                    onChange={(event) => setPayForm({ ...payForm, patientId: event.target.value })}
+                    onChange={(event) => setPayForm({ ...payForm, patientId: event.target.value, appointmentId: '' })}
                     required
                   >
                     <option value="">Select patient</option>
@@ -536,15 +630,22 @@ export default function EmployeePage({ mode = 'employee' }) {
                   </select>
                 </Field>
 
-                <Field label="Appointment ID">
-                  <input
-                    type="number"
-                    min="1"
+                <Field label="Appointment">
+                  <select
                     style={inputStyle}
                     value={payForm.appointmentId}
                     onChange={(event) => setPayForm({ ...payForm, appointmentId: event.target.value })}
                     required
-                  />
+                  >
+                    <option value="">{payForm.patientId ? 'Select appointment' : 'Select a patient first'}</option>
+                    {data.appointments
+                      .filter(a => String(a.PatientID) === String(payForm.patientId))
+                      .map(a => (
+                        <option key={a.AppointmentID} value={a.AppointmentID}>
+                          #{a.AppointmentID} — {a.AppointmentDate ? String(a.AppointmentDate).split('T')[0] : ''} · Dr. {a.DoctorLastName} · {a.StatusText || ''}
+                        </option>
+                      ))}
+                  </select>
                 </Field>
 
                 <Field label="Amount">
@@ -602,7 +703,7 @@ export default function EmployeePage({ mode = 'employee' }) {
 
             <div style={stackLayout}>
               <section style={metricGrid}>
-                <MetricCard label="Posted Revenue" value={`$${totalRevenue.toFixed(2)}`} detail="Across recent transactions" tone="green" />
+                {!isReceptionistPortal && <MetricCard label="Posted Revenue" value={`$${totalRevenue.toFixed(2)}`} detail="Across recent transactions" tone="green" />}
                 <MetricCard label="Overdue" value={overdueInvoices.length} detail="Invoices past due date" tone="amber" />
                 <MetricCard label="Late Fees" value={`$${currency(data.transactions.reduce((sum, transaction) => sum + Number(transaction.LateFeeAmount || 0), 0))}`} detail="Current accrued fees" tone="blue" />
               </section>
@@ -650,6 +751,7 @@ export default function EmployeePage({ mode = 'employee' }) {
                   shifts={data.availability}
                   employeeId={employeeId}
                   onSave={handleShiftSave}
+                  onDelete={handleShiftDelete}
                 />
               </SurfaceCard>
             ) : (
@@ -677,9 +779,10 @@ export default function EmployeePage({ mode = 'employee' }) {
                     Scheduling {selectedEmployee ? `${selectedEmployee.FirstName} ${selectedEmployee.LastName}` : 'employee'} ({selectedEmployee?.Role || 'Role not set'})
                   </div>
                   <WeekDayPicker
-                    shifts={data.availability}
+                    shifts={data.availability.filter(s => String(s.EmployeeID) === String(schedEmpId))}
                     employeeId={schedEmpId}
                     onSave={handleShiftSave}
+                    onDelete={handleShiftDelete}
                   />
                 </div>
               ) : (

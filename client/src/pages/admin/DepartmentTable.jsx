@@ -99,7 +99,7 @@ function ViewRowForm({ row, onClose, onSave }) {
   )
 }
 
-function DepartmentTable({ refreshKey = 0 }) {
+function DepartmentTable({ refreshKey = 0, onDelete }) {
   const [response, setResponse] = useState([])
   const [records, setRecords] = useState([])
   const [loading, setLoading] = useState(false)
@@ -116,18 +116,36 @@ function DepartmentTable({ refreshKey = 0 }) {
 
   useEffect(() => { fetchTableData() }, [refreshKey])
 
+  const handleDelete = async (row) => {
+    if (!window.confirm(`Delete department "${row.DepartmentName}"? Employees will be unassigned.`)) return
+    await fetch(`${API}/admin/api/deletedepartment/${row.DepartmentID}`, { method: 'DELETE', credentials: 'include' })
+    fetchTableData()
+    if (onDelete) onDelete()
+  }
+
   const columns = [
-    { name: "Department ID", selector: row => row.DepartmentID, sortable: true },
+    { name: "ID",            selector: row => row.DepartmentID, sortable: true, width: '70px' },
     { name: "Department",    selector: row => row.DepartmentName, sortable: true },
-    { name: "# of Employees", selector: row => row.Employees || "0" },
+    { name: "# Employees",   selector: row => row.Employees || "0", sortable: true },
     {
-      name: 'View Employees', button: true,
+      name: 'View', button: true,
       cell: row => (
         <button
           onClick={() => setViewRow(row)}
           style={{ fontSize: '12px', padding: '5px 12px', background: '#1e2b1b', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontFamily: 'Poppins, sans-serif' }}
         >
           Employees
+        </button>
+      )
+    },
+    {
+      name: 'Delete', button: true,
+      cell: row => (
+        <button
+          onClick={() => handleDelete(row)}
+          style={{ fontSize: '12px', padding: '5px 12px', background: '#dc2626', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontFamily: 'Poppins, sans-serif' }}
+        >
+          Delete
         </button>
       )
     },

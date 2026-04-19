@@ -21,7 +21,7 @@ function Login() {
       })
 
       if (res.ok) {
-        navigate("/")
+        navigate("/patient/profile")
       } else {
         const msg = await res.json()
         setError(typeof msg === "string" ? msg : "Login failed.")

@@ -147,15 +147,34 @@ router.post('/book', async (req, res) => {
 
     await db.query(
       `INSERT INTO appointment
-        (PatientID, DoctorID, AppointmentDate, StatusCode, OfficeID, ReasonForVisit)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [patientId, doctorId, formattedDate, 1, 1, reason || null]
+        (PatientID, DoctorID, AppointmentDate, StatusCode, ReasonForVisit)
+       VALUES (?, ?, ?, ?, ?)`,
+      [patientId, doctorId, formattedDate, 1, reason || null]
     );
 
     res.json({ success: true });
   } catch (err) {
     console.error('SQL ERROR:', err.message);
     res.status(500).json({ error: err.message });
+  }
+});
+
+router.get('/api/doctor-shifts', async (req, res) => {
+  const patientId = getPatientId(req);
+  if (!patientId) return res.status(401).json({ error: 'Not logged in' });
+
+  const { doctorId, start, end } = req.query;
+
+  try {
+    const [rows] = await db.query(
+      `SELECT ShiftDate, StartTime, EndTime
+       FROM employee_shift
+       WHERE EmployeeID = ? AND ShiftDate BETWEEN ? AND ?`,
+      [doctorId, start, end]
+    );
+    res.json(rows);
+  } catch {
+    res.status(500).json({ error: 'Failed to load shifts' });
   }
 });
 

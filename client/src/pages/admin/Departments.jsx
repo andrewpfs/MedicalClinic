@@ -8,6 +8,7 @@ import {
   shellPage, shellInner,
   adminHeroCard, adminHeroAccent, adminHeroContent,
   adminEyebrow, adminHeroTitle, adminHeroText,
+  sectionLabel,
 } from './adminStyles'
 
 const heroButton = {
@@ -22,13 +23,7 @@ const heroButton = {
   fontFamily: 'inherit',
 }
 
-const heroActions = {
-  display: 'flex',
-  flexWrap: 'wrap',
-  gap: '10px',
-  marginTop: '18px',
-}
-
+const heroActions = { display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '18px' }
 
 function Departments() {
   useStaffAuth('Admin')
@@ -45,17 +40,17 @@ function Departments() {
           <div style={adminHeroContent}>
             <p style={adminEyebrow}>Clinic structure</p>
             <h1 style={adminHeroTitle}>Departments</h1>
-            <p style={adminHeroText}>Manage clinic departments, assign staff, and keep department records up to date.</p>
+            <p style={adminHeroText}>Manage departments and staff assignments.</p>
             <div style={heroActions}>
               <button type="button" onClick={() => navigate('/admin/home')} style={heroButton}>Back to home</button>
-              <button type="button" onClick={() => navigate('/admin/report?type=Invoice')} style={heroButton}>View Reports</button>
               <button type="button" onClick={() => navigate('/admin/employees')} style={heroButton}>Manage employees</button>
             </div>
           </div>
         </div>
 
-        <AddD onSuccess={() => setRefreshKey(k => k + 1)} />
-        <DepartmentTable refreshKey={refreshKey} />
+        <p style={{ ...sectionLabel, marginBottom: '0.75rem' }}>Departments</p>
+        <AddD onSuccess={() => { setRefreshKey(k => k + 1) }} />
+        <DepartmentTable refreshKey={refreshKey} onDelete={() => setRefreshKey(k => k + 1)} />
 
       </div>
     </div>

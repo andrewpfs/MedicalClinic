@@ -97,14 +97,40 @@ function EmployeeTable({ refreshKey = 0 }) {
 
   useEffect(() => { fetchTableData() }, [refreshKey])
 
+  const handleToggleActive = async (row) => {
+    const newVal = row.IsActive ? 0 : 1
+    if (newVal === 0) {
+      const confirmed = window.confirm(`Mark ${row.FirstName} ${row.LastName} as inactive? They will no longer appear in department listings.`)
+      if (!confirmed) return
+    }
+    await fetch(`${API}/admin/api/toggleActive`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ EmployeeID: row.EmployeeID, IsActive: newVal })
+    })
+    fetchTableData()
+  }
+
   const columns = [
-    { name: "Employee ID", selector: row => row.EmployeeID, sortable: true },
-    { name: "First Name",  selector: row => row.FirstName,  sortable: true },
-    { name: "Last Name",   selector: row => row.LastName,   sortable: true },
-    { name: "Role",        selector: row => row.Role,       sortable: true },
+    { name: "ID",          selector: row => row.EmployeeID,           sortable: true, width: '70px' },
+    { name: "First Name",  selector: row => row.FirstName,            sortable: true },
+    { name: "Last Name",   selector: row => row.LastName,             sortable: true },
+    { name: "Role",        selector: row => row.Role,                 sortable: true },
+    { name: "Department",  selector: row => row.DepartmentName || '—', sortable: true },
     { name: "Email",       selector: row => row.Email },
     { name: "Phone",       selector: row => row.PhoneNumber },
-    { name: "Address",     selector: row => row.Address },
+    {
+      name: 'Status', button: true,
+      cell: row => (
+        <button
+          onClick={() => handleToggleActive(row)}
+          style={{ fontSize: '12px', padding: '4px 10px', background: row.IsActive !== 0 ? '#16a34a' : '#dc2626', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontFamily: 'Poppins, sans-serif' }}
+        >
+          {row.IsActive !== 0 ? 'Active' : 'Inactive'}
+        </button>
+      )
+    },
     {
       name: 'Edit', button: true,
       cell: row => (

@@ -5,14 +5,16 @@ import './patient-layout.css';
 import { formatDoctorRating, getDoctorImageUrl, getDoctorInitials } from '../../utils/doctorProfiles';
 
 const HOURS = [9, 10, 11, 12, 13, 14, 15, 16];
-const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
-const SHORT_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const SHORT_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 function getWeekDates(offset = 0) {
   const now = new Date();
   const day = now.getDay();
+  // If today is Sunday, jump straight to next week
+  const effectiveOffset = day === 0 ? offset + 1 : offset;
   const monday = new Date(now);
-  monday.setDate(now.getDate() - (day === 0 ? 6 : day - 1) + offset * 7);
+  monday.setDate(now.getDate() - (day === 0 ? 6 : day - 1) + effectiveOffset * 7);
   monday.setHours(0, 0, 0, 0);
   return DAYS.map((_, index) => {
     const date = new Date(monday);
@@ -34,7 +36,7 @@ function toLocalDateString(date) {
 }
 
 function bookingWindowLabel(weekDates) {
-  return `${weekDates[0].toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${weekDates[4].toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+  return `${weekDates[0].toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${weekDates[5].toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
 }
 
 function formatBookingReason(reason) {
@@ -45,6 +47,7 @@ export default function Booking() {
   const [doctors, setDoctors] = useState([]);
   const [selectedDoctor, setSelectedDoctor] = useState('');
   const [bookedSlots, setBookedSlots] = useState([]);
+  const [doctorShifts, setDoctorShifts] = useState([]);
   const [weekOffset, setWeekOffset] = useState(0);
   const [weekDates, setWeekDates] = useState(getWeekDates(0));
   const [search, setSearch] = useState('');
@@ -81,7 +84,22 @@ export default function Booking() {
       .then((res) => res.json())
       .then((data) => setBookedSlots(data))
       .catch(() => {});
+    fetch(`/patient/api/doctor-shifts?doctorId=${selectedDoctor}&start=${startDate}&end=${endDate}`, { credentials: 'include' })
+      .then((res) => res.json())
+      .then((data) => setDoctorShifts(data))
+      .catch(() => {});
   }, [selectedDoctor, weekDates]);
+
+  const isDoctorWorking = (date, hour) => {
+    const dateStr = toLocalDateString(date);
+    return doctorShifts.some((shift) => {
+      const shiftDate = String(shift.ShiftDate).slice(0, 10);
+      if (shiftDate !== dateStr) return false;
+      const start = parseInt(String(shift.StartTime).split(':')[0], 10);
+      const end = parseInt(String(shift.EndTime).split(':')[0], 10);
+      return hour >= start && hour < end;
+    });
+  };
 
   const getSlotStatus = (date, hour) => {
     const dateStr = toLocalDateString(date);
@@ -226,6 +244,7 @@ export default function Booking() {
                         type="button"
                         onClick={() => {
                           setSelectedDoctor(String(doctor.EmployeeID));
+                          setDoctorShifts([]);
                           setError('');
                         }}
                         style={{
@@ -300,6 +319,7 @@ export default function Booking() {
                         <LegendChip color="#dff4ea" label="Available" />
                         <LegendChip color="#fde2de" label="Booked" />
                         <LegendChip color="#f8ecce" label="Your appointment" />
+                        <LegendChip color="#f1f5f9" label="Unavailable" />
                       </div>
                     </div>
 
@@ -329,15 +349,18 @@ export default function Booking() {
                               {weekDates.map((date, index) => {
                                 const status = getSlotStatus(date, hour);
                                 const past = isPast(date, hour);
-                                const clickable = !past && status !== 'doctor';
+                                const working = isDoctorWorking(date, hour);
+                                const clickable = !past && working && status !== 'doctor';
                                 const slotStyle = past
                                   ? slotPast
-                                  : status === 'doctor'
-                                    ? slotBooked
-                                    : status === 'patient'
-                                      ? slotMine
-                                      : slotAvailable;
-                                const slotText = past ? '-' : status === 'doctor' ? 'Booked' : status === 'patient' ? 'Your visit' : 'Book';
+                                  : !working
+                                    ? slotOff
+                                    : status === 'doctor'
+                                      ? slotBooked
+                                      : status === 'patient'
+                                        ? slotMine
+                                        : slotAvailable;
+                                const slotText = past ? '—' : !working ? '—' : status === 'doctor' ? 'Booked' : status === 'patient' ? 'Your visit' : 'Book';
 
                                 return (
                                   <td key={`${index}-${hour}`} style={calendarCell}>
@@ -847,7 +870,6 @@ const slotBase = {
   width: '100%',
   borderRadius: '16px',
   padding: '14px 10px',
-  border: '1px solid transparent',
   fontSize: '12px',
   fontWeight: 700,
   fontFamily: 'inherit',
@@ -856,7 +878,7 @@ const slotBase = {
 const slotAvailable = {
   ...slotBase,
   background: '#dff4ea',
-  borderColor: '#b9e1cf',
+  border: '1px solid #b9e1cf',
   color: '#0f6b52',
   cursor: 'pointer',
 };
@@ -864,7 +886,7 @@ const slotAvailable = {
 const slotBooked = {
   ...slotBase,
   background: '#fde2de',
-  borderColor: '#f6c7c0',
+  border: '1px solid #f6c7c0',
   color: '#b42318',
   cursor: 'not-allowed',
 };
@@ -872,15 +894,23 @@ const slotBooked = {
 const slotMine = {
   ...slotBase,
   background: '#f8ecce',
-  borderColor: '#f1d592',
+  border: '1px solid #f1d592',
   color: '#9a6700',
   cursor: 'pointer',
+};
+
+const slotOff = {
+  ...slotBase,
+  background: '#f1f5f9',
+  border: '1px solid #e2e8f0',
+  color: '#94a3b8',
+  cursor: 'not-allowed',
 };
 
 const slotPast = {
   ...slotBase,
   background: '#f8fafc',
-  borderColor: '#e2e8f0',
+  border: '1px solid #e2e8f0',
   color: '#cbd5e1',
   cursor: 'not-allowed',
 };

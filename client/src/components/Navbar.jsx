@@ -53,7 +53,7 @@ export default function Navbar() {
   return (
     <header className="navbar-main">
       <div className="navbar-main__inner">
-        <Link to={session.isLoggedIn ? '/patient/profile' : '/'} className="navbar-main__logo">
+        <Link to="/" className="navbar-main__logo">
           <span className="navbar-main__logo-mark" aria-hidden="true">MC</span>
           <span className="navbar-main__logo-copy">
             <span className="navbar-main__logo-clinic">Medical Clinic</span>
