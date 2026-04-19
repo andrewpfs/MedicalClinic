@@ -36,6 +36,8 @@ export default function EmployeePage({ mode = 'employee' }) {
   const [statusFilter, setStatusFilter] = useState('all');
   const [confirmingId, setConfirmingId] = useState('');
   const [message, setMessage] = useState({ type: '', text: '' });
+  const [nurseAssignments, setNurseAssignments] = useState([]);
+  const [nurseForm, setNurseForm] = useState({ nurseId: '', doctorId: '' });
   const [data, setData] = useState({
     patients: [],
     doctors: [],
@@ -74,6 +76,26 @@ export default function EmployeePage({ mode = 'employee' }) {
         ...payload,
         employees: payload.employees || [],
       }));
+    } catch (err) {
+      setMessage({ type: 'error', text: err.message });
+    }
+  };
+
+  const loadNurseAssignments = async () => {
+    try {
+      const res = await fetch(`${EMPLOYEE_API}/nurse-assignments`, { credentials: 'include' });
+      const payload = await res.json();
+      if (payload.success) setNurseAssignments(payload.assignments);
+    } catch { /* non-critical */ }
+  };
+
+  const handleNurseAssign = async (e) => {
+    e.preventDefault();
+    try {
+      const payload = await post(`${EMPLOYEE_API}/assign-nurse`, nurseForm);
+      setMessage({ type: 'success', text: payload.message });
+      setNurseForm({ nurseId: '', doctorId: '' });
+      loadNurseAssignments();
     } catch (err) {
       setMessage({ type: 'error', text: err.message });
     }
@@ -120,6 +142,7 @@ export default function EmployeePage({ mode = 'employee' }) {
         setStaffRole(session.role || 'Employee');
         setEmployeeId(String(session.id || ''));
         loadData();
+        loadNurseAssignments();
       })
       .catch(() => navigate('/staff-login'));
   }, [isReceptionistPortal, navigate]);
@@ -741,6 +764,56 @@ export default function EmployeePage({ mode = 'employee' }) {
               <MetricCard label="Receptionists" value={staffRoleCounts.Receptionist || 0} detail="Front-desk staff now modeled as a distinct role" tone="amber" />
               <MetricCard label="Nurses" value={staffRoleCounts.Nurse || 0} detail="Clinical support staff" tone="green" />
             </section>
+
+            <SurfaceCard title="Assign Nurse to Doctor" subtitle="Select a nurse and the doctor they should support">
+              <form onSubmit={handleNurseAssign} style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'flex-end', padding: '4px 0 8px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <label style={{ fontSize: '11px', fontWeight: 500, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Nurse</label>
+                  <select
+                    value={nurseForm.nurseId}
+                    onChange={e => setNurseForm(f => ({ ...f, nurseId: e.target.value }))}
+                    required
+                    style={{ padding: '9px 12px', border: '1px solid #d1d5db', borderRadius: '8px', fontSize: '14px', fontFamily: 'inherit', minWidth: '200px' }}
+                  >
+                    <option value="">Select nurse…</option>
+                    {data.employees.filter(e => e.Role === 'Nurse').map(e => (
+                      <option key={e.EmployeeID} value={e.EmployeeID}>{e.FirstName} {e.LastName}</option>
+                    ))}
+                  </select>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <label style={{ fontSize: '11px', fontWeight: 500, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Doctor</label>
+                  <select
+                    value={nurseForm.doctorId}
+                    onChange={e => setNurseForm(f => ({ ...f, doctorId: e.target.value }))}
+                    required
+                    style={{ padding: '9px 12px', border: '1px solid #d1d5db', borderRadius: '8px', fontSize: '14px', fontFamily: 'inherit', minWidth: '200px' }}
+                  >
+                    <option value="">Select doctor…</option>
+                    {data.doctors.map(d => (
+                      <option key={d.EmployeeID} value={d.EmployeeID}>Dr. {d.FirstName} {d.LastName}</option>
+                    ))}
+                  </select>
+                </div>
+                <button type="submit" style={{ padding: '9px 20px', background: '#1e2b1b', color: 'white', border: 'none', borderRadius: '8px', fontSize: '14px', cursor: 'pointer', fontFamily: 'inherit' }}>
+                  Assign
+                </button>
+              </form>
+            </SurfaceCard>
+
+            <SurfaceCard title="Nurse Assignments" subtitle="Current nurse–doctor pairings">
+              <DataTable
+                headers={['Nurse', 'Assigned Doctor']}
+                rows={nurseAssignments}
+                empty="No nurse assignments found."
+                renderRow={(row) => (
+                  <tr key={row.NurseID}>
+                    <td style={tableCellStrong}>{row.NurseFirst} {row.NurseLast}</td>
+                    <td style={tableCell}>{row.DoctorFirst ? `Dr. ${row.DoctorFirst} ${row.DoctorLast}` : '—'}</td>
+                  </tr>
+                )}
+              />
+            </SurfaceCard>
 
             <SurfaceCard title="Staff Directory" subtitle="Role breakdown aligned with the employee table">
               <DataTable
