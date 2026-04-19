@@ -157,54 +157,6 @@ router.get('/api/getID', async (req,res) => {
     }
 })
 
-router.get('/api/pulldar', requireAdmin, async (req,res) => {
-    const { min, max, DepartmentName } = req.query;
-    const start = min || '2000-01-01';
-    const end   = max || '2099-12-31';
-    let q = `SELECT E.EmployeeID, E.FirstName, E.LastName, D.DepartmentName,
-                    COUNT(A.AppointmentID) AS Appointments
-             FROM department AS D
-             JOIN employee AS E ON E.DepartmentID = D.DepartmentID
-             JOIN appointment AS A ON A.DoctorID = E.EmployeeID
-             WHERE A.AppointmentDate >= ? AND A.AppointmentDate <= ?`;
-    const params = [start, end];
-    if (DepartmentName) { q += ' AND D.DepartmentName = ?'; params.push(DepartmentName); }
-    q += ' GROUP BY E.EmployeeID ORDER BY Appointments DESC';
-    try {
-        const [rows] = await db.query(q, params);
-        return res.json({ results: rows });
-    } catch (err) {
-        console.error(err);
-        res.status(500).send("Report Error");
-    }
-})
-
-router.get('/api/pullgar', requireAdmin, async (req,res) => {
-    const q = "SELECT D.DepartmentName,O.OfficeName,COUNT(A.AppointmentID) AS 'Appointments' FROM department AS D,appointment AS A,employee AS E,office AS O WHERE A.DoctorID=E.EmployeeID AND D.DepartmentID=E.DepartmentID AND D.OfficeID=O.OfficeID AND A.AppointmentDate >= ? AND A.AppointmentDate <= ? GROUP BY D.DepartmentID ORDER BY Appointments DESC";
-    const {min, max} = req.query;
-
-    try {
-        const [rows] = await db.query(q,[min,max]);
-        return res.json(rows)
-    } catch (err) {
-        console.error(err);
-        res.status(500).send("Report Error");
-    }
-})
-
-router.get('/api/pullgrr', requireAdmin, async (req,res) => {
-    const q = "SELECT D.DepartmentName,O.OfficeName,SUM(T.Amount) AS 'Revenue' FROM department AS D,appointment AS A,employee AS E,transaction as T,office AS O WHERE A.DoctorID=E.EmployeeID AND D.DepartmentID=E.DepartmentID AND D.OfficeID=O.OfficeID AND T.AppointmentID=A.AppointmentID AND A.AppointmentDate >= ? AND A.AppointmentDate <= ? GROUP BY D.DepartmentID ORDER BY Revenue DESC";
-    const {min, max} = req.query;
-
-    try {
-        const [rows] = await db.query(q,[min,max]);
-        return res.json(rows)
-    } catch (err) {
-        console.error(err);
-        res.status(500).send("Report Error");
-    }
-})
-
 router.get('/api/pullrevenue', requireAdmin, async (req,res) => {
     const q = `
     SELECT T.TransactionID AS "Id", P.FName AS "PatFirst", P.LName AS "PatLast", E.FirstName AS "DocFirst", E.LastName AS "DocLast",D.DepartmentName,D.DepartmentID,T.Amount,DATE_FORMAT(T.TransactionDateTime, '%Y-%m-%d') AS "Date",E.EmployeeID AS "DocID",T.Status,P.hasInsurance AS "Insurance"
@@ -299,18 +251,7 @@ router.post('/api/updateEmployee', async (req,res) => {
 })
 
 router.get('/api/getdepartments', async (req,res) => {
-    const q = 'SELECT DepartmentID,DepartmentName,OfficeID FROM department';
-
-    try {
-        const [rows] = await db.query(q)
-        return res.json(rows)
-    }catch(err){
-        console.error(err)
-    }
-})
-
-router.get('/api/getoffices', async (req,res) => {
-    const q = 'SELECT OfficeID,OfficeName FROM office';
+    const q = 'SELECT DepartmentID,DepartmentName FROM department';
 
     try {
         const [rows] = await db.query(q)
@@ -321,12 +262,12 @@ router.get('/api/getoffices', async (req,res) => {
 })
 
 router.post('/api/adddepartment', async (req,res) => {
-    const q = 'INSERT INTO department (DepartmentName,OfficeID) VALUES (?,?)'
+    const q = 'INSERT INTO department (DepartmentName) VALUES (?)'
 
-    const {DepartmentName,OfficeID} = req.body
+    const {DepartmentName} = req.body
 
     try {
-        const rows = await db.query(q,[DepartmentName,OfficeID])
+        const rows = await db.query(q,[DepartmentName])
         return res.json(rows) 
     }catch(err){
         res.status(500).json({error: 'Error creating department'})
@@ -349,9 +290,8 @@ router.get('/api/getdeptdoctors', async (req,res) => {
 
 router.get('/api/getdepartmentinfo', async (req,res) => {
     const q = `
-    SELECT D.DepartmentID, D.DepartmentName, O.OfficeName, O.Street, O.City, O.State, O.ZipCode, O.PhoneNumber, COUNT(E.EmployeeID) AS Employees
+    SELECT D.DepartmentID, D.DepartmentName, COUNT(E.EmployeeID) AS Employees
     FROM department AS D 
-    JOIN office AS O ON D.OfficeID=O.OfficeID 
     LEFT JOIN employee AS E ON E.DepartmentID=D.DepartmentID
     GROUP BY D.DepartmentID
     ORDER BY Employees DESC`
