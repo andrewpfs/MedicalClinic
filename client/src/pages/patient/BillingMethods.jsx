@@ -6,34 +6,34 @@ import './patient-layout.css';
 import API from '../../api';
 const CARD_TYPES = ['Visa', 'Mastercard', 'American Express', 'Discover'];
 
-const styles = {
-  wrap: { padding: '1.5rem', maxWidth: '560px', margin: '0 auto', fontFamily: 'Poppins, sans-serif' },
-  heading: { fontSize: '22px', fontWeight: 500, marginBottom: '1.5rem', color: '#1e2b1b' },
-  sectionLabel: { fontSize: '12px', fontWeight: 500, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.75rem' },
-  card: { background: 'white', border: '1px solid #e5e7eb', borderRadius: '12px', overflow: 'hidden', marginBottom: '1.5rem' },
-  methodRow: { display: 'flex', alignItems: 'center', gap: '14px', padding: '14px 20px', borderBottom: '1px solid #f3f4f6' },
-  methodRowLast: { display: 'flex', alignItems: 'center', gap: '14px', padding: '14px 20px' },
-  methodIcon: { width: '40px', height: '26px', background: '#1e2b1b', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  methodIconText: { fontSize: '9px', fontWeight: 700, color: 'white', textAlign: 'center' },
-  methodInfo: { flex: 1 },
-  methodTitle: { fontSize: '14px', fontWeight: 500, color: '#1e2b1b', margin: 0 },
-  methodSub: { fontSize: '12px', color: '#9ca3af', margin: '2px 0 0' },
-  defaultBadge: { fontSize: '11px', padding: '2px 8px', borderRadius: '99px', background: '#EAF3DE', color: '#3B6D11', border: '1px solid #C0DD97' },
-  removeBtn: { fontSize: '12px', color: '#993C1D', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px', width: 'auto' },
-  emptyMsg: { fontSize: '13px', color: '#9ca3af', fontStyle: 'italic', padding: '1.5rem 20px' },
-  addCard: { background: 'white', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '1.5rem', marginBottom: '1.5rem' },
-  addHeading: { fontSize: '15px', fontWeight: 500, color: '#1e2b1b', marginBottom: '1rem' },
-  formRow: { display: 'flex', gap: '12px', marginBottom: '12px' },
-  formGroup: { flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' },
-  label: { fontSize: '12px', color: '#6b7280', fontWeight: 500 },
-  input: { padding: '8px 12px', borderRadius: '8px', border: '1px solid #d1d5db', fontSize: '14px', color: '#111' },
-  select: { padding: '8px 12px', borderRadius: '8px', border: '1px solid #d1d5db', fontSize: '14px', color: '#111', background: 'white' },
-  checkRow: { display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '1rem' },
-  checkLabel: { fontSize: '13px', color: '#374151' },
-  addBtn: { width: '100%', padding: '10px', background: '#1e2b1b', color: 'white', border: 'none', borderRadius: '8px', fontSize: '14px', cursor: 'pointer' },
-  errorMsg: { fontSize: '13px', color: '#993C1D', marginBottom: '0.5rem' },
-  successMsg: { fontSize: '13px', color: '#3B6D11', marginBottom: '0.5rem' },
-  backLink: { fontSize: '13px', color: '#6b7280', textDecoration: 'none', display: 'inline-block', marginTop: '0.5rem' },
+const s = {
+  body:         { background: '#f5f3ee', minHeight: '100vh', fontFamily: 'Poppins, sans-serif' },
+  wrap:         { maxWidth: '600px', margin: '0 auto', padding: '2rem 1.5rem 4rem' },
+  sectionLabel: { fontSize: '11px', fontWeight: 600, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '12px' },
+  /* saved cards */
+  methodCard:   { background: 'white', border: '1px solid #e5e7eb', borderRadius: '14px', display: 'flex', alignItems: 'center', gap: '14px', padding: '16px 20px', marginBottom: '10px', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' },
+  chipWrap:     { width: '48px', height: '30px', borderRadius: '5px', background: '#1e2b1b', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  chipText:     { fontSize: '9px', fontWeight: 800, color: 'white', letterSpacing: '0.05em' },
+  methodInfo:   { flex: 1, minWidth: 0 },
+  methodTitle:  { fontSize: '14px', fontWeight: 600, color: '#111827', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
+  methodSub:    { fontSize: '12px', color: '#9ca3af', margin: '2px 0 0' },
+  defaultBadge: { fontSize: '11px', fontWeight: 500, padding: '3px 10px', borderRadius: '99px', background: '#EAF3DE', color: '#3B6D11', border: '1px solid #C0DD97', flexShrink: 0, whiteSpace: 'nowrap' },
+  removeBtn:    { fontSize: '12px', fontWeight: 500, color: '#993C1D', background: 'none', border: '1px solid #F5C4B3', borderRadius: '6px', cursor: 'pointer', padding: '5px 12px', fontFamily: 'inherit', flexShrink: 0, width: 'auto' },
+  emptyCard:    { background: 'white', border: '1px solid #e5e7eb', borderRadius: '14px', padding: '2rem', textAlign: 'center', marginBottom: '1.5rem', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' },
+  emptyText:    { fontSize: '13px', color: '#9ca3af', margin: 0 },
+  /* add card form */
+  addCard:      { background: 'white', border: '1px solid #e5e7eb', borderRadius: '14px', padding: '24px', marginBottom: '1.5rem', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' },
+  formRow:      { display: 'flex', gap: '14px', marginBottom: '14px' },
+  formGroup:    { flex: 1, display: 'flex', flexDirection: 'column', gap: '5px' },
+  label:        { fontSize: '12px', fontWeight: 600, color: '#374151', textTransform: 'uppercase', letterSpacing: '0.05em' },
+  input:        { padding: '10px 12px', borderRadius: '8px', border: '1.5px solid #e5e7eb', fontSize: '14px', color: '#111', fontFamily: 'inherit', outline: 'none' },
+  select:       { padding: '10px 12px', borderRadius: '8px', border: '1.5px solid #e5e7eb', fontSize: '14px', color: '#111', background: 'white', fontFamily: 'inherit' },
+  checkRow:     { display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '18px', cursor: 'pointer' },
+  checkLabel:   { fontSize: '13px', color: '#374151', cursor: 'pointer' },
+  addBtn:       { width: '100%', padding: '12px', background: '#1e2b1b', color: 'white', border: 'none', borderRadius: '9px', fontSize: '14px', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' },
+  errorMsg:     { fontSize: '13px', color: '#993C1D', marginBottom: '10px', background: '#fff8f6', border: '1px solid #F5C4B3', borderRadius: '8px', padding: '8px 12px' },
+  successMsg:   { fontSize: '13px', color: '#166534', marginBottom: '10px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '8px 12px' },
+  backLink:     { fontSize: '13px', color: '#6b7280', textDecoration: 'none', display: 'inline-block', marginTop: '0.5rem' },
 };
 
 function cardAbbr(type) {
@@ -87,7 +87,7 @@ export default function BillingMethods() {
   };
 
   return (
-    <div className="pt-page">
+    <div style={s.body}>
       <Navbar />
 
       <div className="pt-banner">
@@ -105,70 +105,62 @@ export default function BillingMethods() {
         </div>
       </div>
 
-      <div style={styles.wrap}>
-      <h1 style={styles.heading}>Payment methods</h1>
+      <div style={s.wrap}>
 
-      <p style={styles.sectionLabel}>Saved cards</p>
-      <div style={styles.card}>
+        <p style={s.sectionLabel}>Saved cards</p>
         {methods.length === 0
-          ? <p style={styles.emptyMsg}>No payment methods saved yet.</p>
-          : methods.map((m, i) => (
-            <div key={m.PaymentMethodID} style={i === methods.length - 1 ? styles.methodRowLast : styles.methodRow}>
-              <div style={styles.methodIcon}>
-                <span style={styles.methodIconText}>{cardAbbr(m.CardType)}</span>
+          ? <div style={s.emptyCard}><p style={s.emptyText}>No payment methods saved yet.</p></div>
+          : methods.map(m => (
+            <div key={m.PaymentMethodID} style={s.methodCard}>
+              <div style={s.chipWrap}>
+                <span style={s.chipText}>{cardAbbr(m.CardType)}</span>
               </div>
-              <div style={styles.methodInfo}>
-                <p style={styles.methodTitle}>{m.CardType} •••• {m.LastFour}</p>
-                <p style={styles.methodSub}>Saved card</p>
+              <div style={s.methodInfo}>
+                <p style={s.methodTitle}>{m.CardType} •••• {m.LastFour}</p>
+                <p style={s.methodSub}>Saved card</p>
               </div>
-              {m.IsDefault ? <span style={styles.defaultBadge}>Default</span> : null}
-              <button style={styles.removeBtn} onClick={() => handleRemove(m.PaymentMethodID)}>Remove</button>
+              {m.IsDefault && <span style={s.defaultBadge}>Default</span>}
+              <button style={s.removeBtn} onClick={() => handleRemove(m.PaymentMethodID)}>Remove</button>
             </div>
           ))
         }
-      </div>
 
-      <p style={styles.sectionLabel}>Add a card</p>
-      <div style={styles.addCard}>
-        <div style={styles.formRow}>
-          <div style={styles.formGroup}>
-            <label style={styles.label}>Card type</label>
-            <select
-              style={styles.select}
-              value={form.cardType}
-              onChange={e => setForm({ ...form, cardType: e.target.value })}
-            >
-              {CARD_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-            </select>
+        <p style={{ ...s.sectionLabel, marginTop: '1.5rem' }}>Add a card</p>
+        <div style={s.addCard}>
+          <div style={s.formRow}>
+            <div style={s.formGroup}>
+              <label style={s.label}>Card type</label>
+              <select style={s.select} value={form.cardType} onChange={e => setForm({ ...form, cardType: e.target.value })}>
+                {CARD_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </div>
+            <div style={s.formGroup}>
+              <label style={s.label}>Last 4 digits</label>
+              <input
+                style={s.input}
+                type="text"
+                maxLength={4}
+                placeholder="1234"
+                value={form.lastFour}
+                onChange={e => setForm({ ...form, lastFour: e.target.value.replace(/\D/g, '') })}
+              />
+            </div>
           </div>
-          <div style={styles.formGroup}>
-            <label style={styles.label}>Last 4 digits</label>
+          <label style={s.checkRow}>
             <input
-              style={styles.input}
-              type="text"
-              maxLength={4}
-              placeholder="1234"
-              value={form.lastFour}
-              onChange={e => setForm({ ...form, lastFour: e.target.value.replace(/\D/g, '') })}
+              type="checkbox"
+              checked={form.isDefault}
+              onChange={e => setForm({ ...form, isDefault: e.target.checked })}
             />
-          </div>
+            <span style={s.checkLabel}>Set as default payment method</span>
+          </label>
+          {error && <p style={s.errorMsg}>{error}</p>}
+          {success && <p style={s.successMsg}>{success}</p>}
+          <button style={s.addBtn} onClick={handleAdd}>Add card</button>
         </div>
-        <div style={styles.checkRow}>
-          <input
-            type="checkbox"
-            id="isDefault"
-            checked={form.isDefault}
-            onChange={e => setForm({ ...form, isDefault: e.target.checked })}
-          />
-          <label htmlFor="isDefault" style={styles.checkLabel}>Set as default payment method</label>
-        </div>
-        {error && <p style={styles.errorMsg}>{error}</p>}
-        {success && <p style={styles.successMsg}>{success}</p>}
-        <button style={styles.addBtn} onClick={handleAdd}>Add card</button>
-      </div>
 
-      <a href="/patient/billing" style={styles.backLink}>← Back to billing</a>
-    </div>
+        <a href="/patient/billing" style={s.backLink}>← Back to billing</a>
+      </div>
     </div>
   );
 }
