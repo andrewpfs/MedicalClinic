@@ -1,6 +1,4 @@
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import RepAllAppt from './RepAllAppt'
-import RepAllTrans from './RepAllTrans'
 import DepartmentReport from './DepartmentReport'
 import InvoiceReport from './InvoiceReport'
 import RevenueReport from './RevenueReport'
@@ -19,26 +17,6 @@ import {
 } from './adminStyles'
 
 const REPORTS = [
-  {
-    type: 'AllAppt',
-    navTitle: 'Appointments',
-    title: 'Appointment Operations',
-    eyebrow: 'Clinic flow',
-    sub: 'Review appointment demand by department and date so admins can spot scheduling pressure and service bottlenecks.',
-    focus: 'Staffing and visit volume',
-    signal: 'Schedule load',
-    action: 'Use this before changing department coverage or appointment capacity.',
-  },
-  {
-    type: 'AllTrans',
-    navTitle: 'Transactions',
-    title: 'Payment Transactions',
-    eyebrow: 'Payment audit',
-    sub: 'Audit recorded transactions by department and appointment date to confirm revenue capture and payment follow-through.',
-    focus: 'Payment trail',
-    signal: 'Collection activity',
-    action: 'Use this to reconcile front-desk payments with completed appointments.',
-  },
   {
     type: 'Invoice',
     navTitle: 'Invoices',
@@ -97,8 +75,6 @@ const REPORT_META = REPORTS.reduce((acc, report) => {
 }, {})
 
 const REPORT_COMPONENTS = {
-  AllAppt: RepAllAppt,
-  AllTrans: RepAllTrans,
   Invoice: InvoiceReport,
   Revenue: RevenueReport,
   Reviews: ReviewsReport,
@@ -255,8 +231,9 @@ function Report() {
               Use operational, financial, and patient-experience reports to understand what needs attention before it becomes a clinic-wide problem.
             </p>
             <div style={heroActions}>
-              <button type="button" onClick={() => navigate('/admin/home')} style={heroButton}>Back to admin home</button>
-              <button type="button" onClick={() => navigate('/admin/employees')} style={heroButton}>Manage employees</button>
+              <button type="button" onClick={() => navigate('/admin/home')} style={heroButton}>Back to home</button>
+              <button type="button" onClick={() => navigate('/admin/employees')} style={heroButton}>Manage Employees</button>
+              <button type="button" onClick={() => navigate('/admin/departments')} style={heroButton}>Manage departments</button>
             </div>
           </div>
         </div>
@@ -275,7 +252,7 @@ function Report() {
           <div style={statCard}>
             <div style={statLabel}>Report library</div>
             <div style={statValue}>{REPORTS.length} views</div>
-            <div style={statSub}>Operations, payments, billing, revenue, quality, patient activity, and departments.</div>
+            <div style={statSub}>Revenue, invoices, quality, patient activity, and departments.</div>
           </div>
         </div>
 

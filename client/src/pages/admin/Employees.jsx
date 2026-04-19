@@ -10,6 +10,26 @@ import {
   adminEyebrow, adminHeroTitle, adminHeroText,
 } from './adminStyles'
 
+const heroButton = {
+  background: 'rgba(255,255,255,0.15)',
+  border: '1px solid rgba(255,255,255,0.25)',
+  borderRadius: '999px',
+  color: 'white',
+  padding: '12px 18px',
+  fontSize: '15px',
+  fontWeight: 500,
+  cursor: 'pointer',
+  fontFamily: 'inherit',
+}
+
+const heroActions = {
+  display: 'flex',
+  flexWrap: 'wrap',
+  gap: '10px',
+  marginTop: '18px',
+}
+
+
 function Employees() {
   useStaffAuth('Admin')
   const navigate = useNavigate()
@@ -26,12 +46,11 @@ function Employees() {
             <p style={adminEyebrow}>Staff management</p>
             <h1 style={adminHeroTitle}>Employees</h1>
             <p style={adminHeroText}>View, add, and edit staff records across all departments and roles.</p>
-            <button
-              onClick={() => navigate('/admin/home')}
-              style={{ marginTop: '18px', background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.25)', borderRadius: '8px', color: 'white', padding: '8px 16px', fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit' }}
-            >
-              ← Back to home
-            </button>
+            <div style={heroActions}>
+              <button type="button" onClick={() => navigate('/admin/home')} style={heroButton}>Back to home</button>
+              <button type="button" onClick={() => navigate('/admin/report?type=Invoice')} style={heroButton}>View Reports</button>
+              <button type="button" onClick={() => navigate('/admin/departments')} style={heroButton}>Manage departments</button>
+            </div>
           </div>
         </div>
 

@@ -430,5 +430,4 @@ router.post('/api/transferdepartment', async (req,res) => {
     }
 })
 
-
 module.exports = router;

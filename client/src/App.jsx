@@ -17,9 +17,6 @@ import AdminHome from './pages/admin/Home';
 import AdminProfile from './pages/admin/Profile';
 import AdminEmployees from './pages/admin/Employees';
 import Report from './pages/admin/Report';
-import RepDAR from './pages/admin/RepDAR';
-import RepGAR from './pages/admin/RepGAR';
-import RepGRR from './pages/admin/RepGRR';
 import DepartmentReport from './pages/admin/DepartmentReport';
 import InvoiceReport from './pages/admin/InvoiceReport';
 import PatientDoctorReport from './pages/admin/PatientDoctorReport';
@@ -72,9 +69,6 @@ export default function App() {
         <Route path="/admin/employees" element={<AdminEmployees />} />
         <Route path="/admin/departments" element={<Departments />} />
         <Route path="/admin/report" element={<Report />} />
-        <Route path="/admin/report/dar" element={<RepDAR />} />
-        <Route path="/admin/report/gar" element={<RepGAR />} />
-        <Route path="/admin/report/grr" element={<RepGRR />} />
         <Route path="/admin/report/revenue" element={<RevenueReport />} />
         <Route path="/admin/report/reviews" element={<ReviewsReport />} />
         <Route path="/admin/report/invoice" element={<InvoiceReport />} />

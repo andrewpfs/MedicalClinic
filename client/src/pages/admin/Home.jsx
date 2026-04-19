@@ -73,20 +73,12 @@ const quickLinks = [
     sub: 'Manage clinic departments and staff',
     path: '/admin/departments',
   },
-  {
-    icon: 'APPT',
-    title: 'All Appointments',
-    sub: 'Browse and filter appointment records',
-    path: '/admin/report?type=AllAppt',
-  },
 ]
 
 const reports = [
   { icon: 'AR', title: 'Invoice Risk', sub: 'Find unpaid balances and prioritize patient billing follow-up.', type: 'Invoice' },
   { icon: 'REV', title: 'Revenue Performance', sub: 'Review completed revenue by department, doctor, patient, and date.', type: 'Revenue' },
   { icon: 'QA', title: 'Patient Experience', sub: 'Track satisfaction patterns across departments and providers.', type: 'Reviews' },
-  { icon: 'OPS', title: 'Appointment Operations', sub: 'Spot scheduling pressure, department demand, and visit volume.', type: 'AllAppt' },
-  { icon: 'PAY', title: 'Payment Transactions', sub: 'Audit recorded payments against appointments and departments.', type: 'AllTrans' },
   { icon: 'PDR', title: 'Patient-Doctor Activity', sub: 'See patient-provider relationships, visit frequency, and last visit dates.', type: 'PatientDoctor' },
   { icon: 'DEP', title: 'Department Summary', sub: 'Compare department activity and spot operational differences.', type: 'Department' },
 ]
@@ -114,7 +106,7 @@ function AdminHome() {
             <p style={adminEyebrow}>Admin workspace</p>
             <h1 style={adminHeroTitle}>Welcome back{adminName ? `, ${adminName}` : ''}</h1>
             <p style={adminHeroText}>
-              Manage employees, departments, appointments, and review clinic-wide reports all from one place.
+              Manage employees, departments and review clinic-wide reports all from one place.
             </p>
           </div>
         </div>
