@@ -208,8 +208,8 @@ function Report() {
   useStaffAuth('Admin')
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
-  const requestedType = searchParams.get('type') || 'AllAppt'
-  const activeType = REPORT_META[requestedType] ? requestedType : 'AllAppt'
+  const requestedType = searchParams.get('type') || 'Invoice'
+  const activeType = REPORT_META[requestedType] ? requestedType : 'Invoice'
   const meta = REPORT_META[activeType]
   const ActiveReport = REPORT_COMPONENTS[activeType]
 
@@ -252,7 +252,7 @@ function Report() {
           <div style={statCard}>
             <div style={statLabel}>Report library</div>
             <div style={statValue}>{REPORTS.length} views</div>
-            <div style={statSub}>Revenue, invoices, quality, patient activity, and departments.</div>
+            <div style={statSub}>Billing, revenue, quality, patient activity, and departments.</div>
           </div>
         </div>
 

@@ -73,6 +73,12 @@ const quickLinks = [
     sub: 'Manage clinic departments and staff',
     path: '/admin/departments',
   },
+  {
+    icon: 'REP',
+    title: 'Reports',
+    sub: 'Review billing, revenue, quality, patient activity, and departments',
+    path: '/admin/report?type=Invoice',
+  },
 ]
 
 const reports = [
