@@ -378,6 +378,33 @@ router.get('/api/getpatients', async (req,res) => {
     }
 })
 
+router.get('/api/pullpatientdoctor', async (req,res) => {
+    const q = `
+    SELECT
+        P.PatientID,
+        P.FName AS PatFirst,
+        P.LName AS PatLast,
+        E.EmployeeID AS DocID,
+        E.FirstName AS DocFirst,
+        E.LastName AS DocLast,
+        D.DepartmentName,
+        COUNT(A.AppointmentID) AS Visits,
+        MAX(DATE_FORMAT(A.AppointmentDate, '%Y-%m-%d')) AS LastVisit
+    FROM appointment AS A
+    JOIN patient AS P ON A.PatientID = P.PatientID
+    JOIN employee AS E ON A.DoctorID = E.EmployeeID
+    JOIN department AS D ON E.DepartmentID = D.DepartmentID
+    GROUP BY P.PatientID, E.EmployeeID
+    ORDER BY LastVisit DESC`;
+    try {
+        const [rows] = await db.query(q);
+        return res.json(rows);
+    } catch(err) {
+        console.error(err);
+        res.status(500).json({ error: 'Error pulling patient-doctor report' });
+    }
+})
+
 router.get('/api/getemployeesbydept/:deptId', async (req,res) => {
     const q = 'SELECT EmployeeID, FirstName, LastName, Role, Email, PhoneNumber FROM employee WHERE DepartmentID = ?';
     try {

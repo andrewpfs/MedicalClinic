@@ -40,9 +40,10 @@ const reportIcon = {
 }
 
 const reports = [
-  { icon: '💰', title: 'Invoice Report',  sub: 'Invoices that have been left unpaid and the amount that each is due',   type: 'Invoice'  },
-  { icon: '📋', title: 'Revenue Report',  sub: 'Transactions that have been completed and how much revenue has been achieved', type: 'Revenue'  },
-  { icon: '⭐', title: 'Reviews Report',  sub: 'Patient satisfaction ratings filtered by department, doctor, and date', type: 'Reviews'  },
+  { icon: '💰', title: 'Invoice Report',         sub: 'Invoices that have been left unpaid and the amount that each is due',          type: 'Invoice'       },
+  { icon: '📋', title: 'Revenue Report',         sub: 'Transactions that have been completed and how much revenue has been achieved',  type: 'Revenue'       },
+  { icon: '⭐', title: 'Reviews Report',         sub: 'Patient satisfaction ratings filtered by department, doctor, and date',        type: 'Reviews'       },
+  { icon: '🩺', title: 'Patient–Doctor Report',  sub: 'Which patients are seeing which doctors, visit frequency, and last visit date', type: 'PatientDoctor' },
 ]
 
 function AdminHome() {

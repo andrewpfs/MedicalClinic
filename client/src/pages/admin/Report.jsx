@@ -1,13 +1,11 @@
 import { useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import RepDAR from './RepDAR'
-import RepGAR from './RepGAR'
-import RepGRR from './RepGRR'
 import RepAllAppt from './RepAllAppt'
 import RepAllTrans from './RepAllTrans'
 import InvoiceReport from './InvoiceReport'
 import RevenueReport from './RevenueReport'
 import ReviewsReport from './ReviewsReport'
+import PatientDoctorReport from './PatientDoctorReport'
 import { useStaffAuth } from '../../hooks/useStaffAuth'
 import StaffNavbar from '../../components/StaffNavbar'
 import {
@@ -17,11 +15,12 @@ import {
 } from './adminStyles'
 
 const REPORT_META = {
-  AllAppt:  { title: 'All Appointments', sub: 'Browse and filter all appointment records by department and date', eyebrow: 'Appointments' },
-  AllTrans: { title: 'All Transactions', sub: 'Browse and filter all transaction records by department and date', eyebrow: 'Transactions' },
-  Invoice:  { title: 'Invoice Report',   sub: 'Outstanding patient invoices filtered by department, patient, and date range', eyebrow: 'Invoices' },
-  Revenue:  { title: 'Revenue Report',   sub: 'Clinic revenue transactions filtered by department, doctor, patient, and date', eyebrow: 'Revenue' },
-  Reviews:  { title: 'Reviews Report',   sub: 'Patient satisfaction ratings filtered by department, doctor, patient, and date', eyebrow: 'Reviews' },
+  AllAppt:       { title: 'All Appointments',      sub: 'Browse and filter all appointment records by department and date', eyebrow: 'Appointments' },
+  AllTrans:      { title: 'All Transactions',      sub: 'Browse and filter all transaction records by department and date', eyebrow: 'Transactions' },
+  Invoice:       { title: 'Invoice Report',        sub: 'Outstanding patient invoices filtered by department, patient, and date range', eyebrow: 'Invoices' },
+  Revenue:       { title: 'Revenue Report',        sub: 'Clinic revenue transactions filtered by department, doctor, patient, and date', eyebrow: 'Revenue' },
+  Reviews:       { title: 'Reviews Report',        sub: 'Patient satisfaction ratings filtered by department, doctor, patient, and date', eyebrow: 'Reviews' },
+  PatientDoctor: { title: 'Patient–Doctor Report', sub: 'See which patients are seeing which doctors, visit frequency, and last visit date', eyebrow: 'Patient Activity' },
 }
 
 function Report() {
@@ -51,11 +50,12 @@ function Report() {
           </div>
         </div>
 
-        {type === 'AllAppt'  && <RepAllAppt />}
-        {type === 'AllTrans' && <RepAllTrans />}
-        {type === 'Invoice'  && <InvoiceReport />}
-        {type === 'Revenue'  && <RevenueReport />}
-        {type === 'Reviews'  && <ReviewsReport />}
+        {type === 'AllAppt'       && <RepAllAppt />}
+        {type === 'AllTrans'      && <RepAllTrans />}
+        {type === 'Invoice'       && <InvoiceReport />}
+        {type === 'Revenue'       && <RevenueReport />}
+        {type === 'Reviews'       && <ReviewsReport />}
+        {type === 'PatientDoctor' && <PatientDoctorReport />}
 
       </div>
     </div>
