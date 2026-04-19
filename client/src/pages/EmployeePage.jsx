@@ -79,6 +79,7 @@ export default function EmployeePage({ mode = 'employee' }) {
     }
   };
 
+
   useEffect(() => {
     fetch('/api/employee/session', { credentials: 'include' })
       .then(res => res.json())
@@ -741,6 +742,7 @@ export default function EmployeePage({ mode = 'employee' }) {
               <MetricCard label="Receptionists" value={staffRoleCounts.Receptionist || 0} detail="Front-desk staff now modeled as a distinct role" tone="amber" />
               <MetricCard label="Nurses" value={staffRoleCounts.Nurse || 0} detail="Clinical support staff" tone="green" />
             </section>
+
 
             <SurfaceCard title="Staff Directory" subtitle="Role breakdown aligned with the employee table">
               <DataTable

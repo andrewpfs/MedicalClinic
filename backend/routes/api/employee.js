@@ -450,4 +450,46 @@ router.delete('/availability/:shiftId', async (req, res) => {
   }
 });
 
+router.post('/assign-nurse', async (req, res) => {
+  const staff = getStaff(req);
+  if (!staff) return res.status(401).json({ success: false, error: 'Not logged in' });
+
+  const { nurseId, doctorId } = req.body;
+  if (!nurseId || !doctorId) return res.status(400).json({ success: false, error: 'nurseId and doctorId are required.' });
+
+  try {
+    const [[existing]] = await db.query('SELECT EmployeeID FROM nurse WHERE EmployeeID = ?', [nurseId]);
+    if (existing) {
+      await db.query('UPDATE nurse SET AssignedDoctorID = ? WHERE EmployeeID = ?', [doctorId, nurseId]);
+    } else {
+      await db.query('INSERT INTO nurse (EmployeeID, AssignedDoctorID) VALUES (?, ?)', [nurseId, doctorId]);
+    }
+    res.json({ success: true, message: 'Nurse assigned successfully.' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+router.get('/nurse-assignments', async (req, res) => {
+  const staff = getStaff(req);
+  if (!staff) return res.status(401).json({ success: false, error: 'Not logged in' });
+
+  try {
+    const [rows] = await db.query(`
+      SELECT n.EmployeeID AS NurseID,
+             en.FirstName AS NurseFirst, en.LastName AS NurseLast,
+             n.AssignedDoctorID AS DoctorID,
+             ed.FirstName AS DoctorFirst, ed.LastName AS DoctorLast
+      FROM nurse n
+      JOIN employee en ON n.EmployeeID = en.EmployeeID
+      LEFT JOIN employee ed ON n.AssignedDoctorID = ed.EmployeeID
+      ORDER BY en.LastName, en.FirstName
+    `);
+    res.json({ success: true, assignments: rows });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 module.exports = router;
