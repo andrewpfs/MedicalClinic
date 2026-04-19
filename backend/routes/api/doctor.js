@@ -1,8 +1,5 @@
 const express = require('express');
-const fs = require('fs');
-const path = require('path');
 const jwt = require('jsonwebtoken');
-const multer = require('multer');
 const db = require('../../db');
 
 const router = express.Router();
@@ -10,33 +7,6 @@ const router = express.Router();
 const STAFF_SECRET = 'staffsecret';
 const MAX_BIO_LENGTH = 800;
 const DOCTOR_FEATURE_SQL_HINT = 'Run backend/sql/doctor-review-system.sql and backend/sql/doctor-profile-image.sql to enable doctor profile features.';
-const UPLOAD_DIRECTORY = path.join(__dirname, '../../public/uploads/doctors');
-const UPLOAD_PUBLIC_PREFIX = '/uploads/doctors';
-const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
-
-fs.mkdirSync(UPLOAD_DIRECTORY, { recursive: true });
-
-const storage = multer.diskStorage({
-  destination: (_req, _file, callback) => callback(null, UPLOAD_DIRECTORY),
-  filename: (req, file, callback) => {
-    const extension = path.extname(file.originalname || '').toLowerCase() || '.jpg';
-    const safeId = req.staff?.id || 'doctor';
-    callback(null, `doctor-${safeId}-${Date.now()}${extension}`);
-  },
-});
-
-const upload = multer({
-  storage,
-  limits: { fileSize: 2 * 1024 * 1024 },
-  fileFilter: (_req, file, callback) => {
-    if (ALLOWED_IMAGE_TYPES.has(file.mimetype)) {
-      callback(null, true);
-      return;
-    }
-
-    callback(new Error('Only JPG, PNG, and WEBP images are supported.'));
-  },
-});
 
 const getStaff = (req) => {
   try {
@@ -66,15 +36,6 @@ const requireDoctor = (req, res) => {
 
 const isDoctorFeatureSchemaMissing = (err) =>
   err && (err.code === 'ER_NO_SUCH_TABLE' || err.code === 'ER_BAD_FIELD_ERROR');
-
-const removeDoctorUpload = (imageUrl) => {
-  if (!imageUrl || !String(imageUrl).startsWith(`${UPLOAD_PUBLIC_PREFIX}/`)) return;
-
-  const absolutePath = path.join(UPLOAD_DIRECTORY, path.basename(imageUrl));
-  if (fs.existsSync(absolutePath)) {
-    fs.unlinkSync(absolutePath);
-  }
-};
 
 router.get('/', async (req, res) => {
   const staff = requireDoctor(req, res);
@@ -253,56 +214,9 @@ router.patch('/profile-image', (req, res) => {
   const staff = requireDoctor(req, res);
   if (!staff) return;
 
-  req.staff = staff;
-
-  upload.single('image')(req, res, async (uploadError) => {
-    if (uploadError instanceof multer.MulterError) {
-      return res.status(400).json({ success: false, error: 'Image upload failed. Use a file under 2MB.' });
-    }
-
-    if (uploadError) {
-      return res.status(400).json({ success: false, error: uploadError.message });
-    }
-
-    if (!req.file) {
-      return res.status(400).json({ success: false, error: 'Please choose an image first.' });
-    }
-
-    try {
-      const [[existingProfile]] = await db.query(
-        'SELECT ProfileImageUrl FROM doctor WHERE EmployeeID = ? LIMIT 1',
-        [staff.id]
-      );
-
-      if (!existingProfile) {
-        fs.unlinkSync(req.file.path);
-        return res.status(404).json({ success: false, error: 'Doctor profile not found.' });
-      }
-
-      const nextImageUrl = `${UPLOAD_PUBLIC_PREFIX}/${req.file.filename}`;
-
-      await db.query('UPDATE doctor SET ProfileImageUrl = ? WHERE EmployeeID = ?', [
-        nextImageUrl,
-        staff.id,
-      ]);
-
-      removeDoctorUpload(existingProfile.ProfileImageUrl);
-
-      res.json({
-        success: true,
-        imageUrl: nextImageUrl,
-        message: 'Profile image updated successfully.',
-      });
-    } catch (err) {
-      console.error(err);
-      if (req.file?.path && fs.existsSync(req.file.path)) {
-        fs.unlinkSync(req.file.path);
-      }
-      if (isDoctorFeatureSchemaMissing(err)) {
-        return res.status(409).json({ success: false, error: DOCTOR_FEATURE_SQL_HINT });
-      }
-      res.status(500).json({ success: false, error: err.message });
-    }
+  return res.status(410).json({
+    success: false,
+    error: 'Doctor image uploads are disabled in this environment.',
   });
 });
 

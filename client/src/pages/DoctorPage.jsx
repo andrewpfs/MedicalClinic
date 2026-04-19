@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import StaffNavbar from '../components/StaffNavbar';
 import WeekDayPicker from '../components/WeekDayPicker';
-import { getDoctorImageUrl, getDoctorInitials } from '../utils/doctorProfiles';
 
 const DOCTOR_API = '/api/doctor';
 const EMPLOYEE_API = '/api/employee';
@@ -22,7 +21,6 @@ export default function DoctorPage() {
   const [patientSearch, setPatientSearch] = useState('');
   const [bioDraft, setBioDraft] = useState('');
   const [isSavingBio, setIsSavingBio] = useState(false);
-  const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [markingReviewId, setMarkingReviewId] = useState('');
   const [message, setMessage] = useState({ type: '', text: '' });
   const [notesModal, setNotesModal] = useState(null);
@@ -163,34 +161,6 @@ export default function DoctorPage() {
       setMessage({ type: 'error', text: err.message });
     } finally {
       setIsSavingBio(false);
-    }
-  };
-
-  const handleProfileImageUpload = async (event) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    const formData = new FormData();
-    formData.append('image', file);
-    setIsUploadingImage(true);
-
-    try {
-      const response = await fetch(`${DOCTOR_API}/profile-image`, {
-        method: 'PATCH',
-        credentials: 'include',
-        body: formData,
-      });
-
-      const payload = await response.json();
-      if (!payload.success) throw new Error(payload.error || 'Failed to upload profile image.');
-
-      setMessage({ type: 'success', text: payload.message || 'Profile image updated successfully.' });
-      loadData();
-    } catch (err) {
-      setMessage({ type: 'error', text: err.message });
-    } finally {
-      setIsUploadingImage(false);
-      event.target.value = '';
     }
   };
 
@@ -420,31 +390,6 @@ export default function DoctorPage() {
               </SurfaceCard>
 
               <SurfaceCard title="About Your Practice" subtitle="Keep a short professional bio on your dashboard for reference and future patient-facing use.">
-                <div style={profileMediaRow}>
-                  <div style={doctorPortraitWrap}>
-                    {profile.ProfileImageUrl ? (
-                      <img
-                        src={getDoctorImageUrl(profile)}
-                        alt={`Dr. ${profile.LastName || staffName || 'Doctor'}`}
-                        style={doctorPortrait}
-                      />
-                    ) : (
-                      <div style={doctorPortraitFallback}>{getDoctorInitials(profile)}</div>
-                    )}
-                  </div>
-
-                  <div style={profileMediaBody}>
-                    <div style={profileMediaTitle}>Photo for patient selection</div>
-                    <p style={profileMediaText}>
-                      Upload a square JPG, PNG, or WEBP image. If no image is uploaded, patients will see the default clinic avatar.
-                    </p>
-                    <label style={uploadButton}>
-                      <input type="file" accept="image/png,image/jpeg,image/webp" style={{ display: 'none' }} onChange={handleProfileImageUpload} />
-                      {isUploadingImage ? 'Uploading...' : 'Upload headshot'}
-                    </label>
-                  </div>
-                </div>
-
                 <textarea
                   style={bioTextarea}
                   value={bioDraft}
@@ -1242,62 +1187,6 @@ const searchInput = {
   fontFamily: 'inherit',
 };
 
-const profileMediaRow = {
-  display: 'flex',
-  gap: '16px',
-  alignItems: 'center',
-  marginBottom: '18px',
-  flexWrap: 'wrap',
-};
-
-const doctorPortraitWrap = {
-  width: '108px',
-  height: '108px',
-  borderRadius: '24px',
-  overflow: 'hidden',
-  background: 'linear-gradient(135deg, #e2f3ea 0%, #d5e8df 100%)',
-  border: '1px solid #dbe4ea',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  flexShrink: 0,
-};
-
-const doctorPortrait = {
-  width: '100%',
-  height: '100%',
-  objectFit: 'cover',
-};
-
-const doctorPortraitFallback = {
-  width: '100%',
-  height: '100%',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  color: '#123524',
-  fontSize: '28px',
-  fontWeight: 700,
-};
-
-const profileMediaBody = {
-  flex: 1,
-  minWidth: '220px',
-};
-
-const profileMediaTitle = {
-  fontSize: '15px',
-  fontWeight: 700,
-  color: '#0f172a',
-};
-
-const profileMediaText = {
-  margin: '6px 0 12px',
-  color: '#64748b',
-  fontSize: '13px',
-  lineHeight: 1.6,
-};
-
 const bioTextarea = {
   width: '100%',
   minHeight: '180px',
@@ -1331,21 +1220,6 @@ const primaryButton = {
   borderRadius: '14px',
   background: '#123524',
   color: '#ffffff',
-  padding: '10px 14px',
-  fontSize: '13px',
-  fontWeight: 700,
-  cursor: 'pointer',
-  fontFamily: 'inherit',
-};
-
-const uploadButton = {
-  display: 'inline-flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  borderRadius: '14px',
-  border: '1px solid #cbd5e1',
-  background: '#ffffff',
-  color: '#334155',
   padding: '10px 14px',
   fontSize: '13px',
   fontWeight: 700,
