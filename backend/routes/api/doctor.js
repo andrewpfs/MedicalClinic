@@ -7,6 +7,7 @@ const router = express.Router();
 const STAFF_SECRET = 'staffsecret';
 const MAX_BIO_LENGTH = 800;
 const DOCTOR_FEATURE_SQL_HINT = 'Run backend/sql/doctor-review-system.sql and backend/sql/doctor-profile-image.sql to enable doctor profile features.';
+const REFERRAL_SQL_HINT = 'Run backend/sql/doctor-referrals.sql to enable doctor referrals.';
 
 const getStaff = (req) => {
   try {
@@ -35,6 +36,9 @@ const requireDoctor = (req, res) => {
 };
 
 const isDoctorFeatureSchemaMissing = (err) =>
+  err && (err.code === 'ER_NO_SUCH_TABLE' || err.code === 'ER_BAD_FIELD_ERROR');
+
+const isReferralSchemaMissing = (err) =>
   err && (err.code === 'ER_NO_SUCH_TABLE' || err.code === 'ER_BAD_FIELD_ERROR');
 
 router.get('/', async (req, res) => {
@@ -69,6 +73,7 @@ router.get('/', async (req, res) => {
          a.AppointmentID,
          a.PatientID,
          a.DoctorID,
+         NULL AS OfficeID,
          a.AppointmentDate,
          a.AppointmentTime,
          a.ReasonForVisit,
@@ -153,6 +158,66 @@ router.get('/', async (req, res) => {
       [doctorId]
     );
 
+    const [specialists] = await db.query(
+      `SELECT
+         d.EmployeeID,
+         e.FirstName,
+         e.LastName,
+         d.Specialty,
+         dept.DepartmentName
+       FROM doctor d
+       JOIN employee e ON d.EmployeeID = e.EmployeeID
+       LEFT JOIN department dept ON e.DepartmentID = dept.DepartmentID
+       WHERE d.IsPrimaryCare = 0
+         AND d.EmployeeID <> ?
+       ORDER BY e.LastName, e.FirstName`,
+      [doctorId]
+    );
+
+    const [referrals] = await db.query(
+      `SELECT
+         r.ReferralID,
+         r.PatientID,
+         r.PrimaryCareDoctorID,
+         r.SpecialistDoctorID,
+         r.ApprovalDate,
+         r.ExpirationDate,
+         r.Status,
+         p.FName AS PatientFirstName,
+         p.LName AS PatientLastName,
+         specialist.FirstName AS SpecialistFirstName,
+         specialist.LastName AS SpecialistLastName,
+         sd.Specialty AS SpecialistSpecialty
+       FROM referral r
+       JOIN patient p ON r.PatientID = p.PatientID
+       JOIN employee specialist ON r.SpecialistDoctorID = specialist.EmployeeID
+       LEFT JOIN doctor sd ON r.SpecialistDoctorID = sd.EmployeeID
+       WHERE r.PrimaryCareDoctorID = ?
+       ORDER BY r.ApprovalDate DESC, r.ReferralID DESC`,
+      [doctorId]
+    );
+
+    const [incomingReferrals] = await db.query(
+      `SELECT
+         r.ReferralID,
+         r.PatientID,
+         r.PrimaryCareDoctorID,
+         r.SpecialistDoctorID,
+         r.ApprovalDate,
+         r.ExpirationDate,
+         r.Status,
+         p.FName AS PatientFirstName,
+         p.LName AS PatientLastName,
+         primaryDoctor.FirstName AS PrimaryDoctorFirstName,
+         primaryDoctor.LastName AS PrimaryDoctorLastName
+       FROM referral r
+       JOIN patient p ON r.PatientID = p.PatientID
+       JOIN employee primaryDoctor ON r.PrimaryCareDoctorID = primaryDoctor.EmployeeID
+       WHERE r.SpecialistDoctorID = ?
+       ORDER BY r.ApprovalDate DESC, r.ReferralID DESC`,
+      [doctorId]
+    );
+
     res.json({
       success: true,
       profile,
@@ -166,11 +231,17 @@ router.get('/', async (req, res) => {
         reviewCount: Number(reviewSummary?.ReviewCount || 0),
         averageRating: Number(reviewSummary?.AverageRating || 0),
       },
+      specialists,
+      referrals,
+      incomingReferrals,
     });
   } catch (err) {
     console.error(err);
     if (isDoctorFeatureSchemaMissing(err)) {
-      return res.status(409).json({ success: false, error: DOCTOR_FEATURE_SQL_HINT });
+      return res.status(409).json({
+        success: false,
+        error: `${isReferralSchemaMissing(err) ? `${DOCTOR_FEATURE_SQL_HINT} ${REFERRAL_SQL_HINT}` : DOCTOR_FEATURE_SQL_HINT} Database detail: ${err.message}`,
+      });
     }
     res.status(500).json({ success: false, error: err.message });
   }
@@ -260,6 +331,123 @@ router.patch('/appointments/:id/complete', async (req, res) => {
     res.json({ success: true, message: 'Appointment marked as complete.' });
   } catch (err) {
     console.error(err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+router.post('/referrals', async (req, res) => {
+  const staff = requireDoctor(req, res);
+  if (!staff) return;
+
+  const patientId = Number(req.body.patientId);
+  const specialistDoctorId = Number(req.body.specialistDoctorId);
+  const expirationDate = typeof req.body.expirationDate === 'string' ? req.body.expirationDate.trim() : '';
+
+  if (!patientId || !specialistDoctorId) {
+    return res.status(400).json({
+      success: false,
+      error: 'Patient and specialist are required.',
+    });
+  }
+
+  if (specialistDoctorId === Number(staff.id)) {
+    return res.status(400).json({
+      success: false,
+      error: 'Choose a different doctor as the specialist.',
+    });
+  }
+
+  if (expirationDate) {
+    const expirationTime = new Date(`${expirationDate}T00:00:00`).getTime();
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (Number.isNaN(expirationTime) || expirationTime < today.getTime()) {
+      return res.status(400).json({
+        success: false,
+        error: 'Expiration date must be today or later.',
+      });
+    }
+  }
+
+  try {
+    const [[patientRelationship]] = await db.query(
+      `SELECT AppointmentID
+       FROM appointment
+       WHERE PatientID = ? AND DoctorID = ?
+       LIMIT 1`,
+      [patientId, staff.id]
+    );
+
+    if (!patientRelationship) {
+      return res.status(403).json({
+        success: false,
+        error: 'You can only refer patients who have an appointment history with you.',
+      });
+    }
+
+    const [[specialist]] = await db.query(
+      `SELECT d.EmployeeID, e.FirstName, e.LastName
+       FROM doctor d
+       JOIN employee e ON d.EmployeeID = e.EmployeeID
+       WHERE d.EmployeeID = ? AND d.IsPrimaryCare = 0
+       LIMIT 1`,
+      [specialistDoctorId]
+    );
+
+    if (!specialist) {
+      return res.status(400).json({
+        success: false,
+        error: 'Selected doctor is not marked as a specialist.',
+      });
+    }
+
+    const [[existingReferral]] = await db.query(
+      `SELECT ReferralID
+       FROM referral
+       WHERE PatientID = ?
+         AND PrimaryCareDoctorID = ?
+         AND SpecialistDoctorID = ?
+         AND Status = 'Approved'
+         AND (ExpirationDate IS NULL OR ExpirationDate >= CURDATE())
+       LIMIT 1`,
+      [patientId, staff.id, specialistDoctorId]
+    );
+
+    if (existingReferral) {
+      return res.status(409).json({
+        success: false,
+        error: 'An active referral to this specialist already exists for this patient.',
+      });
+    }
+
+    const expirationSql = expirationDate || null;
+    const [result] = await db.query(
+      `INSERT INTO referral
+        (PatientID, PrimaryCareDoctorID, SpecialistDoctorID, ApprovalDate, ExpirationDate, Status)
+       VALUES (?, ?, ?, CURDATE(), COALESCE(?, DATE_ADD(CURDATE(), INTERVAL 6 MONTH)), 'Approved')`,
+      [patientId, staff.id, specialistDoctorId, expirationSql]
+    );
+
+    await db.query(
+      `INSERT INTO notification (PatientID, Message, Type, Link)
+       VALUES (?, ?, 'referral', '/patient/booking')`,
+      [
+        patientId,
+        `Your doctor approved a referral to Dr. ${specialist.FirstName} ${specialist.LastName}.`,
+      ]
+    );
+
+    res.status(201).json({
+      success: true,
+      referralId: result.insertId,
+      message: 'Referral approved successfully.',
+    });
+  } catch (err) {
+    console.error(err);
+    if (isReferralSchemaMissing(err)) {
+      return res.status(409).json({ success: false, error: REFERRAL_SQL_HINT });
+    }
     res.status(500).json({ success: false, error: err.message });
   }
 });

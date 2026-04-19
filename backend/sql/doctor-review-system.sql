@@ -1,5 +1,20 @@
-ALTER TABLE doctor
-ADD COLUMN IF NOT EXISTS Bio TEXT NULL;
+SET @bio_column_exists = (
+  SELECT COUNT(*)
+  FROM INFORMATION_SCHEMA.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE()
+    AND TABLE_NAME = 'doctor'
+    AND COLUMN_NAME = 'Bio'
+);
+
+SET @add_bio_sql = IF(
+  @bio_column_exists = 0,
+  'ALTER TABLE doctor ADD COLUMN Bio TEXT NULL',
+  'SELECT ''doctor.Bio already exists'' AS Message'
+);
+
+PREPARE add_bio_stmt FROM @add_bio_sql;
+EXECUTE add_bio_stmt;
+DEALLOCATE PREPARE add_bio_stmt;
 
 CREATE TABLE IF NOT EXISTS doctor_review (
   ReviewID INT NOT NULL AUTO_INCREMENT,
