@@ -391,7 +391,8 @@ router.get('/api/pullpatientdoctor', async (req,res) => {
         COUNT(A.AppointmentID) AS Visits,
         MAX(DATE_FORMAT(A.AppointmentDate, '%Y-%m-%d')) AS LastVisit
     FROM appointment AS A
-    JOIN patient AS P ON A.PatientID = P.PatientID
+    JOIN transaction AS T ON T.AppointmentID = A.AppointmentID
+    JOIN patient AS P ON T.PatientID = P.PatientID
     JOIN employee AS E ON A.DoctorID = E.EmployeeID
     JOIN department AS D ON E.DepartmentID = D.DepartmentID
     GROUP BY P.PatientID, E.EmployeeID
