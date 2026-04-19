@@ -24,6 +24,7 @@ const AddD = ({ onSuccess }) => {
 
   const handleChange = (e) => {
     setEmp(prev => ({ ...prev, [e.target.name]: e.target.value }))
+    console.log(emp)
   }
 
   const handleRoleChange = (e) => {
@@ -40,6 +41,7 @@ const AddD = ({ onSuccess }) => {
     if (check) {
       try {
         // Step 1: create department record
+        console.log(emp)
         const empRes = await fetch(`${API}/admin/api/adddepartment`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -83,11 +85,11 @@ const AddD = ({ onSuccess }) => {
             <div style={grid2}>
               <div style={filterGroup}>
                 <label style={filterLabel}>Department Name *</label>
-                <input style={filterInput} type="text" name="FirstName" onChange={handleChange} maxLength="30" required />
+                <input style={filterInput} type="text" name="DepartmentName" onChange={handleChange} maxLength="30" required />
               </div>
               <div style={filterGroup}>
                 <label style={filterLabel}>Office *</label>
-                <select style={select} name="DepartmentID" onChange={handleChange}>
+                <select style={select} name="OfficeID" onChange={handleChange}>
                   <option value="">Select office</option>
                   {offices.map(d => (
                     <option key={d.OfficeID} value={d.OfficeID}>{d.OfficeName}</option>
