@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import StaffNavbar from '../components/StaffNavbar';
 import WeekDayPicker from '../components/WeekDayPicker';
 import { getDoctorImageUrl, getDoctorInitials } from '../utils/doctorProfiles';
@@ -10,10 +10,12 @@ const TABS = [
   { id: 'overview', label: 'Overview' },
   { id: 'schedule', label: 'Schedule' },
   { id: 'patients', label: 'Care Panel' },
+  { id: 'messages', label: 'Messages' },
 ];
 
 export default function DoctorPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [activeTab, setActiveTab] = useState('overview');
   const [staffName, setStaffName] = useState('');
   const [employeeId, setEmployeeId] = useState('');
@@ -23,6 +25,16 @@ export default function DoctorPage() {
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [markingReviewId, setMarkingReviewId] = useState('');
   const [message, setMessage] = useState({ type: '', text: '' });
+  const [notesModal, setNotesModal] = useState(null);
+  const [notesDraft, setNotesDraft] = useState({ doctorNotes: '', patientSummary: '' });
+  const [isSavingNotes, setIsSavingNotes] = useState(false);
+  const [isCompletingId, setIsCompletingId] = useState(null);
+  const [messageThreads, setMessageThreads] = useState([]);
+  const [activeMessageThread, setActiveMessageThread] = useState(null);
+  const [threadMessages, setThreadMessages] = useState([]);
+  const [replyDraft, setReplyDraft] = useState('');
+  const [isSendingReply, setIsSendingReply] = useState(false);
+  const [threadAppointment, setThreadAppointment] = useState(null);
   const [data, setData] = useState({
     profile: null,
     upcomingAppointments: [],
@@ -30,6 +42,7 @@ export default function DoctorPage() {
     patientSummary: [],
     reviews: [],
     unreadReviewCount: 0,
+    unreadMessageCount: 0,
     reviewSummary: { reviewCount: 0, averageRating: 0 },
   });
   const [shifts, setShifts] = useState([]);
@@ -54,6 +67,7 @@ export default function DoctorPage() {
         patientSummary: doctorPayload.patientSummary || [],
         reviews: doctorPayload.reviews || [],
         unreadReviewCount: doctorPayload.unreadReviewCount || 0,
+        unreadMessageCount: doctorPayload.unreadMessageCount || 0,
         reviewSummary: doctorPayload.reviewSummary || { reviewCount: 0, averageRating: 0 },
       });
       setBioDraft(doctorPayload.profile?.Bio || '');
@@ -75,6 +89,7 @@ export default function DoctorPage() {
         if (session.role !== 'Doctor') {
           if (session.role === 'Admin') navigate('/admin');
           else if (session.role === 'Nurse') navigate('/nurse');
+          else if (session.role === 'Receptionist') navigate('/receptionist');
           else navigate('/employee');
           return;
         }
@@ -179,6 +194,54 @@ export default function DoctorPage() {
     }
   };
 
+  const handleOpenNotes = (appointment) => {
+    setNotesDraft({
+      doctorNotes: appointment.DoctorNotes || '',
+      patientSummary: appointment.PatientSummary || '',
+    });
+    setNotesModal(appointment);
+  };
+
+  const handleSaveNotes = async () => {
+    if (!notesModal) return;
+    setIsSavingNotes(true);
+    try {
+      const response = await fetch(`${DOCTOR_API}/appointments/${notesModal.AppointmentID}/notes`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(notesDraft),
+      });
+      const payload = await response.json();
+      if (!payload.success) throw new Error(payload.error || 'Failed to save notes.');
+      setMessage({ type: 'success', text: 'Notes saved successfully.' });
+      setNotesModal(null);
+      loadData();
+    } catch (err) {
+      setMessage({ type: 'error', text: err.message });
+    } finally {
+      setIsSavingNotes(false);
+    }
+  };
+
+  const handleMarkComplete = async (appointmentId) => {
+    setIsCompletingId(appointmentId);
+    try {
+      const response = await fetch(`${DOCTOR_API}/appointments/${appointmentId}/complete`, {
+        method: 'PATCH',
+        credentials: 'include',
+      });
+      const payload = await response.json();
+      if (!payload.success) throw new Error(payload.error || 'Failed to mark complete.');
+      setMessage({ type: 'success', text: 'Appointment marked as complete.' });
+      loadData();
+    } catch (err) {
+      setMessage({ type: 'error', text: err.message });
+    } finally {
+      setIsCompletingId(null);
+    }
+  };
+
   const handleMarkReviewSeen = async (reviewId) => {
     setMarkingReviewId(String(reviewId));
 
@@ -200,6 +263,64 @@ export default function DoctorPage() {
     }
   };
 
+  const loadMessageThreads = async () => {
+    try {
+      const res = await fetch(`${DOCTOR_API}/messages`, { credentials: 'include' });
+      const payload = await res.json();
+      if (payload.success) setMessageThreads(payload.threads || []);
+    } catch {}
+  };
+
+  const handleOpenMessageThread = async (thread) => {
+    setActiveMessageThread(thread);
+    setReplyDraft('');
+    setThreadMessages([]);
+    setThreadAppointment(null);
+    try {
+      const res = await fetch(`${DOCTOR_API}/messages/${thread.AppointmentID}`, { credentials: 'include' });
+      const payload = await res.json();
+      if (payload.success) {
+        setThreadMessages(payload.messages || []);
+        setThreadAppointment(payload.appointment || null);
+      }
+    } catch {}
+  };
+
+  const handleSendReply = async () => {
+    if (!replyDraft.trim() || !activeMessageThread) return;
+    setIsSendingReply(true);
+    try {
+      const res = await fetch(`${DOCTOR_API}/messages/${activeMessageThread.AppointmentID}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ body: replyDraft }),
+      });
+      const payload = await res.json();
+      if (!payload.success) throw new Error(payload.error || 'Failed to send');
+      setReplyDraft('');
+      const refreshRes = await fetch(`${DOCTOR_API}/messages/${activeMessageThread.AppointmentID}`, { credentials: 'include' });
+      const refreshPayload = await refreshRes.json();
+      if (refreshPayload.success) setThreadMessages(refreshPayload.messages || []);
+      loadMessageThreads();
+      loadData();
+    } catch (err) {
+      setMessage({ type: 'error', text: err.message });
+    } finally {
+      setIsSendingReply(false);
+    }
+  };
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const tab = params.get('tab');
+    if (tab && TABS.some((t) => t.id === tab)) setActiveTab(tab);
+  }, [location.search]);
+
+  useEffect(() => {
+    if (activeTab === 'messages') loadMessageThreads();
+  }, [activeTab]);
+
   const todayIso = new Date().toISOString().split('T')[0];
   const filteredPatients = data.patientSummary.filter((patient) => {
     const haystack = `${patient.PatientFirstName} ${patient.PatientLastName} ${patient.PatientID} ${patient.RelationshipType}`.toLowerCase();
@@ -220,6 +341,7 @@ export default function DoctorPage() {
   const averageRating = Number(data.reviewSummary?.averageRating || 0);
 
   return (
+    <>
     <div style={pageShell}>
       <StaffNavbar />
 
@@ -253,7 +375,9 @@ export default function DoctorPage() {
                 ...(activeTab === tab.id ? activeTabButton : null),
               }}
             >
-              {tab.label}
+              {tab.id === 'messages' && data.unreadMessageCount > 0
+                ? `Messages (${data.unreadMessageCount})`
+                : tab.label}
             </button>
           ))}
         </nav>
@@ -464,31 +588,211 @@ export default function DoctorPage() {
               />
             </SurfaceCard>
 
-            <SurfaceCard title="Upcoming Appointments" subtitle="A doctor-facing schedule only, without any front-desk confirmation controls">
+            <SurfaceCard title="Appointments" subtitle="Write visit notes and mark appointments complete from here">
               <DataTable
-                headers={['Appt', 'Patient', 'Date', 'Time', 'Office', 'Reason', 'Status']}
+                headers={['Appt', 'Patient', 'Date', 'Time', 'Reason', 'Status', 'Actions']}
                 rows={data.upcomingAppointments.filter((appointment) => {
                   const haystack = `${appointment.PatientFirstName} ${appointment.PatientLastName} ${appointment.PatientID}`.toLowerCase();
                   return haystack.includes(patientSearch.trim().toLowerCase());
                 })}
                 empty="No appointments match that search."
-                renderRow={(row) => (
-                  <tr key={row.AppointmentID}>
-                    <td style={tableCell}><IdBadge>{row.AppointmentID}</IdBadge></td>
-                    <td style={tableCellStrong}>{row.PatientLastName}, {row.PatientFirstName}</td>
-                    <td style={tableCell}>{fmtDate(row.AppointmentDate)}</td>
-                    <td style={tableCell}>{fmtTime(row.AppointmentDate, row.AppointmentTime)}</td>
-                    <td style={tableCell}>Office {row.OfficeID || 'Not set'}</td>
-                    <td style={tableCell}>{row.ReasonForVisit || 'No reason recorded'}</td>
-                    <td style={tableCell}><StatusBadge status={row.StatusText || row.StatusCode} /></td>
-                  </tr>
-                )}
+                renderRow={(row) => {
+                  const isCompleted = row.StatusCode === 4;
+                  const isCancelled = row.StatusCode === 3;
+                  const completing = isCompletingId === row.AppointmentID;
+                  return (
+                    <tr key={row.AppointmentID}>
+                      <td style={tableCell}><IdBadge>{row.AppointmentID}</IdBadge></td>
+                      <td style={tableCellStrong}>{row.PatientLastName}, {row.PatientFirstName}</td>
+                      <td style={tableCell}>{fmtDate(row.AppointmentDate)}</td>
+                      <td style={tableCell}>{fmtTime(row.AppointmentDate, row.AppointmentTime)}</td>
+                      <td style={tableCell}>{row.ReasonForVisit || '—'}</td>
+                      <td style={tableCell}><StatusBadge status={row.StatusText || row.StatusCode} /></td>
+                      <td style={tableCell}>
+                        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                          <button
+                            type="button"
+                            style={notesActionBtn}
+                            onClick={() => handleOpenNotes(row)}
+                          >
+                            {row.DoctorNotes || row.PatientSummary ? 'Edit notes' : 'Add notes'}
+                          </button>
+                          {!isCompleted && !isCancelled && (
+                            <button
+                              type="button"
+                              style={completeActionBtn}
+                              onClick={() => handleMarkComplete(row.AppointmentID)}
+                              disabled={completing}
+                            >
+                              {completing ? 'Saving…' : 'Mark complete'}
+                            </button>
+                          )}
+                          {isCompleted && <span style={completedTag}>Completed</span>}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                }}
               />
             </SurfaceCard>
           </div>
         )}
+        {activeTab === 'messages' && (
+          <div style={stackLayout}>
+            <SurfaceCard
+              title="Patient Message Threads"
+              subtitle="Messages sent by patients from their visit history"
+              aside={<span style={subtleTag}>{messageThreads.filter((t) => Number(t.UnreadCount) > 0).length} unread</span>}
+            >
+              {messageThreads.length === 0 ? (
+                <p style={emptyState}>No messages yet. Patients can send messages from their visit history page.</p>
+              ) : (
+                <div style={{ display: 'grid', gap: '10px' }}>
+                  {messageThreads.map((thread) => (
+                    <div key={thread.AppointmentID} style={{ ...threadCard, ...(Number(thread.UnreadCount) > 0 ? unreadThreadStyle : null) }}>
+                      <div style={threadRow}>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={threadName}>{thread.PatientLastName}, {thread.PatientFirstName}</div>
+                          <div style={threadMeta}>
+                            Appt #{thread.AppointmentID} · {fmtDate(thread.AppointmentDate)} · {thread.MessageCount} message{Number(thread.MessageCount) !== 1 ? 's' : ''}
+                          </div>
+                          {thread.LastMessageBody && (
+                            <div style={threadPreview}>
+                              {String(thread.LastMessageBody).slice(0, 80)}{String(thread.LastMessageBody).length > 80 ? '…' : ''}
+                            </div>
+                          )}
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px', flexShrink: 0 }}>
+                          {Number(thread.UnreadCount) > 0 && (
+                            <span style={unreadDot}>{thread.UnreadCount} new</span>
+                          )}
+                          <button type="button" style={secondaryButton} onClick={() => handleOpenMessageThread(thread)}>
+                            View & reply
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </SurfaceCard>
+          </div>
+        )}
+
       </div>
     </div>
+
+    {activeMessageThread && (
+      <div style={modalOverlay}>
+        <div style={{ ...modalBox, maxWidth: '580px' }}>
+          <h3 style={modalTitle}>{activeMessageThread.PatientFirstName} {activeMessageThread.PatientLastName}</h3>
+          <p style={modalMeta}>Appt #{activeMessageThread.AppointmentID} · {fmtDate(activeMessageThread.AppointmentDate)}</p>
+
+          {threadAppointment && (
+            <div style={apptContextCard}>
+              <div style={apptContextRow}>
+                <span style={apptContextLabel}>Date</span>
+                <span>{fmtDate(threadAppointment.AppointmentDate)} at {fmtTime(threadAppointment.AppointmentDate, threadAppointment.AppointmentTime)}</span>
+              </div>
+              <div style={apptContextRow}>
+                <span style={apptContextLabel}>Reason</span>
+                <span>{threadAppointment.ReasonForVisit || 'Not specified'}</span>
+              </div>
+              <div style={apptContextRow}>
+                <span style={apptContextLabel}>Status</span>
+                <span>{threadAppointment.StatusText || threadAppointment.StatusCode}</span>
+              </div>
+              {threadAppointment.PatientSummary && (
+                <div style={apptContextRow}>
+                  <span style={apptContextLabel}>Patient summary</span>
+                  <span style={{ whiteSpace: 'pre-wrap' }}>{threadAppointment.PatientSummary}</span>
+                </div>
+              )}
+              {threadAppointment.DoctorNotes && (
+                <div style={apptContextRow}>
+                  <span style={apptContextLabel}>Your notes</span>
+                  <span style={{ whiteSpace: 'pre-wrap' }}>{threadAppointment.DoctorNotes}</span>
+                </div>
+              )}
+            </div>
+          )}
+
+          <div style={chatScroll}>
+            {threadMessages.length === 0 ? (
+              <p style={{ color: '#94a3b8', fontSize: '13px', textAlign: 'center' }}>No messages yet.</p>
+            ) : threadMessages.map((msg) => (
+              <div key={msg.MessageID} style={msg.SenderType === 'doctor' ? chatBubbleRight : chatBubbleLeft}>
+                <div style={chatSenderLabel}>{msg.SenderType === 'doctor' ? 'You' : activeMessageThread.PatientFirstName}</div>
+                {msg.Body}
+                <div style={chatTimestamp}>{fmtDateTime(msg.SentAt)}</div>
+              </div>
+            ))}
+          </div>
+
+          <textarea
+            style={{ ...modalTextarea, marginTop: '12px' }}
+            value={replyDraft}
+            onChange={(e) => setReplyDraft(e.target.value)}
+            placeholder="Write a reply..."
+            rows={3}
+          />
+
+          <div style={modalActions}>
+            <button type="button" style={primaryButton} onClick={handleSendReply} disabled={isSendingReply || !replyDraft.trim()}>
+              {isSendingReply ? 'Sending...' : 'Send reply'}
+            </button>
+            <button type="button" style={secondaryButton} onClick={() => { setActiveMessageThread(null); setThreadMessages([]); setReplyDraft(''); setThreadAppointment(null); }}>
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {notesModal && (
+      <div style={modalOverlay}>
+        <div style={modalBox}>
+          <h3 style={modalTitle}>Visit notes — {notesModal.PatientFirstName} {notesModal.PatientLastName}</h3>
+          <p style={modalMeta}>
+            Appt #{notesModal.AppointmentID} · {fmtDate(notesModal.AppointmentDate)} · {fmtTime(notesModal.AppointmentDate, notesModal.AppointmentTime)}
+          </p>
+
+          <label style={modalLabel}>
+            Private clinical notes
+            <span style={modalLabelHint}> — only you can see this</span>
+          </label>
+          <textarea
+            style={modalTextarea}
+            value={notesDraft.doctorNotes}
+            onChange={(e) => setNotesDraft((d) => ({ ...d, doctorNotes: e.target.value }))}
+            placeholder="Diagnosis, observations, follow-up plan…"
+            rows={4}
+          />
+
+          <label style={{ ...modalLabel, marginTop: '14px' }}>
+            Patient summary
+            <span style={modalLabelHint}> — visible to the patient after visit is marked complete</span>
+          </label>
+          <textarea
+            style={modalTextarea}
+            value={notesDraft.patientSummary}
+            onChange={(e) => setNotesDraft((d) => ({ ...d, patientSummary: e.target.value }))}
+            placeholder="Diagnosis: … · Instructions: … · Follow-up: …"
+            rows={4}
+          />
+
+          <div style={modalActions}>
+            <button type="button" style={primaryButton} onClick={handleSaveNotes} disabled={isSavingNotes}>
+              {isSavingNotes ? 'Saving…' : 'Save notes'}
+            </button>
+            <button type="button" style={secondaryButton} onClick={() => setNotesModal(null)}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 }
 
@@ -1229,4 +1533,221 @@ const idBadge = {
   color: '#334155',
   fontSize: '12px',
   fontWeight: 700,
+};
+
+const notesActionBtn = {
+  padding: '5px 10px',
+  borderRadius: '8px',
+  border: '1px solid #cbd5e1',
+  background: '#ffffff',
+  color: '#334155',
+  fontSize: '12px',
+  fontWeight: 600,
+  cursor: 'pointer',
+  fontFamily: 'inherit',
+};
+
+const completeActionBtn = {
+  padding: '5px 10px',
+  borderRadius: '8px',
+  border: '1px solid #bbf7d0',
+  background: '#dcfce7',
+  color: '#166534',
+  fontSize: '12px',
+  fontWeight: 600,
+  cursor: 'pointer',
+  fontFamily: 'inherit',
+};
+
+const completedTag = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  padding: '4px 10px',
+  borderRadius: '999px',
+  background: '#dcfce7',
+  color: '#166534',
+  fontSize: '11px',
+  fontWeight: 700,
+};
+
+const modalOverlay = {
+  position: 'fixed',
+  inset: 0,
+  background: 'rgba(15, 23, 42, 0.5)',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: '20px',
+  zIndex: 1200,
+};
+
+const modalBox = {
+  width: '100%',
+  maxWidth: '560px',
+  background: '#ffffff',
+  borderRadius: '24px',
+  padding: '28px',
+  boxShadow: '0 24px 60px rgba(15, 23, 42, 0.2)',
+};
+
+const modalTitle = {
+  margin: '0 0 4px',
+  fontSize: '20px',
+  color: '#0f172a',
+};
+
+const modalMeta = {
+  margin: '0 0 20px',
+  fontSize: '13px',
+  color: '#64748b',
+};
+
+const modalLabel = {
+  display: 'block',
+  fontSize: '13px',
+  fontWeight: 700,
+  color: '#334155',
+  marginBottom: '6px',
+};
+
+const modalLabelHint = {
+  fontWeight: 400,
+  color: '#94a3b8',
+};
+
+const modalTextarea = {
+  width: '100%',
+  boxSizing: 'border-box',
+  borderRadius: '12px',
+  border: '1px solid #dbe4ea',
+  background: '#f8fafc',
+  padding: '12px 14px',
+  fontSize: '14px',
+  color: '#0f172a',
+  fontFamily: 'inherit',
+  resize: 'vertical',
+};
+
+const modalActions = {
+  display: 'flex',
+  gap: '10px',
+  marginTop: '20px',
+};
+
+const threadCard = {
+  borderRadius: '16px',
+  border: '1px solid #e2e8f0',
+  background: '#f8fafc',
+  padding: '16px',
+};
+
+const unreadThreadStyle = {
+  borderColor: '#a5b4fc',
+  background: '#eef2ff',
+};
+
+const threadRow = {
+  display: 'flex',
+  gap: '16px',
+  alignItems: 'flex-start',
+};
+
+const threadName = {
+  fontSize: '15px',
+  fontWeight: 700,
+  color: '#0f172a',
+};
+
+const threadMeta = {
+  marginTop: '3px',
+  fontSize: '12px',
+  color: '#64748b',
+};
+
+const threadPreview = {
+  marginTop: '6px',
+  fontSize: '13px',
+  color: '#475569',
+  lineHeight: 1.5,
+};
+
+const unreadDot = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  padding: '3px 10px',
+  borderRadius: '999px',
+  background: '#6d28d9',
+  color: '#ffffff',
+  fontSize: '11px',
+  fontWeight: 700,
+};
+
+const chatScroll = {
+  maxHeight: '280px',
+  overflowY: 'auto',
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '10px',
+  padding: '12px',
+  background: '#f8fafc',
+  borderRadius: '14px',
+  border: '1px solid #e2e8f0',
+};
+
+const chatBubbleLeft = {
+  padding: '10px 14px',
+  borderRadius: '12px',
+  background: '#eef2ff',
+  color: '#1e293b',
+  fontSize: '14px',
+  maxWidth: '75%',
+};
+
+const chatBubbleRight = {
+  padding: '10px 14px',
+  borderRadius: '12px',
+  background: '#dcfce7',
+  color: '#1e293b',
+  fontSize: '14px',
+  maxWidth: '75%',
+  marginLeft: 'auto',
+};
+
+const chatSenderLabel = {
+  fontSize: '11px',
+  fontWeight: 700,
+  color: '#64748b',
+  marginBottom: '4px',
+};
+
+const chatTimestamp = {
+  fontSize: '10px',
+  color: '#94a3b8',
+  marginTop: '4px',
+};
+
+const apptContextCard = {
+  borderRadius: '12px',
+  border: '1px solid #e2e8f0',
+  background: '#f8fafc',
+  padding: '12px 16px',
+  marginBottom: '14px',
+  display: 'grid',
+  gap: '8px',
+  fontSize: '13px',
+  color: '#334155',
+};
+
+const apptContextRow = {
+  display: 'grid',
+  gridTemplateColumns: '120px 1fr',
+  gap: '8px',
+  alignItems: 'start',
+};
+
+const apptContextLabel = {
+  fontWeight: 700,
+  color: '#64748b',
+  fontSize: '12px',
+  paddingTop: '1px',
 };

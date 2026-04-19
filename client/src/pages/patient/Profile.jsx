@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../../components/Navbar';
+import './patient-layout.css';
 
 const QUICK_ACTIONS = [
   { path: '/patient/booking', title: 'Find a doctor', description: 'Compare doctors and book from the weekly planner.', accent: '#dcfce7' },
@@ -57,8 +58,19 @@ export default function Profile() {
     navigate('/');
   };
 
-  if (error) return <p style={{ padding: '20px', color: 'red' }}>{error}</p>;
-  if (!patient) return <p style={{ padding: '20px' }}>Loading...</p>;
+  if (error) return (
+    <div className="pt-page">
+      <Navbar />
+      <p style={{ padding: '40px', color: '#993C1D', fontSize: '14px' }}>{error}</p>
+    </div>
+  );
+
+  if (!patient) return (
+    <div className="pt-page">
+      <Navbar />
+      <p style={{ padding: '40px', color: '#6b7280', fontSize: '14px' }}>Loading…</p>
+    </div>
+  );
 
   return (
     <div style={pageShell}>

@@ -9,6 +9,7 @@ import Register from './pages/patient/Register';
 import RoleSelect from './pages/RoleSelect';
 // David's pages
 import EmployeePage from './pages/EmployeePage';
+import ReceptionistPage from './pages/ReceptionistPage';
 import DoctorPage from './pages/DoctorPage';
 import NursePage from './pages/NursePage';
 import StaffLogin from './pages/StaffLogin';
@@ -45,6 +46,7 @@ export default function App() {
 
         {/* Staff pages */}
         <Route path="/employee" element={<EmployeePage />} />
+        <Route path="/receptionist" element={<ReceptionistPage />} />
         <Route path="/doctor" element={<DoctorPage />} />
         <Route path="/nurse" element={<NursePage />} />
 

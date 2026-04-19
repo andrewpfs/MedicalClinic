@@ -97,48 +97,50 @@ export default function NursePage() {
   const completed = data.appointments.filter(a => (a.StatusText || '').toLowerCase().includes('complete'));
 
   return (
-    <div style={{ fontFamily: "'Poppins', sans-serif", margin: 0, background: '#f4f6f4', minHeight: '100vh' }}>
+    <div style={nursePageShell}>
       <StaffNavbar />
 
-      {/* ── Header + tabs ── */}
-      <div style={{ background: 'white', borderBottom: '1px solid #e5e7eb' }}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 40px' }}>
-          <div style={{ paddingTop: '24px', paddingBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div style={nursePageInner}>
+
+        {/* Hero card */}
+        <section style={nurseHeroCard}>
+          <div style={nurseHeroOrb} />
+          <div style={nurseHeroContent}>
             <div>
-              <p style={{ margin: '0 0 2px', fontSize: '12px', fontWeight: 600, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
-                Nurse Dashboard
+              <p style={nurseEyebrow}>Nurse Dashboard</p>
+              <h1 style={nurseHeroTitle}>{staffName || '…'}</h1>
+              <p style={nurseHeroText}>
+                {dr ? <>Assigned to <strong>Dr. {dr.DoctorFirst} {dr.DoctorLast}</strong> — manage appointments and your schedule.</> : 'No assigned doctor yet. Contact an admin to get assigned.'}
               </p>
-              <h1 style={{ margin: 0, fontSize: '22px', fontWeight: 700, color: '#111827' }}>
-                {staffName || '…'}
-              </h1>
             </div>
-            {dr && (
-              <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '10px', padding: '10px 16px', fontSize: '13px', color: '#1d4ed8' }}>
-                <span style={{ fontWeight: 400, color: '#6b7280' }}>Assigned to </span>
-                <span style={{ fontWeight: 700 }}>Dr. {dr.DoctorFirst} {dr.DoctorLast}</span>
+            <div style={nurseHeroHighlights}>
+              <div style={nurseHeroStat}>
+                <div style={nurseHeroStatValue}>{scheduled.length}</div>
+                <div style={nurseHeroStatLabel}>Awaiting</div>
               </div>
-            )}
+              <div style={nurseHeroStat}>
+                <div style={nurseHeroStatValue}>{completed.length}</div>
+                <div style={nurseHeroStatLabel}>Completed</div>
+              </div>
+              <div style={nurseHeroStat}>
+                <div style={nurseHeroStatValue}>{data.availability.length}</div>
+                <div style={nurseHeroStatLabel}>My Shifts</div>
+              </div>
+            </div>
           </div>
-          <div style={{ display: 'flex', gap: '2px' }}>
-            {TABS.map(t => (
-              <button key={t.id} onClick={() => setActiveTab(t.id)} style={{
-                padding: '10px 18px', border: 'none',
-                borderBottom: `2px solid ${activeTab === t.id ? '#1e2b1b' : 'transparent'}`,
-                background: 'transparent',
-                color: activeTab === t.id ? '#1e2b1b' : '#6b7280',
-                fontWeight: activeTab === t.id ? 600 : 400,
-                fontSize: '14px', cursor: 'pointer', fontFamily: 'inherit',
-                marginBottom: '-1px', transition: 'color 0.12s, border-color 0.12s',
-              }}>
-                {t.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
+        </section>
+
+        {/* Tabs */}
+        <nav style={nurseTabRow}>
+          {TABS.map(t => (
+            <button key={t.id} onClick={() => setActiveTab(t.id)} style={{ ...nurseTabButton, ...(activeTab === t.id ? nurseActiveTab : {}) }}>
+              {t.label}
+            </button>
+          ))}
+        </nav>
 
       {/* ── Content ── */}
-      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '32px 40px 60px' }}>
+      <div>
 
         {/* Toast */}
         {message.text && (
@@ -266,6 +268,7 @@ export default function NursePage() {
         )}
 
       </div>
+      </div>
     </div>
   );
 }
@@ -363,7 +366,23 @@ function ShiftIcon() { return <svg width="22" height="22" viewBox="0 0 24 24" fi
 /* ── Styles ────────────────────────────────────────────────────── */
 const td  = { textAlign: 'left', padding: '11px 12px', borderBottom: '1px solid #f3f4f6', fontSize: '14px', color: '#374151', verticalAlign: 'top' };
 const inp = { width: '100%', padding: '9px 12px', border: '1.5px solid #e5e7eb', borderRadius: '8px', boxSizing: 'border-box', fontSize: '14px', color: '#1a1a1a', background: 'white', fontFamily: 'inherit' };
-const btn = { width: '100%', marginTop: '16px', background: '#1e2b1b', color: 'white', border: 'none', padding: '12px', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit' };
+const btn = { width: '100%', marginTop: '16px', background: '#0f766e', color: 'white', border: 'none', padding: '12px', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit' };
+
+const nursePageShell  = { minHeight: '100vh', background: 'radial-gradient(circle at top right, #ccfbf1 0%, #f0fdfa 35%, #ecfeff 65%, #f8fafc 100%)', fontFamily: 'Poppins, Inter, sans-serif' };
+const nursePageInner  = { maxWidth: '1100px', margin: '0 auto', padding: '2rem 1.5rem' };
+const nurseHeroCard   = { position: 'relative', overflow: 'hidden', borderRadius: '20px', background: 'linear-gradient(135deg, #134e4a 0%, #0f766e 48%, #0891b2 100%)', padding: '2.5rem 2.5rem 2rem', marginBottom: '2rem', boxShadow: '0 8px 32px rgba(15,118,110,0.25)' };
+const nurseHeroOrb    = { position: 'absolute', top: '-60px', right: '-60px', width: '260px', height: '260px', borderRadius: '50%', background: 'rgba(255,255,255,0.07)', pointerEvents: 'none' };
+const nurseHeroContent= { position: 'relative', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '2rem', flexWrap: 'wrap' };
+const nurseEyebrow    = { margin: '0 0 6px', fontSize: '12px', fontWeight: 600, color: 'rgba(255,255,255,0.65)', textTransform: 'uppercase', letterSpacing: '0.1em' };
+const nurseHeroTitle  = { margin: '0 0 8px', fontSize: '28px', fontWeight: 700, color: '#ffffff', lineHeight: 1.15 };
+const nurseHeroText   = { margin: 0, fontSize: '14px', color: 'rgba(255,255,255,0.8)', maxWidth: '520px' };
+const nurseHeroHighlights = { display: 'flex', gap: '2rem', flexShrink: 0 };
+const nurseHeroStat   = { textAlign: 'center' };
+const nurseHeroStatValue = { fontSize: '30px', fontWeight: 700, color: '#ffffff', lineHeight: 1 };
+const nurseHeroStatLabel = { fontSize: '12px', color: 'rgba(255,255,255,0.65)', marginTop: '4px' };
+const nurseTabRow     = { display: 'flex', gap: '6px', marginBottom: '24px' };
+const nurseTabButton  = { padding: '8px 20px', borderRadius: '8px', border: '1.5px solid #e5e7eb', background: 'white', cursor: 'pointer', fontSize: '13px', fontWeight: 600, fontFamily: 'inherit', color: '#374151', transition: 'all 0.15s' };
+const nurseActiveTab  = { background: '#0f766e', color: 'white', borderColor: '#0f766e' };
 
 const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 

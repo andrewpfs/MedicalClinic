@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../../components/Navbar';
+import './patient-layout.css';
 
 const HOURS = [9, 10, 11, 12, 13, 14, 15, 16];
 const SHORT_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
@@ -66,12 +67,20 @@ function isCompletedVisit(visit) {
 }
 
 const styles = {
-  wrap: { padding: '1.5rem', maxWidth: '1120px', margin: '0 auto', fontFamily: 'Poppins, sans-serif' },
-  heading: { fontSize: '22px', fontWeight: 500, marginBottom: '1.5rem', color: '#1e2b1b' },
-  sectionHeading: { fontSize: '12px', fontWeight: 500, marginBottom: '0.75rem', marginTop: '1.5rem', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em' },
-  table: { width: '100%', borderCollapse: 'collapse', marginBottom: '1rem' },
-  th: { fontSize: '12px', fontWeight: 500, color: '#6b7280', padding: '10px 12px', textAlign: 'left', borderBottom: '1px solid #e5e7eb', background: '#f9fafb', whiteSpace: 'nowrap' },
-  td: { fontSize: '13px', color: '#374151', padding: '12px', borderBottom: '1px solid #f3f4f6', verticalAlign: 'middle' },
+  body: { background: '#f5f3ee', minHeight: '100vh', fontFamily: 'Poppins, sans-serif' },
+  wrap: { maxWidth: '1100px', margin: '0 auto', padding: '2rem 1.5rem 4rem' },
+  sectionHeading: { fontSize: '11px', fontWeight: 600, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '12px' },
+  /* upcoming cards */
+  apptCard: { background: 'white', border: '1px solid #e5e7eb', borderRadius: '14px', padding: '18px 22px', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '20px', boxShadow: '0 1px 3px rgba(0,0,0,0.04)', flexWrap: 'wrap' },
+  apptDate: { fontSize: '14px', fontWeight: 600, color: '#111827', minWidth: '140px' },
+  apptTime: { fontSize: '14px', color: '#6b7280', minWidth: '90px' },
+  apptDoctor: { fontSize: '14px', color: '#374151', flex: 1 },
+  apptActions: { display: 'flex', gap: '8px', alignItems: 'center', flexShrink: 0 },
+  /* past visits table in a card */
+  tableCard: { background: 'white', border: '1px solid #e5e7eb', borderRadius: '14px', overflow: 'hidden', marginBottom: '1rem', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' },
+  table: { width: '100%', borderCollapse: 'collapse' },
+  th: { fontSize: '11px', fontWeight: 700, color: '#6b7280', padding: '11px 16px', textAlign: 'left', borderBottom: '1px solid #e5e7eb', background: '#f9fafb', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' },
+  td: { fontSize: '13px', color: '#374151', padding: '13px 16px', borderBottom: '1px solid #f3f4f6', verticalAlign: 'middle' },
   badge: (status) => ({
     display: 'inline-block',
     padding: '3px 10px',
@@ -122,6 +131,14 @@ const styles = {
   helperText: { fontSize: '12px', color: '#6b7280', marginTop: '0.5rem', lineHeight: 1.5 },
   reviewSummary: { display: 'grid', gap: '4px' },
   reviewComment: { color: '#6b7280', lineHeight: 1.55, maxWidth: '320px' },
+  summaryBtn: { fontSize: '11px', padding: '5px 10px', background: '#eef2ff', color: '#4338ca', border: '1px solid #c7d2fe', borderRadius: '6px', cursor: 'pointer', width: 'auto', fontWeight: 600 },
+  summaryBody: { background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '14px 16px', fontSize: '14px', color: '#1e293b', lineHeight: 1.7, whiteSpace: 'pre-wrap', marginBottom: '0.5rem' },
+  messageBtn: { fontSize: '11px', padding: '5px 10px', background: '#f0fdf4', color: '#166534', border: '1px solid #86efac', borderRadius: '6px', cursor: 'pointer', width: 'auto', fontWeight: 600 },
+  chatWrap: { maxHeight: '260px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px', padding: '10px', background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0', marginBottom: '12px' },
+  bubblePatient: { padding: '8px 12px', borderRadius: '10px', background: '#EAF3DE', color: '#1e293b', fontSize: '13px', marginLeft: 'auto', maxWidth: '80%' },
+  bubbleDoctor: { padding: '8px 12px', borderRadius: '10px', background: '#eef2ff', color: '#1e293b', fontSize: '13px', marginRight: 'auto', maxWidth: '80%' },
+  bubbleSender: { fontWeight: 600, fontSize: '10px', color: '#64748b', marginBottom: '3px' },
+  bubbleTime: { fontSize: '10px', color: '#94a3b8', marginTop: '3px' },
 };
 
 export default function Visits() {
@@ -139,6 +156,12 @@ export default function Visits() {
   const [reviewError, setReviewError] = useState('');
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
   const [reviewForm, setReviewForm] = useState({ rating: 5, comment: '' });
+  const [summaryVisit, setSummaryVisit] = useState(null);
+  const [messageTarget, setMessageTarget] = useState(null);
+  const [threadMessages, setThreadMessages] = useState([]);
+  const [messageDraft, setMessageDraft] = useState('');
+  const [isSendingMessage, setIsSendingMessage] = useState(false);
+  const [messageError, setMessageError] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -271,6 +294,44 @@ export default function Visits() {
     }
   };
 
+  const loadThread = async (appointmentId) => {
+    try {
+      const res = await fetch(`/patient/api/messages/${appointmentId}`, { credentials: 'include' });
+      const data = await res.json();
+      if (Array.isArray(data)) setThreadMessages(data);
+    } catch {}
+  };
+
+  const handleOpenThread = (visit) => {
+    setMessageTarget(visit);
+    setMessageDraft('');
+    setMessageError('');
+    setThreadMessages([]);
+    loadThread(visit.AppointmentID);
+  };
+
+  const handleSendMessage = async () => {
+    if (!messageDraft.trim() || !messageTarget) return;
+    setIsSendingMessage(true);
+    setMessageError('');
+    try {
+      const res = await fetch(`/patient/api/messages/${messageTarget.AppointmentID}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ body: messageDraft }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to send');
+      setMessageDraft('');
+      loadThread(messageTarget.AppointmentID);
+    } catch (err) {
+      setMessageError(err.message);
+    } finally {
+      setIsSendingMessage(false);
+    }
+  };
+
   const isBooked = (date, hour) => {
     const dateStr = toLocalDateString(date);
     return bookedSlots.some((slot) => {
@@ -292,206 +353,249 @@ export default function Visits() {
   const todayStr = toLocalDateString(new Date());
 
   return (
-    <>
+    <div style={styles.body}>
       <Navbar />
+
+      <div className="pt-banner">
+        <div className="pt-banner__inner">
+          <div className="pt-banner__icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+              <rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
+              <line x1="9" y1="12" x2="15" y2="12"/>
+              <line x1="9" y1="16" x2="13" y2="16"/>
+            </svg>
+          </div>
+          <div>
+            <h1 className="pt-banner__title">Visit History</h1>
+            <p className="pt-banner__sub">Manage your upcoming and past appointments</p>
+          </div>
+        </div>
+      </div>
+
       <div style={styles.wrap}>
-        <h1 style={styles.heading}>Visit history</h1>
 
         {bookingMsg && (
-          <div style={{ background: '#EAF3DE', border: '1px solid #C0DD97', borderRadius: '8px', padding: '12px 16px', marginBottom: '1.5rem', fontSize: '14px', color: '#3B6D11' }}>
+          <div style={{ background: '#EAF3DE', border: '1px solid #C0DD97', borderRadius: '10px', padding: '13px 16px', marginBottom: '1.5rem', fontSize: '14px', color: '#3B6D11' }}>
             {bookingMsg}
           </div>
         )}
+        {error && <p style={{ color: '#993C1D', fontSize: '13px', marginBottom: '1rem' }}>{error}</p>}
 
-        {error && <p style={{ color: '#993C1D', fontSize: '13px' }}>{error}</p>}
-
+        {/* ── Upcoming appointments ── */}
         <p style={styles.sectionHeading}>Upcoming appointments</p>
 
         {upcoming.length === 0 ? (
-          <p style={styles.emptyMsg}>No upcoming appointments.</p>
+          <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: '14px', padding: '1.5rem', marginBottom: '1.5rem', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+            <p style={{ color: '#9ca3af', fontSize: '13px', margin: 0 }}>No upcoming appointments.</p>
+          </div>
         ) : (
-          <table style={styles.table}>
-            <thead>
-              <tr>
-                <th style={styles.th}>Date</th>
-                <th style={styles.th}>Time</th>
-                <th style={styles.th}>Doctor</th>
-                <th style={styles.th}>Status</th>
-                <th style={styles.th}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {upcoming.map((visit) => (
-                <React.Fragment key={visit.AppointmentID}>
-                  <tr style={{ background: rescheduleTarget?.AppointmentID === visit.AppointmentID ? '#f0f7ff' : 'white' }}>
+          <div style={{ marginBottom: '1.5rem' }}>
+            {upcoming.map((visit) => (
+              <React.Fragment key={visit.AppointmentID}>
+                <div style={{ ...styles.apptCard, borderLeft: rescheduleTarget?.AppointmentID === visit.AppointmentID ? '4px solid #185FA5' : '4px solid #e5e7eb' }}>
+                  <div style={styles.apptDate}>{formatDate(visit.AppointmentDate)}</div>
+                  <div style={styles.apptTime}>{formatTime(visit.AppointmentDate, visit.AppointmentTime)}</div>
+                  <div style={styles.apptDoctor}>Dr. {visit.FirstName} {visit.LastName}</div>
+                  <span style={styles.badge(visit.Status)}>{visit.Status}</span>
+                  <div style={styles.apptActions}>
+                    <button style={styles.rescheduleBtn} onClick={() => { setRescheduleTarget(visit); setWeekOffset(0); setRescheduleError(''); }}>
+                      Reschedule
+                    </button>
+                    <button style={styles.cancelBtn} onClick={() => setCancelTarget(visit)}>Cancel</button>
+                  </div>
+                </div>
+
+                {rescheduleTarget?.AppointmentID === visit.AppointmentID && (
+                  <div style={{ ...styles.calendarWrap, marginBottom: '10px', borderRadius: '14px' }}>
+                    <p style={styles.calHeading}>Select a new time for your appointment with Dr. {visit.FirstName} {visit.LastName}</p>
+                    <p style={{ fontSize: '12px', color: '#6b7280', marginBottom: '1rem' }}>
+                      Current: {formatDate(visit.AppointmentDate)} at {formatTime(visit.AppointmentDate, visit.AppointmentTime)}
+                    </p>
+                    {rescheduleError && <p style={{ color: '#993C1D', fontSize: '12px', marginBottom: '0.5rem' }}>{rescheduleError}</p>}
+                    <div style={styles.weekNav}>
+                      <button onClick={() => setWeekOffset((v) => v - 1)} disabled={weekOffset === 0} style={weekOffset === 0 ? styles.navBtnDisabled : styles.navBtn}>Prev</button>
+                      <span style={styles.weekLabel}>
+                        {weekDates[0].toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – {weekDates[4].toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      </span>
+                      <button onClick={() => setWeekOffset((v) => v + 1)} style={styles.navBtn}>Next</button>
+                    </div>
+                    <div style={{ overflowX: 'auto' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                        <thead>
+                          <tr>
+                            <th style={{ width: '60px' }}></th>
+                            {weekDates.map((date, index) => {
+                              const isToday = toLocalDateString(date) === todayStr;
+                              return (
+                                <th key={index} style={{ ...styles.calTh, color: isToday ? '#185FA5' : '#6b7280' }}>
+                                  <div>{SHORT_DAYS[index]}</div>
+                                  <div style={{ fontSize: '15px', fontWeight: 500 }}>{date.getDate()}</div>
+                                </th>
+                              );
+                            })}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {HOURS.map((hour) => (
+                            <tr key={hour}>
+                              <td style={styles.timeCell}>{formatHour(hour)}</td>
+                              {weekDates.map((date, index) => {
+                                const booked = isBooked(date, hour);
+                                const pastTime = isPast(date, hour);
+                                const unavailable = booked || pastTime;
+                                return (
+                                  <td key={index} style={{ padding: '2px 3px' }}>
+                                    <div
+                                      onClick={() => !unavailable && handleReschedule(date, hour)}
+                                      style={pastTime ? styles.slotPast : booked ? styles.slotBooked : styles.slotAvailable}
+                                      onMouseEnter={(e) => { if (!unavailable) e.currentTarget.style.opacity = '0.7'; }}
+                                      onMouseLeave={(e) => { e.currentTarget.style.opacity = '1'; }}
+                                    >
+                                      {pastTime ? '-' : booked ? 'Booked' : 'Available'}
+                                    </div>
+                                  </td>
+                                );
+                              })}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    <button onClick={() => { setRescheduleTarget(null); setWeekOffset(0); }}
+                      style={{ marginTop: '0.75rem', fontSize: '12px', color: '#6b7280', background: 'none', border: 'none', cursor: 'pointer', padding: 0, width: 'auto' }}>
+                      Close
+                    </button>
+                  </div>
+                )}
+              </React.Fragment>
+            ))}
+          </div>
+        )}
+
+        {/* ── Past visits ── */}
+        <p style={{ ...styles.sectionHeading, marginTop: '0.5rem' }}>Past visits</p>
+
+        {past.length === 0 ? (
+          <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: '14px', padding: '1.5rem', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+            <p style={{ color: '#9ca3af', fontSize: '13px', margin: 0 }}>No past visits on record.</p>
+          </div>
+        ) : (
+          <div style={styles.tableCard}>
+            <table style={styles.table}>
+              <thead>
+                <tr>
+                  <th style={styles.th}>Date</th>
+                  <th style={styles.th}>Time</th>
+                  <th style={styles.th}>Doctor</th>
+                  <th style={styles.th}>Status</th>
+                  <th style={styles.th}>Review</th>
+                  <th style={styles.th}>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {past.map((visit) => (
+                  <tr key={visit.AppointmentID}>
                     <td style={styles.td}>{formatDate(visit.AppointmentDate)}</td>
                     <td style={styles.td}>{formatTime(visit.AppointmentDate, visit.AppointmentTime)}</td>
                     <td style={styles.td}>Dr. {visit.FirstName} {visit.LastName}</td>
                     <td style={styles.td}><span style={styles.badge(visit.Status)}>{visit.Status}</span></td>
                     <td style={styles.td}>
-                      <button
-                        style={styles.rescheduleBtn}
-                        onClick={() => {
-                          setRescheduleTarget(visit);
-                          setWeekOffset(0);
-                          setRescheduleError('');
-                        }}
-                      >
-                        Reschedule
-                      </button>
-                      <button style={styles.cancelBtn} onClick={() => setCancelTarget(visit)}>
-                        Cancel
-                      </button>
+                      {Number(visit.HasReview) === 1 ? (
+                        <div style={styles.reviewSummary}>
+                          <span style={styles.reviewStatus}>{visit.ReviewRating}/5 rating</span>
+                          <span style={styles.reviewComment}>{visit.ReviewComment || 'No comment left.'}</span>
+                        </div>
+                      ) : Number(visit.CanReview) === 1 ? (
+                        <span style={styles.reviewStatus}>Ready for review</span>
+                      ) : (
+                        <span style={{ color: '#9ca3af' }}>Not available</span>
+                      )}
+                    </td>
+                    <td style={styles.td}>
+                      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
+                        {visit.Status !== 'Cancelled' && (
+                          <button type="button" style={styles.messageBtn} onClick={() => handleOpenThread(visit)}>Message</button>
+                        )}
+                        {visit.PatientSummary && (
+                          <button type="button" style={styles.summaryBtn} onClick={() => setSummaryVisit(visit)}>View summary</button>
+                        )}
+                        {Number(visit.HasReview) === 1 ? (
+                          <span style={{ color: '#64748b', fontSize: '12px' }}>Review submitted</span>
+                        ) : Number(visit.CanReview) === 1 ? (
+                          <button type="button" style={styles.reviewBtn} onClick={() => { setReviewTarget(visit); setReviewForm({ rating: 5, comment: '' }); setReviewError(''); }}>
+                            Leave review
+                          </button>
+                        ) : (
+                          !visit.PatientSummary && <span style={{ color: '#9ca3af', fontSize: '12px' }}>No action</span>
+                        )}
+                      </div>
                     </td>
                   </tr>
-
-                  {rescheduleTarget?.AppointmentID === visit.AppointmentID && (
-                    <tr>
-                      <td colSpan={5} style={{ padding: '0 0 12px 0', background: '#f9fafb' }}>
-                        <div style={styles.calendarWrap}>
-                          <p style={styles.calHeading}>
-                            Select a new time for your appointment with Dr. {visit.FirstName} {visit.LastName}
-                          </p>
-                          <p style={{ fontSize: '12px', color: '#6b7280', marginBottom: '1rem' }}>
-                            Current: {formatDate(visit.AppointmentDate)} at {formatTime(visit.AppointmentDate, visit.AppointmentTime)}
-                          </p>
-                          {rescheduleError && <p style={{ color: '#993C1D', fontSize: '12px', marginBottom: '0.5rem' }}>{rescheduleError}</p>}
-
-                          <div style={styles.weekNav}>
-                            <button onClick={() => setWeekOffset((value) => value - 1)} disabled={weekOffset === 0} style={weekOffset === 0 ? styles.navBtnDisabled : styles.navBtn}>Prev</button>
-                            <span style={styles.weekLabel}>
-                              {weekDates[0].toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {weekDates[4].toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                            </span>
-                            <button onClick={() => setWeekOffset((value) => value + 1)} style={styles.navBtn}>Next</button>
-                          </div>
-
-                          <div style={{ overflowX: 'auto' }}>
-                            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                              <thead>
-                                <tr>
-                                  <th style={{ width: '60px' }}></th>
-                                  {weekDates.map((date, index) => {
-                                    const isToday = toLocalDateString(date) === todayStr;
-                                    return (
-                                      <th key={index} style={{ ...styles.calTh, color: isToday ? '#185FA5' : '#6b7280' }}>
-                                        <div>{SHORT_DAYS[index]}</div>
-                                        <div style={{ fontSize: '15px', fontWeight: 500 }}>{date.getDate()}</div>
-                                      </th>
-                                    );
-                                  })}
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {HOURS.map((hour) => (
-                                  <tr key={hour}>
-                                    <td style={styles.timeCell}>{formatHour(hour)}</td>
-                                    {weekDates.map((date, index) => {
-                                      const booked = isBooked(date, hour);
-                                      const pastTime = isPast(date, hour);
-                                      const unavailable = booked || pastTime;
-
-                                      return (
-                                        <td key={index} style={{ padding: '2px 3px' }}>
-                                          <div
-                                            onClick={() => !unavailable && handleReschedule(date, hour)}
-                                            style={pastTime ? styles.slotPast : booked ? styles.slotBooked : styles.slotAvailable}
-                                            onMouseEnter={(event) => {
-                                              if (!unavailable) event.currentTarget.style.opacity = '0.7';
-                                            }}
-                                            onMouseLeave={(event) => {
-                                              event.currentTarget.style.opacity = '1';
-                                            }}
-                                          >
-                                            {pastTime ? '-' : booked ? 'Booked' : 'Available'}
-                                          </div>
-                                        </td>
-                                      );
-                                    })}
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </div>
-
-                          <button
-                            onClick={() => {
-                              setRescheduleTarget(null);
-                              setWeekOffset(0);
-                            }}
-                            style={{ marginTop: '0.75rem', fontSize: '12px', color: '#6b7280', background: 'none', border: 'none', cursor: 'pointer', padding: 0, width: 'auto' }}
-                          >
-                            Close
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  )}
-                </React.Fragment>
-              ))}
-            </tbody>
-          </table>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
 
-        <hr style={styles.divider} />
+        {summaryVisit && (
+          <div style={styles.modal}>
+            <div style={{ ...styles.modalBox, boxShadow: '0 20px 60px rgba(0,0,0,0.15)', borderRadius: '16px' }}>
+              <h3 style={styles.modalHeading}>Visit summary</h3>
+              <p style={styles.modalSub}>
+                <strong>Dr. {summaryVisit.FirstName} {summaryVisit.LastName}</strong> · {formatDate(summaryVisit.AppointmentDate)}
+              </p>
+              <div style={styles.summaryBody}>
+                {summaryVisit.PatientSummary}
+              </div>
+              <div style={styles.modalBtns}>
+                <button style={styles.dismissBtn} onClick={() => setSummaryVisit(null)}>Close</button>
+              </div>
+            </div>
+          </div>
+        )}
 
-        <p style={styles.sectionHeading}>Past visits</p>
+        {messageTarget && (
+          <div style={styles.modal}>
+            <div style={{ ...styles.modalBox, maxWidth: '540px' }}>
+              <h3 style={styles.modalHeading}>Messages — Dr. {messageTarget.FirstName} {messageTarget.LastName}</h3>
+              <p style={styles.modalSub}>Appointment · {formatDate(messageTarget.AppointmentDate)}</p>
 
-        {past.length === 0 ? (
-          <p style={styles.emptyMsg}>No past visits on record.</p>
-        ) : (
-          <table style={styles.table}>
-            <thead>
-              <tr>
-                <th style={styles.th}>Date</th>
-                <th style={styles.th}>Time</th>
-                <th style={styles.th}>Doctor</th>
-                <th style={styles.th}>Status</th>
-                <th style={styles.th}>Review</th>
-                <th style={styles.th}>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {past.map((visit) => (
-                <tr key={visit.AppointmentID} style={{ background: 'white' }}>
-                  <td style={styles.td}>{formatDate(visit.AppointmentDate)}</td>
-                  <td style={styles.td}>{formatTime(visit.AppointmentDate, visit.AppointmentTime)}</td>
-                  <td style={styles.td}>Dr. {visit.FirstName} {visit.LastName}</td>
-                  <td style={styles.td}><span style={styles.badge(visit.Status)}>{visit.Status}</span></td>
-                  <td style={styles.td}>
-                    {Number(visit.HasReview) === 1 ? (
-                      <div style={styles.reviewSummary}>
-                        <span style={styles.reviewStatus}>{visit.ReviewRating}/5 rating</span>
-                        <span style={styles.reviewComment}>{visit.ReviewComment || 'No comment left.'}</span>
-                      </div>
-                    ) : Number(visit.CanReview) === 1 ? (
-                      <span style={styles.reviewStatus}>Ready for review</span>
-                    ) : (
-                      <span style={{ color: '#9ca3af' }}>Not available</span>
-                    )}
-                  </td>
-                  <td style={styles.td}>
-                    {Number(visit.HasReview) === 1 ? (
-                      <span style={{ color: '#64748b', fontSize: '12px' }}>Review submitted</span>
-                    ) : Number(visit.CanReview) === 1 ? (
-                      <button
-                        type="button"
-                        style={styles.reviewBtn}
-                        onClick={() => {
-                          setReviewTarget(visit);
-                          setReviewForm({ rating: 5, comment: '' });
-                          setReviewError('');
-                        }}
-                      >
-                        Leave review
-                      </button>
-                    ) : (
-                      <span style={{ color: '#9ca3af', fontSize: '12px' }}>No action</span>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+              <div style={styles.chatWrap}>
+                {threadMessages.length === 0 ? (
+                  <p style={{ color: '#9ca3af', fontSize: '13px', textAlign: 'center', padding: '1rem 0' }}>
+                    No messages yet. Start the conversation below.
+                  </p>
+                ) : threadMessages.map((msg) => (
+                  <div key={msg.MessageID} style={msg.SenderType === 'patient' ? styles.bubblePatient : styles.bubbleDoctor}>
+                    <div style={styles.bubbleSender}>{msg.SenderType === 'patient' ? 'You' : `Dr. ${messageTarget.LastName}`}</div>
+                    {msg.Body}
+                    <div style={styles.bubbleTime}>
+                      {new Date(msg.SentAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <textarea
+                style={styles.textarea}
+                value={messageDraft}
+                onChange={(e) => setMessageDraft(e.target.value)}
+                placeholder="Write a message to your doctor..."
+                rows={3}
+              />
+              {messageError && <p style={{ color: '#993C1D', fontSize: '12px', marginTop: '4px' }}>{messageError}</p>}
+
+              <div style={styles.modalBtns}>
+                <button style={styles.saveBtn} onClick={handleSendMessage} disabled={isSendingMessage || !messageDraft.trim()}>
+                  {isSendingMessage ? 'Sending...' : 'Send'}
+                </button>
+                <button style={styles.dismissBtn} onClick={() => { setMessageTarget(null); setThreadMessages([]); }}>
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
         )}
 
         {cancelTarget && (
@@ -567,6 +671,6 @@ export default function Visits() {
           </div>
         )}
       </div>
-    </>
+    </div>
   );
 }
