@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import RepAllAppt from './RepAllAppt'
 import RepAllTrans from './RepAllTrans'
+import DepartmentReport from './DepartmentReport'
 import InvoiceReport from './InvoiceReport'
 import RevenueReport from './RevenueReport'
 import ReviewsReport from './ReviewsReport'
@@ -21,6 +22,7 @@ const REPORT_META = {
   Revenue:       { title: 'Revenue Report',        sub: 'Clinic revenue transactions filtered by department, doctor, patient, and date', eyebrow: 'Revenue' },
   Reviews:       { title: 'Reviews Report',        sub: 'Patient satisfaction ratings filtered by department, doctor, patient, and date', eyebrow: 'Reviews' },
   PatientDoctor: { title: 'Patient–Doctor Report', sub: 'See which patients are seeing which doctors, visit frequency, and last visit date', eyebrow: 'Patient Activity' },
+  Department:  { title: 'Department Report',   sub: 'PLEASE REPLACE IN THE FUTUUUUUUURE!!!!!', eyebrow: 'Department' },
 }
 
 function Report() {
@@ -50,12 +52,13 @@ function Report() {
           </div>
         </div>
 
-        {type === 'AllAppt'       && <RepAllAppt />}
-        {type === 'AllTrans'      && <RepAllTrans />}
-        {type === 'Invoice'       && <InvoiceReport />}
-        {type === 'Revenue'       && <RevenueReport />}
-        {type === 'Reviews'       && <ReviewsReport />}
-        {type === 'PatientDoctor' && <PatientDoctorReport />}
+        {type === 'AllAppt'  && <RepAllAppt />}
+        {type === 'AllTrans' && <RepAllTrans />}
+        {type === 'Invoice'  && <InvoiceReport />}
+        {type === 'Revenue'  && <RevenueReport />}
+        {type === 'Reviews'  && <ReviewsReport />}
+        {type === 'PatientDoctor'  && <PatientDoctorReport />}
+        {type === 'Department'  && <DepartmentReport />}
 
       </div>
     </div>

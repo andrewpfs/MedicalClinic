@@ -206,7 +206,7 @@ router.get('/api/pullgrr', requireAdmin, async (req,res) => {
 
 router.get('/api/pullrevenue', requireAdmin, async (req,res) => {
     const q = `
-    SELECT T.TransactionID AS "Id", P.FName AS "PatFirst", P.LName AS "PatLast", E.FirstName AS "DocFirst", E.LastName AS "DocLast",D.DepartmentName,T.Amount,DATE_FORMAT(T.TransactionDateTime, '%Y-%m-%d') AS "Date",E.EmployeeID AS "DocID",T.Status,P.hasInsurance AS "Insurance"
+    SELECT T.TransactionID AS "Id", P.FName AS "PatFirst", P.LName AS "PatLast", E.FirstName AS "DocFirst", E.LastName AS "DocLast",D.DepartmentName,D.DepartmentID,T.Amount,DATE_FORMAT(T.TransactionDateTime, '%Y-%m-%d') AS "Date",E.EmployeeID AS "DocID",T.Status,P.hasInsurance AS "Insurance"
     FROM transaction AS T, patient AS P,appointment AS A, employee AS E, department AS D
     WHERE T.AppointmentID=A.AppointmentID AND T.PatientID=P.PatientID AND E.EmployeeID=A.DoctorID AND E.DepartmentID=D.DepartmentID`;
 
@@ -220,7 +220,7 @@ router.get('/api/pullrevenue', requireAdmin, async (req,res) => {
 
 router.get('/api/pullreviews', requireAdmin, async (req,res) => {
     const q = `
-    SELECT DR.ReviewID AS "Id", P.FName AS "PatFirst", P.LName AS "PatLast", E.FirstName AS "DocFirst", E.LastName AS "DocLast",D.DepartmentName,DR.Rating,DATE_FORMAT(DR.CreatedAt, '%Y-%m-%d') AS "Date",E.EmployeeID AS "DocID"
+    SELECT DR.ReviewID AS "Id", P.FName AS "PatFirst", P.LName AS "PatLast", E.FirstName AS "DocFirst", E.LastName AS "DocLast",D.DepartmentName,D.DepartmentID,DR.Rating,DATE_FORMAT(DR.CreatedAt, '%Y-%m-%d') AS "Date",E.EmployeeID AS "DocID"
     FROM doctor_review AS DR, patient AS P,appointment AS A, employee AS E, department AS D
     WHERE DR.AppointmentID=A.AppointmentID AND DR.PatientID=P.PatientID AND E.EmployeeID=A.DoctorID AND E.DepartmentID=D.DepartmentID`;
 

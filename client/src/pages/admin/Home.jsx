@@ -44,6 +44,7 @@ const reports = [
   { icon: '📋', title: 'Revenue Report',         sub: 'Transactions that have been completed and how much revenue has been achieved',  type: 'Revenue'       },
   { icon: '⭐', title: 'Reviews Report',         sub: 'Patient satisfaction ratings filtered by department, doctor, and date',        type: 'Reviews'       },
   { icon: '🩺', title: 'Patient–Doctor Report',  sub: 'Which patients are seeing which doctors, visit frequency, and last visit date', type: 'PatientDoctor' },
+  { icon: '⭐', title: 'Department Report',  sub: 'See Summarized Data of Departments and Compare to other Departments', type: 'Department'  },
 ]
 
 function AdminHome() {
