@@ -9,6 +9,7 @@ const PATIENT_SECRET = 'secretkey';
 const COMPLETED_STATUS_CODE = 4;
 const REVIEW_SQL_HINT = 'Run backend/sql/doctor-review-system.sql to enable doctor reviews.';
 const DOCTOR_DIRECTORY_SQL_HINT = 'Run backend/sql/doctor-profile-image.sql to enable doctor profile images.';
+const REFERRAL_SQL_HINT = 'Run backend/sql/doctor-referrals.sql to enable specialist referrals.';
 
 const isPatientFeatureSchemaMissing = (err) =>
   err && (err.code === 'ER_NO_SUCH_TABLE' || err.code === 'ER_BAD_FIELD_ERROR');
@@ -97,14 +98,33 @@ router.get('/api/doctors', async (req, res) => {
          e.FirstName,
          e.LastName,
          d.Specialty,
+         d.IsPrimaryCare,
          d.Bio,
          d.ProfileImageUrl,
          dept.DepartmentName,
+         activeReferral.ReferralID,
+         activeReferral.ApprovalDate AS ReferralApprovalDate,
+         activeReferral.ExpirationDate AS ReferralExpirationDate,
+         referringDoctor.FirstName AS ReferringDoctorFirstName,
+         referringDoctor.LastName AS ReferringDoctorLastName,
          COALESCE(reviewSummary.ReviewCount, 0) AS ReviewCount,
          COALESCE(reviewSummary.AverageRating, 0) AS AverageRating
        FROM employee e
        LEFT JOIN doctor d ON e.EmployeeID = d.EmployeeID
        LEFT JOIN department dept ON e.DepartmentID = dept.DepartmentID
+       LEFT JOIN referral activeReferral
+         ON activeReferral.ReferralID = (
+           SELECT r.ReferralID
+           FROM referral r
+           WHERE r.PatientID = ?
+             AND r.SpecialistDoctorID = e.EmployeeID
+             AND r.Status = 'Approved'
+             AND (r.ExpirationDate IS NULL OR r.ExpirationDate >= CURDATE())
+           ORDER BY r.ApprovalDate DESC, r.ReferralID DESC
+           LIMIT 1
+         )
+       LEFT JOIN employee referringDoctor
+         ON activeReferral.PrimaryCareDoctorID = referringDoctor.EmployeeID
        LEFT JOIN (
          SELECT DoctorID, COUNT(*) AS ReviewCount, AVG(Rating) AS AverageRating
          FROM doctor_review
@@ -112,13 +132,14 @@ router.get('/api/doctors', async (req, res) => {
        ) AS reviewSummary
          ON reviewSummary.DoctorID = e.EmployeeID
        WHERE e.Role = 'Doctor'
-       ORDER BY e.LastName, e.FirstName`
+       ORDER BY e.LastName, e.FirstName`,
+      [patientId]
     );
     res.json(doctors);
   } catch (err) {
     console.error(err);
     if (isPatientFeatureSchemaMissing(err)) {
-      return res.status(409).json({ error: `${REVIEW_SQL_HINT} ${DOCTOR_DIRECTORY_SQL_HINT}` });
+      return res.status(409).json({ error: `${REVIEW_SQL_HINT} ${DOCTOR_DIRECTORY_SQL_HINT} ${REFERRAL_SQL_HINT}` });
     }
     res.status(500).json({ error: 'Database Error' });
   }
@@ -132,6 +153,38 @@ router.post('/book', async (req, res) => {
   const formattedDate = `${date.replace('T', ' ')}:00`;
 
   try {
+    const [[doctor]] = await db.query(
+      `SELECT d.EmployeeID, d.IsPrimaryCare
+       FROM doctor d
+       JOIN employee e ON d.EmployeeID = e.EmployeeID
+       WHERE d.EmployeeID = ? AND e.Role = 'Doctor'
+       LIMIT 1`,
+      [doctorId]
+    );
+
+    if (!doctor) {
+      return res.status(404).json({ error: 'Doctor not found.' });
+    }
+
+    if (doctor.IsPrimaryCare !== null && Number(doctor.IsPrimaryCare) === 0) {
+      const [[activeReferral]] = await db.query(
+        `SELECT ReferralID
+         FROM referral
+         WHERE PatientID = ?
+           AND SpecialistDoctorID = ?
+           AND Status = 'Approved'
+           AND (ExpirationDate IS NULL OR ExpirationDate >= CURDATE())
+         LIMIT 1`,
+        [patientId, doctorId]
+      );
+
+      if (!activeReferral) {
+        return res.status(403).json({
+          error: 'An approved referral is required before booking this specialist.',
+        });
+      }
+    }
+
     const [conflict] = await db.query(
       `SELECT AppointmentID
        FROM appointment
@@ -155,6 +208,9 @@ router.post('/book', async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     console.error('SQL ERROR:', err.message);
+    if (isPatientFeatureSchemaMissing(err)) {
+      return res.status(409).json({ error: REFERRAL_SQL_HINT });
+    }
     res.status(500).json({ error: err.message });
   }
 });

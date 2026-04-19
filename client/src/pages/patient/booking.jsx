@@ -121,6 +121,11 @@ export default function Booking() {
     }
 
     const doctor = doctors.find((entry) => String(entry.EmployeeID) === String(selectedDoctor));
+    if (doctor && isSpecialistDoctor(doctor) && !hasActiveReferral(doctor)) {
+      setError('An approved referral is required before booking this specialist.');
+      return;
+    }
+
     setReason('');
     setConfirmData({
       date,
@@ -204,7 +209,7 @@ export default function Booking() {
                 <div style={sectionHeader}>
                   <div>
                     <h2 style={sectionTitle}>Choose a doctor</h2>
-                    <p style={sectionSubtitle}>Every card shows specialty, clinic department, review summary, and the doctor photo or default clinic avatar.</p>
+                    <p style={sectionSubtitle}>Every card shows specialty, clinic department, review summary, and whether specialist referral approval is on file.</p>
                   </div>
                   <input
                     type="text"
@@ -246,8 +251,15 @@ export default function Booking() {
 
                         <div style={doctorCardBody}>
                           <div style={doctorCardTitle}>Dr. {doctor.FirstName} {doctor.LastName}</div>
-                          <div style={doctorCardMeta}>{doctor.Specialty || 'General practice'}{doctor.DepartmentName ? ` · ${doctor.DepartmentName}` : ''}</div>
+                          <div style={doctorCardMeta}>{doctor.Specialty || 'General practice'}{doctor.DepartmentName ? ` - ${doctor.DepartmentName}` : ''}</div>
                           <div style={doctorCardRating}>{formatDoctorRating(doctor)}</div>
+                          {isSpecialistDoctor(doctor) && (
+                            <div style={hasActiveReferral(doctor) ? referralApprovedBadge : referralRequiredBadge}>
+                              {hasActiveReferral(doctor)
+                                ? `Referral approved${doctor.ReferralExpirationDate ? ` through ${formatReferralDate(doctor.ReferralExpirationDate)}` : ''}`
+                                : 'Referral required'}
+                            </div>
+                          )}
                           <p style={doctorCardBio}>{doctor.Bio || 'No custom bio yet. Patients will still see the clinic default profile.'}</p>
                         </div>
 
@@ -293,7 +305,14 @@ export default function Booking() {
                     <div style={selectedDoctorBanner}>
                       <div style={selectedDoctorSummary}>
                         <div style={selectedDoctorName}>Dr. {selectedDoctorDetails.FirstName} {selectedDoctorDetails.LastName}</div>
-                        <div style={selectedDoctorSub}>{selectedDoctorDetails.Specialty || 'General practice'} · {formatDoctorRating(selectedDoctorDetails)}</div>
+                        <div style={selectedDoctorSub}>{selectedDoctorDetails.Specialty || 'General practice'} - {formatDoctorRating(selectedDoctorDetails)}</div>
+                        {isSpecialistDoctor(selectedDoctorDetails) && (
+                          <div style={hasActiveReferral(selectedDoctorDetails) ? referralApprovedInline : referralRequiredInline}>
+                            {hasActiveReferral(selectedDoctorDetails)
+                              ? `Referral approved by Dr. ${selectedDoctorDetails.ReferringDoctorLastName || 'your doctor'}`
+                              : 'Referral required before booking'}
+                          </div>
+                        )}
                       </div>
                       <div style={legend}>
                         <LegendChip color="#dff4ea" label="Available" />
@@ -417,6 +436,21 @@ function LegendChip({ color, label }) {
       <span>{label}</span>
     </div>
   );
+}
+
+function isSpecialistDoctor(doctor = {}) {
+  return doctor.IsPrimaryCare !== null && doctor.IsPrimaryCare !== undefined && Number(doctor.IsPrimaryCare) === 0;
+}
+
+function hasActiveReferral(doctor = {}) {
+  return Boolean(doctor.ReferralID);
+}
+
+function formatReferralDate(value) {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
 const pageShell = {
@@ -647,6 +681,29 @@ const doctorCardRating = {
   fontWeight: 700,
 };
 
+const referralBadgeBase = {
+  display: 'inline-flex',
+  width: 'fit-content',
+  padding: '5px 9px',
+  borderRadius: '999px',
+  fontSize: '11px',
+  fontWeight: 700,
+  letterSpacing: '0.03em',
+  textTransform: 'uppercase',
+};
+
+const referralApprovedBadge = {
+  ...referralBadgeBase,
+  background: '#dcfce7',
+  color: '#166534',
+};
+
+const referralRequiredBadge = {
+  ...referralBadgeBase,
+  background: '#fef3c7',
+  color: '#92400e',
+};
+
 const doctorCardBio = {
   margin: '2px 0 0',
   color: '#64748b',
@@ -735,6 +792,20 @@ const selectedDoctorName = {
 const selectedDoctorSub = {
   fontSize: '13px',
   color: '#64748b',
+};
+
+const referralApprovedInline = {
+  color: '#166534',
+  fontSize: '12px',
+  fontWeight: 700,
+  marginTop: '4px',
+};
+
+const referralRequiredInline = {
+  color: '#92400e',
+  fontSize: '12px',
+  fontWeight: 700,
+  marginTop: '4px',
 };
 
 const legend = {

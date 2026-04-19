@@ -9,6 +9,7 @@ const TABS = [
   { id: 'overview', label: 'Overview' },
   { id: 'schedule', label: 'Schedule' },
   { id: 'patients', label: 'Care Panel' },
+  { id: 'referrals', label: 'Referrals' },
 ];
 
 export default function DoctorPage() {
@@ -19,6 +20,8 @@ export default function DoctorPage() {
   const [patientSearch, setPatientSearch] = useState('');
   const [bioDraft, setBioDraft] = useState('');
   const [isSavingBio, setIsSavingBio] = useState(false);
+  const [referralDraft, setReferralDraft] = useState({ patientId: '', specialistDoctorId: '', expirationDate: '' });
+  const [isSavingReferral, setIsSavingReferral] = useState(false);
   const [markingReviewId, setMarkingReviewId] = useState('');
   const [message, setMessage] = useState({ type: '', text: '' });
   const [data, setData] = useState({
@@ -29,6 +32,9 @@ export default function DoctorPage() {
     reviews: [],
     unreadReviewCount: 0,
     reviewSummary: { reviewCount: 0, averageRating: 0 },
+    specialists: [],
+    referrals: [],
+    incomingReferrals: [],
   });
   const [shifts, setShifts] = useState([]);
 
@@ -53,11 +59,38 @@ export default function DoctorPage() {
         reviews: doctorPayload.reviews || [],
         unreadReviewCount: doctorPayload.unreadReviewCount || 0,
         reviewSummary: doctorPayload.reviewSummary || { reviewCount: 0, averageRating: 0 },
+        specialists: doctorPayload.specialists || [],
+        referrals: doctorPayload.referrals || [],
+        incomingReferrals: doctorPayload.incomingReferrals || [],
       });
       setBioDraft(doctorPayload.profile?.Bio || '');
       setShifts(employeePayload.availability || []);
     } catch (err) {
       setMessage({ type: 'error', text: err.message });
+    }
+  };
+
+  const handleReferralCreate = async () => {
+    setIsSavingReferral(true);
+
+    try {
+      const response = await fetch(`${DOCTOR_API}/referrals`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(referralDraft),
+      });
+
+      const payload = await response.json();
+      if (!payload.success) throw new Error(payload.error || 'Failed to create referral.');
+
+      setMessage({ type: 'success', text: payload.message || 'Referral approved successfully.' });
+      setReferralDraft({ patientId: '', specialistDoctorId: '', expirationDate: '' });
+      loadData();
+    } catch (err) {
+      setMessage({ type: 'error', text: err.message });
+    } finally {
+      setIsSavingReferral(false);
     }
   };
 
@@ -189,6 +222,8 @@ export default function DoctorPage() {
   const profile = data.profile || {};
   const unreadReviews = (data.reviews || []).filter((review) => Number(review.IsSeenByDoctor) === 0);
   const averageRating = Number(data.reviewSummary?.averageRating || 0);
+  const activeOutgoingReferrals = data.referrals.filter(isActiveReferral);
+  const activeIncomingReferrals = data.incomingReferrals.filter(isActiveReferral);
 
   return (
     <div style={pageShell}>
@@ -433,6 +468,109 @@ export default function DoctorPage() {
             </SurfaceCard>
           </div>
         )}
+
+        {activeTab === 'referrals' && (
+          <div style={stackLayout}>
+            <section style={metricGrid}>
+              <MetricCard label="Active Referrals Made" value={activeOutgoingReferrals.length} tone="blue" detail="Specialist approvals you issued" />
+              <MetricCard label="Incoming Referrals" value={activeIncomingReferrals.length} tone="green" detail="Patients referred to you" />
+              <MetricCard label="Specialists Available" value={data.specialists.length} tone="teal" detail="Eligible doctors for referrals" />
+            </section>
+
+            <section style={twoColumnLayout}>
+              <SurfaceCard title="Create Specialist Referral" subtitle="Approve a patient to book with a doctor explicitly marked as a specialist.">
+                <div style={formGrid}>
+                  <label style={formField}>
+                    Patient
+                    <select
+                      value={referralDraft.patientId}
+                      onChange={(event) => setReferralDraft((prev) => ({ ...prev, patientId: event.target.value }))}
+                      style={fieldSelect}
+                    >
+                      <option value="">Select patient</option>
+                      {data.patientSummary.map((patient) => (
+                        <option key={patient.PatientID} value={patient.PatientID}>
+                          {patient.PatientLastName}, {patient.PatientFirstName} (#{patient.PatientID})
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label style={formField}>
+                    Specialist doctor
+                    <select
+                      value={referralDraft.specialistDoctorId}
+                      onChange={(event) => setReferralDraft((prev) => ({ ...prev, specialistDoctorId: event.target.value }))}
+                      style={fieldSelect}
+                    >
+                      <option value="">Select marked specialist</option>
+                      {data.specialists.map((specialist) => (
+                        <option key={specialist.EmployeeID} value={specialist.EmployeeID}>
+                          Dr. {specialist.LastName}, {specialist.FirstName}{specialist.Specialty ? ` - ${specialist.Specialty}` : ''}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label style={formField}>
+                    Expiration date
+                    <input
+                      type="date"
+                      value={referralDraft.expirationDate}
+                      onChange={(event) => setReferralDraft((prev) => ({ ...prev, expirationDate: event.target.value }))}
+                      style={fieldSelect}
+                    />
+                  </label>
+                </div>
+
+                <button
+                  type="button"
+                  style={fullWidthButton}
+                  onClick={handleReferralCreate}
+                  disabled={isSavingReferral || !referralDraft.patientId || !referralDraft.specialistDoctorId}
+                >
+                  {isSavingReferral ? 'Saving referral...' : 'Approve referral'}
+                </button>
+                <p style={helperText}>If no expiration is provided, the referral expires six months from today.</p>
+              </SurfaceCard>
+
+              <SurfaceCard title="Incoming Specialist Referrals" subtitle="Patients another doctor approved to see you.">
+                <DataTable
+                  headers={['Patient', 'From', 'Approved', 'Expires', 'Status']}
+                  rows={data.incomingReferrals}
+                  empty="No patients have been referred to you yet."
+                  renderRow={(row) => (
+                    <tr key={row.ReferralID}>
+                      <td style={tableCellStrong}>{row.PatientLastName}, {row.PatientFirstName}</td>
+                      <td style={tableCell}>Dr. {row.PrimaryDoctorLastName}, {row.PrimaryDoctorFirstName}</td>
+                      <td style={tableCell}>{fmtDate(row.ApprovalDate)}</td>
+                      <td style={tableCell}>{fmtDate(row.ExpirationDate)}</td>
+                      <td style={tableCell}><ReferralStatusBadge referral={row} /></td>
+                    </tr>
+                  )}
+                />
+              </SurfaceCard>
+            </section>
+
+            <SurfaceCard title="Referrals You Approved" subtitle="Active and expired specialist approvals you have issued.">
+              <DataTable
+                headers={['Patient', 'Specialist', 'Specialty', 'Approved', 'Expires', 'Status']}
+                rows={data.referrals}
+                empty="No outgoing referrals have been created yet."
+                renderRow={(row) => (
+                  <tr key={row.ReferralID}>
+                    <td style={tableCellStrong}>{row.PatientLastName}, {row.PatientFirstName}</td>
+                    <td style={tableCell}>Dr. {row.SpecialistLastName}, {row.SpecialistFirstName}</td>
+                    <td style={tableCell}>{row.SpecialistSpecialty || 'Specialist'}</td>
+                    <td style={tableCell}>{fmtDate(row.ApprovalDate)}</td>
+                    <td style={tableCell}>{fmtDate(row.ExpirationDate)}</td>
+                    <td style={tableCell}><ReferralStatusBadge referral={row} /></td>
+                  </tr>
+                )}
+              />
+            </SurfaceCard>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -557,6 +695,17 @@ function RelationshipBadge({ relationship }) {
   const normalized = String(relationship || '').toLowerCase();
   const style = normalized === 'pcp' ? badgeGreen : normalized === 'specialist' ? badgeBlue : badgeNeutral;
   return <span style={{ ...badgeBase, ...style }}>{relationship || 'Unassigned'}</span>;
+}
+
+function isActiveReferral(referral) {
+  if (!referral || referral.Status !== 'Approved') return false;
+  if (!referral.ExpirationDate) return true;
+  return normalizeDateKey(referral.ExpirationDate) >= normalizeDateKey(new Date().toISOString());
+}
+
+function ReferralStatusBadge({ referral }) {
+  const active = isActiveReferral(referral);
+  return <span style={{ ...badgeBase, ...(active ? badgeGreen : badgeNeutral) }}>{active ? 'Active' : referral.Status || 'Expired'}</span>;
 }
 
 function IdBadge({ children }) {
@@ -912,6 +1061,31 @@ const helperText = {
   color: '#64748b',
 };
 
+const formGrid = {
+  display: 'grid',
+  gap: '14px',
+};
+
+const formField = {
+  display: 'grid',
+  gap: '7px',
+  color: '#334155',
+  fontSize: '13px',
+  fontWeight: 700,
+};
+
+const fieldSelect = {
+  width: '100%',
+  padding: '11px 14px',
+  borderRadius: '14px',
+  border: '1px solid #dbe4ea',
+  background: '#f8fafc',
+  color: '#0f172a',
+  fontSize: '14px',
+  fontFamily: 'inherit',
+  boxSizing: 'border-box',
+};
+
 const primaryButton = {
   border: 'none',
   borderRadius: '14px',
@@ -922,6 +1096,12 @@ const primaryButton = {
   fontWeight: 700,
   cursor: 'pointer',
   fontFamily: 'inherit',
+};
+
+const fullWidthButton = {
+  ...primaryButton,
+  width: '100%',
+  marginTop: '16px',
 };
 
 const secondaryButton = {

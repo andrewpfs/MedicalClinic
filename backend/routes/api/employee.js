@@ -67,7 +67,7 @@ async function loadReceptionistWorkspace(staffId) {
 
   const [availability] = await db.query(`
     SELECT es.ShiftID, es.EmployeeID, e.FirstName, e.LastName, e.Role,
-      es.OfficeID, es.ShiftDate, es.StartTime, es.EndTime
+      NULL AS OfficeID, es.ShiftDate, es.StartTime, es.EndTime
     FROM employee_shift es
     JOIN employee e ON es.EmployeeID = e.EmployeeID
     WHERE es.EmployeeID = ?
@@ -180,7 +180,7 @@ router.get('/', async (req, res) => {
 
     const [availability] = await db.query(`
       SELECT es.ShiftID, es.EmployeeID, e.FirstName, e.LastName, e.Role,
-        es.OfficeID, es.ShiftDate, es.StartTime, es.EndTime
+        NULL AS OfficeID, es.ShiftDate, es.StartTime, es.EndTime
       FROM employee_shift es
       JOIN employee e ON es.EmployeeID = e.EmployeeID
       ORDER BY es.ShiftDate DESC, es.StartTime DESC LIMIT 25
@@ -315,7 +315,7 @@ router.get('/nurse', async (req, res) => {
     const [doctors] = await db.query('SELECT d.EmployeeID, e.FirstName, e.LastName, d.Specialty FROM doctor d JOIN employee e ON d.EmployeeID = e.EmployeeID ORDER BY e.LastName, e.FirstName');
     const [paymentMethods] = await db.query('SELECT PaymentCode, PaymentText FROM paymentmethod ORDER BY PaymentCode');
     const [availability] = await db.query(
-      'SELECT es.ShiftID, es.EmployeeID, e.FirstName, e.LastName, e.Role, es.OfficeID, es.ShiftDate, es.StartTime, es.EndTime FROM employee_shift es JOIN employee e ON es.EmployeeID = e.EmployeeID WHERE es.EmployeeID = ? ORDER BY es.ShiftDate DESC LIMIT 25',
+      'SELECT es.ShiftID, es.EmployeeID, e.FirstName, e.LastName, e.Role, NULL AS OfficeID, es.ShiftDate, es.StartTime, es.EndTime FROM employee_shift es JOIN employee e ON es.EmployeeID = e.EmployeeID WHERE es.EmployeeID = ? ORDER BY es.ShiftDate DESC LIMIT 25',
       [nurseId]
     );
 
