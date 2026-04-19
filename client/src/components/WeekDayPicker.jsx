@@ -44,7 +44,10 @@ export default function WeekDayPicker({ shifts = [], employeeId, onSave, onDelet
     const map = {};
     for (const shift of shifts) {
       if (String(shift.EmployeeID) === String(employeeId)) {
-        map[shift.ShiftDate] = shift;
+        const key = shift.ShiftDate instanceof Date
+          ? shift.ShiftDate.toISOString().split('T')[0]
+          : String(shift.ShiftDate).split('T')[0];
+        map[key] = shift;
       }
     }
     return map;
@@ -146,6 +149,9 @@ export default function WeekDayPicker({ shifts = [], employeeId, onSave, onDelet
               {shift ? (
                 <div style={shiftPreview}>
                   <div style={shiftTime}>{shift.StartTime} – {shift.EndTime}</div>
+                  {String(shift.StartTime).startsWith('08:00') && String(shift.EndTime).startsWith('17:00') && (
+                    <div style={{ fontSize: '10px', color: '#0f766e', marginTop: '2px' }}>lunch 12–1 pm</div>
+                  )}
                   <div style={shiftActionText}>{isActive ? 'Viewing shift' : 'View details'}</div>
                 </div>
               ) : (
@@ -190,6 +196,16 @@ export default function WeekDayPicker({ shifts = [], employeeId, onSave, onDelet
           ) : (
             <>
               <p style={panelTitle}>Add shift for {fmtLong(activeDate)}</p>
+              <div style={{ marginBottom: '12px' }}>
+                <button
+                  type="button"
+                  onClick={() => setForm({ startTime: '08:00', endTime: '17:00' })}
+                  style={standardBtn}
+                >
+                  ⏰ Standard Hours (8 AM – 5 PM)
+                </button>
+                <span style={{ fontSize: '12px', color: '#9ca3af', marginLeft: '10px' }}>incl. 1 hr lunch at noon</span>
+              </div>
               <div style={panelForm}>
                 <div>
                   <label style={fieldLabel}>Start time</label>
@@ -398,4 +414,16 @@ const dangerButton = {
   fontWeight: 700,
   fontSize: '13px',
   fontFamily: 'inherit',
+};
+
+const standardBtn = {
+  padding: '7px 14px',
+  borderRadius: '8px',
+  border: '1.5px solid #0f766e',
+  background: '#f0fdfa',
+  color: '#0f766e',
+  fontWeight: 600,
+  fontSize: '12px',
+  fontFamily: 'inherit',
+  cursor: 'pointer',
 };
