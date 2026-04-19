@@ -49,7 +49,7 @@ function DepartmentReport() {
         try {
             const data = await fetch("/admin/api/pullreviews", {credentials : "include"}).then(res => res.json())
             setReviews(data)
-            setReviewsRecords(data)
+            setReviewRecords(data)
         }catch(err){
             console.error(err)
         }
@@ -123,18 +123,19 @@ function DepartmentReport() {
             if (Array.isArray(response)) response.forEach(dep => {
                 if (dep.DepartmentID === row.DepartmentID) {
                     deprev[depIds.indexOf(dep.DepartmentID)] += Number(row.Rating)
-                    amount[depIds.indexOf(dep.DepartmentID)] ++
+                    depamount[depIds.indexOf(dep.DepartmentID)] ++
                 }
             })
         })
         for (let i = 0; i < depIds.length; i++) {
+            const review = depamount[i] > 0 ? String(deprev[i] / depamount[i]) : "None Found"
             departs.push({
                 DepartmentID: records[i].DepartmentID,
                 DepartmentName: records[i].DepartmentName,
                 OfficeName: records[i].OfficeName,
                 Employees: records[i].Employees,
                 Revenue: records[i].Revenue,
-                Reviews: records[i].deprev[i] / depamount[i],
+                Reviews: review,
                 Percent: records[i].Percent
             })
         }
@@ -145,13 +146,13 @@ function DepartmentReport() {
     useEffect(() => { 
         fetchTableData() 
         fetchRevenueData()
-        //fetchReviewData()
+        fetchReviewData()
         getTop()
     }, [])
 
     useEffect(() => {
         getRevenueDepartment()
-        //getReviewDepartment()
+        getReviewDepartment()
         getTop()
     },[revenueRecords])
 
