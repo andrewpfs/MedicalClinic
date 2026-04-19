@@ -1,6 +1,4 @@
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import RepAllAppt from './RepAllAppt'
-import RepAllTrans from './RepAllTrans'
 import DepartmentReport from './DepartmentReport'
 import InvoiceReport from './InvoiceReport'
 import RevenueReport from './RevenueReport'
@@ -19,26 +17,6 @@ import {
 } from './adminStyles'
 
 const REPORTS = [
-  {
-    type: 'AllAppt',
-    navTitle: 'Appointments',
-    title: 'Appointment Operations',
-    eyebrow: 'Clinic flow',
-    sub: 'Review appointment demand by department and date so admins can spot scheduling pressure and service bottlenecks.',
-    focus: 'Staffing and visit volume',
-    signal: 'Schedule load',
-    action: 'Use this before changing department coverage or appointment capacity.',
-  },
-  {
-    type: 'AllTrans',
-    navTitle: 'Transactions',
-    title: 'Payment Transactions',
-    eyebrow: 'Payment audit',
-    sub: 'Audit recorded transactions by department and appointment date to confirm revenue capture and payment follow-through.',
-    focus: 'Payment trail',
-    signal: 'Collection activity',
-    action: 'Use this to reconcile front-desk payments with completed appointments.',
-  },
   {
     type: 'Invoice',
     navTitle: 'Invoices',
@@ -97,8 +75,6 @@ const REPORT_META = REPORTS.reduce((acc, report) => {
 }, {})
 
 const REPORT_COMPONENTS = {
-  AllAppt: RepAllAppt,
-  AllTrans: RepAllTrans,
   Invoice: InvoiceReport,
   Revenue: RevenueReport,
   Reviews: ReviewsReport,
@@ -232,8 +208,8 @@ function Report() {
   useStaffAuth('Admin')
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
-  const requestedType = searchParams.get('type') || 'AllAppt'
-  const activeType = REPORT_META[requestedType] ? requestedType : 'AllAppt'
+  const requestedType = searchParams.get('type') || 'Invoice'
+  const activeType = REPORT_META[requestedType] ? requestedType : 'Invoice'
   const meta = REPORT_META[activeType]
   const ActiveReport = REPORT_COMPONENTS[activeType]
 
@@ -275,7 +251,7 @@ function Report() {
           <div style={statCard}>
             <div style={statLabel}>Report library</div>
             <div style={statValue}>{REPORTS.length} views</div>
-            <div style={statSub}>Operations, payments, billing, revenue, quality, patient activity, and departments.</div>
+            <div style={statSub}>Billing, revenue, quality, patient activity, and departments.</div>
           </div>
         </div>
 
