@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import NotificationBell from './NotificationBell';
 import './Navbar.css';
+import API from '../api';
 
 const NAV_LINKS = [
   { label: 'Overview', to: '/patient/profile' },
@@ -26,7 +27,7 @@ export default function Navbar() {
   const location = useLocation();
 
   useEffect(() => {
-    fetch('/api/session', { credentials: 'include' })
+    fetch(`${API}/api/session`, { credentials: 'include' })
       .then((res) => res.json())
       .then((data) => setSession({ isLoggedIn: data.isLoggedIn, firstName: data.firstName || '' }))
       .catch(() => {});

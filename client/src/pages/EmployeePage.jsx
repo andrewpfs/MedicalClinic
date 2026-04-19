@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import StaffNavbar from '../components/StaffNavbar';
 import WeekDayPicker from '../components/WeekDayPicker';
 
-const EMPLOYEE_API = '/api/employee';
+import API from '../api';
+const EMPLOYEE_API = `${API}/api/employee`;
 
 const EMPLOYEE_TABS = [
   { id: 'overview', label: 'Overview' },
