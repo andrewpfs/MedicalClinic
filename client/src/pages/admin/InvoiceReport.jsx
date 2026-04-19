@@ -157,7 +157,6 @@ function InvoiceReport() {
             total += Number(row.Amount) + Number(row.Late)
 
         })
-        console.log("Cleared if not empty:",depinv)
         //console.log(patIds)
         const maxpat = (Math.max(...patinv) != '-Infinity' && Math.max(...patinv) != '0') ? Math.max(...patinv) : '0'
         index = patinv.indexOf(maxpat);
