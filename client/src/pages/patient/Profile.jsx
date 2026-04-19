@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../../components/Navbar';
 import './patient-layout.css';
+import API from '../../api';
 
 const QUICK_ACTIONS = [
   { path: '/patient/booking', title: 'Find a doctor', description: 'Compare doctors and book from the weekly planner.', accent: '#dcfce7' },
@@ -18,9 +19,9 @@ export default function Profile() {
 
   useEffect(() => {
     Promise.all([
-      fetch('/patient/api/profile', { credentials: 'include' }),
-      fetch('/patient/api/visits', { credentials: 'include' }),
-      fetch('/patient/api/payments', { credentials: 'include' }),
+      fetch(`${API}/patient/api/profile`, { credentials: 'include' }),
+      fetch(`${API}/patient/api/visits`, { credentials: 'include' }),
+      fetch(`${API}/patient/api/payments`, { credentials: 'include' }),
     ])
       .then(async ([profileRes, visitsRes, billingRes]) => {
         if (profileRes.status === 401) {
@@ -54,7 +55,7 @@ export default function Profile() {
   }, [navigate]);
 
   const handleLogout = async () => {
-    await fetch('/patient/logout', { credentials: 'include' });
+    await fetch(`${API}/patient/logout`, { credentials: 'include' });
     navigate('/');
   };
 

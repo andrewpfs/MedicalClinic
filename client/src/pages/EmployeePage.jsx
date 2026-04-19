@@ -89,7 +89,7 @@ export default function EmployeePage({ mode = 'employee' }) {
 
 
   useEffect(() => {
-    fetch('/api/employee/session', { credentials: 'include' })
+    fetch(`${API}/api/employee/session`, { credentials: 'include' })
       .then(res => res.json())
       .then(session => {
         if (!session.isLoggedIn) {
