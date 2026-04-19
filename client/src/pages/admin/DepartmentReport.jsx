@@ -1,412 +1,300 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
 import DataTable from 'react-data-table-component'
-import { tableCustomStyles, filterCard, filterRow, filterGroup, filterLabel, filterInput, primaryBtn, resetBtn, sectionLabel, statCardsRow, statCard, statCardAccent, statLabel, statLabelLight, statValue, statValueLight, statSub, statSubLight, pageHeader, pageHeaderTitle, pageHeaderSub } from './adminStyles'
+import API from '../../api'
+import {
+    tableCustomStyles,
+    filterCard,
+    filterRow,
+    filterGroup,
+    filterLabel,
+    filterInput,
+    resetBtn,
+    sectionLabel,
+    statCardsRow,
+    statCard,
+    statCardAccent,
+    statLabel,
+    statLabelLight,
+    statValue,
+    statValueLight,
+    statSub,
+    statSubLight,
+} from './adminStyles'
+
+const blankFilters = {
+    PFirst: '',
+    PLast: '',
+    min: '',
+    max: '',
+    status: '',
+    insure: '',
+}
+
+const currency = (value) => `$${Number(value || 0).toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+})}`
+
+const percent = (value) => `${Number(value || 0).toFixed(1)}%`
+const rating = (value) => value == null ? 'No reviews' : `${Number(value).toFixed(2)} / 5`
 
 function DepartmentReport() {
-    const [response, setResponse] = useState([])
+    const [departments, setDepartments] = useState([])
     const [revenue, setRevenue] = useState([])
     const [reviews, setReviews] = useState([])
     const [records, setRecords] = useState([])
     const [revenueRecords, setRevenueRecords] = useState([])
     const [reviewRecords, setReviewRecords] = useState([])
-    const [departments, setDepts]   = useState([])
-    const [depIds, setDepIds] = useState([])
-    const [doctorList,setDoctorList] = useState([])
     const [loading, setLoading] = useState(false)
-    const [filterCheck,setFilterCheck] = useState(true)
-    const [best,setBest] = useState({
-        topRevenue: "",
-        topDepartmentRevenue: "",
-        RevenuePerc: "",
-        topReviews: "",
-        topDepartmentReviews: "",
-
+    const [best, setBest] = useState({
+        totalRevenue: 0,
+        topRevenue: 0,
+        topDepartmentRevenue: 'None Found',
+        topReviews: null,
+        topDepartmentReviews: 'None Found',
     })
-    const [rep,setRep] = useState({
-        min: "",
-        max: "",
-        status: "",
-        insure: "",
-        showReviewRevenue: "Both"
-    })
+    const [rep, setRep] = useState(blankFilters)
 
+    useEffect(() => {
+        let cancelled = false
 
-    async function fetchRevenueData() {
-        setLoading(true)
-        try {
-            const data = await fetch("/admin/api/pullrevenue", {credentials : "include"}).then(res => res.json())
-            setRevenue(data)
-            setRevenueRecords(data)
-        }catch(err){
-            console.error(err)
-        }
-        setLoading(false)
-    }
+        async function loadReportData() {
+            setLoading(true)
+            try {
+                const [departmentRes, revenueRes, reviewRes] = await Promise.all([
+                    fetch(`${API}/admin/api/getdepartmentinfo`, { credentials: 'include' }),
+                    fetch(`${API}/admin/api/pullrevenue`, { credentials: 'include' }),
+                    fetch(`${API}/admin/api/pullreviews`, { credentials: 'include' }),
+                ])
 
-    async function fetchReviewData() {
-        setLoading(true)
-        try {
-            const data = await fetch("/admin/api/pullreviews", {credentials : "include"}).then(res => res.json())
-            setReviews(data)
-            setReviewRecords(data)
-        }catch(err){
-            console.error(err)
-        }
-        setLoading(false)
-    } 
-
-    async function fetchTableData() {
-        //console.log("fethcing patients")
-        try {
-            const response = await fetch('/admin/api/getdepartmentinfo',{credentials:"include"})
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            
-            const rows = await response.json();
-            let deps = [];
-            let ids = [];
-            
-            if (Array.isArray(rows)) {
-                rows.forEach((row) => {
-                    deps.push({
-                        DepartmentID: row.DepartmentID,
-                        DepartmentName: row.DepartmentName,
-                        OfficeName: row.OfficeName,
-                        Employees: row.Employees,
-                        Revenue: "",
-                        Reviews: "",
-                        Percent: ""
-                    });
-                    ids.push(row.DepartmentID)
-                });
-            }
-            setResponse(rows)
-            setRecords(deps)
-            setDepIds(ids)
-        } catch(err) {
-            console.error('Error fetching patients:', err);
-        }
-    }
-
-    function getRevenueDepartment() {
-        let departs = []
-        let total = 0
-        const deprev = new Array(depIds.length).fill(0)
-        if (Array.isArray(revenueRecords)) revenueRecords.forEach(row => {
-            total += Number(row.Amount)
-            if (Array.isArray(response)) response.forEach(dep => {
-                if (dep.DepartmentID === row.DepartmentID) deprev[depIds.indexOf(dep.DepartmentID)] += Number(row.Amount)
-            })
-        })
-        for (let i = 0; i < depIds.length; i++) {
-            departs.push({
-                DepartmentID: records[i].DepartmentID,
-                DepartmentName: records[i].DepartmentName,
-                OfficeName: records[i].OfficeName,
-                Employees: records[i].Employees,
-                Revenue: deprev[i],
-                Reviews: records[i].Reviews,
-                Percent: deprev[i] / total * 100
-            })
-        }
-
-        setRecords(departs)
-    }
-
-    function getReviewDepartment() {
-        let departs = []
-        const deprev = new Array(depIds.length).fill(0)
-        const depamount = new Array(depIds.length).fill(0)
-        if (Array.isArray(revenueRecords)) revenueRecords.forEach(row => {
-            if (Array.isArray(response)) response.forEach(dep => {
-                if (dep.DepartmentID === row.DepartmentID) {
-                    deprev[depIds.indexOf(dep.DepartmentID)] += Number(row.Rating)
-                    depamount[depIds.indexOf(dep.DepartmentID)] ++
+                if (!departmentRes.ok || !revenueRes.ok || !reviewRes.ok) {
+                    throw new Error('Failed to load department report data')
                 }
-            })
-        })
-        for (let i = 0; i < depIds.length; i++) {
-            const review = depamount[i] > 0 ? String(deprev[i] / depamount[i]) : "None Found"
-            departs.push({
-                DepartmentID: records[i].DepartmentID,
-                DepartmentName: records[i].DepartmentName,
-                OfficeName: records[i].OfficeName,
-                Employees: records[i].Employees,
-                Revenue: records[i].Revenue,
-                Reviews: review,
-                Percent: records[i].Percent
-            })
+
+                const [departmentRows, revenueRows, reviewRows] = await Promise.all([
+                    departmentRes.json(),
+                    revenueRes.json(),
+                    reviewRes.json(),
+                ])
+
+                if (cancelled) return
+
+                const safeDepartments = Array.isArray(departmentRows) ? departmentRows : []
+                const safeRevenue = Array.isArray(revenueRows) ? revenueRows : []
+                const safeReviews = Array.isArray(reviewRows) ? reviewRows : []
+
+                setDepartments(safeDepartments)
+                setRevenue(safeRevenue)
+                setReviews(safeReviews)
+                setRevenueRecords(safeRevenue)
+                setReviewRecords(safeReviews)
+            } catch (err) {
+                console.error('Error loading department report:', err)
+                if (!cancelled) {
+                    setDepartments([])
+                    setRevenue([])
+                    setReviews([])
+                    setRevenueRecords([])
+                    setReviewRecords([])
+                }
+            } finally {
+                if (!cancelled) setLoading(false)
+            }
         }
 
-        setRecords(departs)
-    }
+        loadReportData()
 
-    useEffect(() => { 
-        fetchTableData() 
-        fetchRevenueData()
-        fetchReviewData()
-        getTop()
+        return () => {
+            cancelled = true
+        }
     }, [])
 
     useEffect(() => {
-        getRevenueDepartment()
-        getReviewDepartment()
-        getTop()
-    },[revenueRecords])
+        const summary = new Map(
+            departments.map(dep => [
+                String(dep.DepartmentID),
+                {
+                    DepartmentID: dep.DepartmentID,
+                    DepartmentName: dep.DepartmentName,
+                    OfficeName: dep.OfficeName,
+                    Employees: dep.Employees,
+                    Revenue: 0,
+                    Percent: 0,
+                    Reviews: null,
+                    reviewTotal: 0,
+                    reviewCount: 0,
+                },
+            ])
+        )
 
-    useEffect(() => {
-        getTop()
-    },[rep])
+        let totalRevenue = 0
+
+        revenueRecords.forEach(row => {
+            const amount = Number(row.Amount) || 0
+            const department = summary.get(String(row.DepartmentID))
+            totalRevenue += amount
+            if (department) department.Revenue += amount
+        })
+
+        reviewRecords.forEach(row => {
+            const ratingValue = Number(row.Rating)
+            const department = summary.get(String(row.DepartmentID))
+            if (department && !Number.isNaN(ratingValue)) {
+                department.reviewTotal += ratingValue
+                department.reviewCount += 1
+            }
+        })
+
+        const nextRecords = [...summary.values()].map(dep => ({
+            ...dep,
+            Percent: totalRevenue > 0 ? (dep.Revenue / totalRevenue) * 100 : 0,
+            Reviews: dep.reviewCount > 0 ? dep.reviewTotal / dep.reviewCount : null,
+        }))
+
+        const topRevenue = [...nextRecords].sort((a, b) => b.Revenue - a.Revenue)[0]
+        const topReviews = [...nextRecords]
+            .filter(dep => dep.Reviews != null)
+            .sort((a, b) => b.Reviews - a.Reviews)[0]
+
+        setRecords(nextRecords)
+        setBest({
+            totalRevenue,
+            topRevenue: topRevenue?.Revenue || 0,
+            topDepartmentRevenue: topRevenue && topRevenue.Revenue > 0 ? topRevenue.DepartmentName : 'None Found',
+            topReviews: topReviews?.Reviews ?? null,
+            topDepartmentReviews: topReviews ? topReviews.DepartmentName : 'None Found',
+        })
+    }, [departments, revenueRecords, reviewRecords])
 
     const columnsDep = [
-        {
-            name: "Department",
-            selector: (row) => row.DepartmentName,
-            sortable: true
-        },
-        {
-            name: "Office",
-            selector: (row) => row.OfficeName,
-            sortable: true
-        },
-        {
-            name: "# of Employees",
-            selector: (row) => row.Employees,
-            sortable: true
-        },
-        {
-            name: "Revenue",
-            selector: (row) => row.Revenue,
-            sortable: true
-        },
-        {
-            name: "Percent of Revenue",
-            selector: (row) => row.Percent,
-            sortable: true
-        },
-        {
-            name: "Reviews",
-            selector: (row) => row.Reviews,
-            sortable: true
-        }
-    ];
+        { name: 'Department', selector: row => row.DepartmentName, sortable: true, grow: 2 },
+        { name: 'Office', selector: row => row.OfficeName, sortable: true, grow: 2 },
+        { name: '# of Employees', selector: row => row.Employees, sortable: true },
+        { name: 'Revenue', selector: row => currency(row.Revenue), sortable: true },
+        { name: 'Percent of Revenue', selector: row => percent(row.Percent), sortable: true },
+        { name: 'Avg Reviews', selector: row => rating(row.Reviews), sortable: true },
+    ]
 
     const columnsReview = [
-        {
-            name: "ID",
-            selector: (row) => row.Id,
-            sortable: true
-        },
-        {
-            name: "Patient",
-            selector: (row) => row.PatFirst + " " + row.PatLast,
-            sortable: true
-        },
-        {
-            name: "Doctor",
-            selector: (row) => row.DocFirst + " " + row.DocLast,
-            sortable: true
-        },
-        {
-            name: "Department",
-            selector: (row) => row.DepartmentName,
-            sortable: true
-        },
-        {
-            name: "Rating",
-            selector: (row) => row.Rating,
-            sortable: true
-        },
-        {
-            name: "Date Created",
-            selector: (row) => String(row.Date).slice(0, 10),
-            sortable: true
-        },
-    ];
+        { name: 'ID', selector: row => row.Id, sortable: true },
+        { name: 'Patient', selector: row => `${row.PatFirst} ${row.PatLast}`, sortable: true, grow: 2 },
+        { name: 'Doctor', selector: row => `${row.DocFirst} ${row.DocLast}`, sortable: true, grow: 2 },
+        { name: 'Department', selector: row => row.DepartmentName, sortable: true, grow: 2 },
+        { name: 'Rating', selector: row => row.Rating, sortable: true },
+        { name: 'Date Created', selector: row => row.Date != null ? String(row.Date).slice(0, 10) : 'Not Posted', sortable: true },
+    ]
 
     const columnsRevenue = [
-        {
-            name: "ID",
-            selector: (row) => row.Id,
-            sortable: true
-        },
-        {
-            name: "Patient",
-            selector: (row) => row.PatFirst + " " + row.PatLast,
-            sortable: true
-        },
-        {
-            name: "Doctor",
-            selector: (row) => row.DocFirst + " " + row.DocLast,
-            sortable: true
-        },
-        {
-            name: "Department",
-            selector: (row) => row.DepartmentName,
-            sortable: true
-        },
-        {
-            name: "Amount",
-            selector: (row) => row.Amount,
-            sortable: true
-        },
-        {
-            name: "Transaction Date",
-            selector: (row) => row.Date != null ? String(row.Date).slice(0, 10) : "Not Posted",
-            sortable: true
-        },
-        {
-            name: "Insurance",
-            selector: (row) => row.Insurance == 1 ? 'Yes' : 'No',
-            sortable: true
-        },
-        {
-            name: "Status",
-            selector: (row) => row.Status,
-            sortable: true
-        }
-    ];
+        { name: 'ID', selector: row => row.Id, sortable: true },
+        { name: 'Patient', selector: row => `${row.PatFirst} ${row.PatLast}`, sortable: true, grow: 2 },
+        { name: 'Doctor', selector: row => `${row.DocFirst} ${row.DocLast}`, sortable: true, grow: 2 },
+        { name: 'Department', selector: row => row.DepartmentName, sortable: true, grow: 2 },
+        { name: 'Amount', selector: row => currency(row.Amount), sortable: true },
+        { name: 'Transaction Date', selector: row => row.Date != null ? String(row.Date).slice(0, 10) : 'Not Posted', sortable: true },
+        { name: 'Insurance', selector: row => row.Insurance == 1 ? 'Yes' : 'No', sortable: true },
+        { name: 'Status', selector: row => row.Status, sortable: true },
+    ]
 
-    const getTop = () => {
-        //setBest(prev => ({ ...prev, [totalRevenue]: 0 }))
-        /*const deprevenue = new Array(depNames.length).fill(0)
-        const depreviews = new Array(depNames.length).fill(0)
-        var index = 0
-        var total = 0
-        records.forEach((row) => {
-            index = docIds.indexOf(row.DocID)
-            docrev[index] += Number(row.Amount)
-            index = depNames.indexOf(row.DepartmentName)
-            deprev[index] += Number(row.Amount)
-            total += Number(row.Amount)
-        })
-        const maxdoc = (Math.max(...docrev) != '-Infinity' && Math.max(...docrev) != '0') ? Math.max(...docrev) : '0'
-        index = docrev.indexOf(maxdoc);
-        const doc = index > -1 ? doctors[index].FirstName+" "+doctors[index].LastName : "None Found"
-        const maxdep = (Math.max(...deprev) != '-Infinity' && Math.max(...deprev) != '0') ? Math.max(...deprev) : '0'
-        index = deprev.indexOf(maxdep);
-        const dep = index > -1 ? depNames[index] : "None Found"
-        setBest(prev => ({ ...prev, totalRevenue: total }))
-        setBest(prev => ({ ...prev, topDoctor: doc }))
-        setBest(prev => ({ ...prev, topDocRevenue: maxdoc }))
-        setBest(prev => ({ ...prev, topDepartment: dep }))
-        setBest(prev => ({ ...prev, topDepRevenue: maxdep }))*/
+    const filterRevenueRows = (filters) => {
+        let result = revenue
+        if (filters.min) result = result.filter(row => String(row.Date).slice(0, 10) >= filters.min)
+        if (filters.max) result = result.filter(row => String(row.Date).slice(0, 10) <= filters.max)
+        if (filters.PFirst) result = result.filter(row => row.PatFirst.toLowerCase().startsWith(filters.PFirst.toLowerCase()))
+        if (filters.PLast) result = result.filter(row => row.PatLast.toLowerCase().startsWith(filters.PLast.toLowerCase()))
+        if (filters.status) result = result.filter(row => row.Status === filters.status)
+        if (filters.insure) result = result.filter(row => String(row.Insurance) === String(filters.insure))
+        return result
     }
 
-    async function getDoctors() {
-        const docs = []
-        if (Array.isArray(doctors))doctors.forEach((doc) => {
-            if (doc.DepartmentName === rep.DepartmentName) docs.push(doc)
-        })
+    const filterReviewRows = (filters) => {
+        let result = reviews
+        if (filters.min) result = result.filter(row => String(row.Date).slice(0, 10) >= filters.min)
+        if (filters.max) result = result.filter(row => String(row.Date).slice(0, 10) <= filters.max)
+        if (filters.PFirst) result = result.filter(row => row.PatFirst.toLowerCase().startsWith(filters.PFirst.toLowerCase()))
+        if (filters.PLast) result = result.filter(row => row.PatLast.toLowerCase().startsWith(filters.PLast.toLowerCase()))
+        return result
+    }
 
-        setDoctorList(docs)
+    const applyFilters = (filters) => {
+        setRevenueRecords(filterRevenueRows(filters))
+        setReviewRecords(filterReviewRows(filters))
     }
 
     const handleChange = (e) => {
         const newRep = { ...rep, [e.target.name]: e.target.value }
         setRep(newRep)
         applyFilters(newRep)
-    };
-
-    function applyFilters(f) {
-        let result = response
-        if (f.DepartmentName) {
-            result = result.filter(row => row.DepartmentName === f.DepartmentName)
-            const docs = doctors.filter(doc => doc.DepartmentName === f.DepartmentName)
-            setDoctorList(docs)
-        } else {
-            setDoctorList(doctors)
-        }
-        if (f.DoctorLast)     result = result.filter(row => row.DocLast === f.DoctorLast)
-        if (f.min)            result = result.filter(row => String(row.Date).slice(0, 10) >= f.min)
-        if (f.max)            result = result.filter(row => String(row.Date).slice(0, 10) <= f.max)
-        if (f.PFirst)         result = result.filter(row => row.PatFirst.toLowerCase().startsWith(f.PFirst.toLowerCase()))
-        if (f.PLast)          result = result.filter(row => row.PatLast.toLowerCase().startsWith(f.PLast.toLowerCase()))
-        if (f.status)         result = result.filter(row => row.Status === f.status)
-        if (f.insure)         result = result.filter(row => String(row.Insurance) === String(f.insure))
-        setRecords(result)
     }
 
-    const handleClick = async e => {
-        e.preventDefault()
-        setLoading(true)
-        try {
-            const response = await fetch("/admin/api/pullrevenue", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(rep)
-            })
-            const data = await response.json()
-            setStuff(data)
-        } catch (err) {
-            console.error(err)
-        } finally {
-            setLoading(false)
-        }
-    };
+    const reset = () => {
+        setRep(blankFilters)
+        setRevenueRecords(revenue)
+        setReviewRecords(reviews)
+    }
 
     return (
         <>
             <div style={statCardsRow}>
                 <div style={statCardAccent}>
-                    <p style={statLabelLight}>{best.topDepartmentRevenue} made</p>
-                    <p style={statValueLight}>${Number(best.totalRevenue).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-                    <p style={statSubLight}>Of All Revenue</p>
+                    <p style={statLabelLight}>Total Revenue</p>
+                    <p style={statValueLight}>{currency(best.totalRevenue)}</p>
+                    <p style={statSubLight}>Across filtered transactions</p>
                 </div>
                 <div style={statCard}>
-                    <p style={statLabel}>Top Revenue</p>
+                    <p style={statLabel}>Top Revenue Department</p>
                     <p style={statValue}>{best.topDepartmentRevenue}</p>
-                    <p style={statSub}>${Number(best.topRevenue).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} in revenue</p>
+                    <p style={statSub}>{currency(best.topRevenue)} in revenue</p>
                 </div>
                 <div style={statCard}>
-                    <p style={statLabel}>Top Reviews</p>
+                    <p style={statLabel}>Top Reviewed Department</p>
                     <p style={statValue}>{best.topDepartmentReviews}</p>
-                    <p style={statSub}>{isNaN(best.topReviews) ? '—' : Number(best.topReviews).toFixed(2)} / 5 avg rating</p>
+                    <p style={statSub}>{rating(best.topReviews)} average rating</p>
                 </div>
             </div>
+
             <div style={filterCard}>
                 <p style={sectionLabel}>Filters</p>
                 <div style={filterRow}>
                     <div style={filterGroup}>
-                    <label style={filterLabel}>Patient's First</label>
-                    <input type="text" name="PFirst" value={rep.PFirst} onChange={handleChange} style={filterInput} />
+                        <label style={filterLabel}>Patient First</label>
+                        <input type="text" name="PFirst" value={rep.PFirst} onChange={handleChange} style={filterInput} />
                     </div>
                     <div style={filterGroup}>
-                    <label style={filterLabel}>Patient's Last</label>
-                    <input type="text" name="PLast" value={rep.PLast} onChange={handleChange} style={filterInput} />
+                        <label style={filterLabel}>Patient Last</label>
+                        <input type="text" name="PLast" value={rep.PLast} onChange={handleChange} style={filterInput} />
                     </div>
                     <div style={filterGroup}>
-                    <label style={filterLabel}>Insurance</label>
-                    <select name="insure" value={rep.insure} onChange={handleChange} style={filterInput}>
-                        <option value="">Select</option>
-                        <option value="1">Yes</option>
-                        <option value="0">No</option>
-                    </select>
+                        <label style={filterLabel}>Insurance</label>
+                        <select name="insure" value={rep.insure} onChange={handleChange} style={filterInput}>
+                            <option value="">All</option>
+                            <option value="1">Yes</option>
+                            <option value="0">No</option>
+                        </select>
                     </div>
                     <div style={filterGroup}>
-                    <label style={filterLabel}>Status</label>
-                    <select name="status" value={rep.status} onChange={handleChange} style={filterInput}>
-                        <option value="">Select</option>
-                        <option value="Posted">Posted</option>
-                        <option value="Pending">Pending</option>
-                        <option value="Void">Void</option>
-                    </select>
+                        <label style={filterLabel}>Status</label>
+                        <select name="status" value={rep.status} onChange={handleChange} style={filterInput}>
+                            <option value="">All</option>
+                            <option value="Posted">Posted</option>
+                            <option value="Pending">Pending</option>
+                            <option value="Void">Void</option>
+                        </select>
+                    </div>
+                    <div style={filterGroup}>
+                        <label style={filterLabel}>From</label>
+                        <input type="date" name="min" value={rep.min} onChange={handleChange} style={filterInput} />
+                    </div>
+                    <div style={filterGroup}>
+                        <label style={filterLabel}>To</label>
+                        <input type="date" name="max" value={rep.max} onChange={handleChange} style={filterInput} />
+                    </div>
+                    <div style={filterGroup}>
+                        <label style={filterLabel}>&nbsp;</label>
+                        <button type="button" onClick={reset} style={resetBtn}>Reset</button>
                     </div>
                 </div>
-                <br />
-                <div style={filterRow}>
-                    <div style={filterGroup}>
-                    <label style={filterLabel}>From</label>
-                    <input type="date" name="min" value={rep.min} onChange={handleChange} style={filterInput} />
-                    </div>
-                    <div style={filterGroup}>
-                    <label style={filterLabel}>To</label>
-                    <input type="date" name="max" value={rep.max} onChange={handleChange} style={filterInput} />
-                    </div>
-                </div>
-                </div>
+            </div>
+
             <div className="report-table">
                 <DataTable
                     title="Department Report"
@@ -415,7 +303,8 @@ function DepartmentReport() {
                     progressPending={loading}
                     customStyles={tableCustomStyles}
                     pagination
-                    fixedHeader />
+                    fixedHeader
+                />
             </div>
             <div className="report-table">
                 <DataTable
@@ -425,7 +314,8 @@ function DepartmentReport() {
                     progressPending={loading}
                     customStyles={tableCustomStyles}
                     pagination
-                    fixedHeader />
+                    fixedHeader
+                />
             </div>
             <div className="report-table">
                 <DataTable
@@ -435,10 +325,11 @@ function DepartmentReport() {
                     progressPending={loading}
                     customStyles={tableCustomStyles}
                     pagination
-                    fixedHeader />
+                    fixedHeader
+                />
             </div>
         </>
-    );
-};
+    )
+}
 
-export default DepartmentReport;
+export default DepartmentReport

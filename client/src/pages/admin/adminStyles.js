@@ -108,7 +108,7 @@ export const shellPage = {
 }
 
 export const shellInner = {
-  maxWidth: '1280px', margin: '0 auto', padding: '30px 26px 68px',
+  maxWidth: '1480px', margin: '0 auto', padding: '30px 26px 68px',
 }
 
 export const adminHeroCard = {

@@ -126,10 +126,7 @@ const heroButton = {
 }
 
 const reportWorkspace = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 420px), 1fr))',
-  gap: '22px',
-  alignItems: 'start',
+  display: 'block',
 }
 
 const reportMenu = {
@@ -138,8 +135,7 @@ const reportMenu = {
   borderRadius: '26px',
   padding: '18px',
   boxShadow: '0 18px 44px rgba(15,23,42,0.09)',
-  position: 'sticky',
-  top: '18px',
+  marginBottom: '22px',
 }
 
 const reportMenuTitle = {
@@ -157,7 +153,6 @@ const reportMenuHelp = {
 }
 
 const reportNavButton = {
-  width: '100%',
   textAlign: 'left',
   border: '1px solid transparent',
   borderRadius: '18px',
@@ -166,7 +161,12 @@ const reportNavButton = {
   cursor: 'pointer',
   fontFamily: 'inherit',
   display: 'block',
-  marginBottom: '8px',
+}
+
+const reportMenuGrid = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+  gap: '10px',
 }
 
 const reportNavButtonActive = {
@@ -284,21 +284,23 @@ function Report() {
             <p style={{ ...sectionLabel, marginBottom: '8px' }}>Report menu</p>
             <h2 style={reportMenuTitle}>Choose what to review</h2>
             <p style={reportMenuHelp}>Pick a report from this list. The active report opens on the right with filters and results.</p>
-            {REPORTS.map(report => (
-              <button
-                key={report.type}
-                type="button"
-                onClick={() => chooseReport(report.type)}
-                style={{
-                  ...reportNavButton,
-                  ...(activeType === report.type ? reportNavButtonActive : {}),
-                }}
-              >
-                <p style={reportNavEyebrow}>{report.eyebrow}</p>
-                <p style={reportNavTitle}>{report.navTitle}</p>
-                <p style={reportNavText}>{report.action}</p>
-              </button>
-            ))}
+            <div style={reportMenuGrid}>
+              {REPORTS.map(report => (
+                <button
+                  key={report.type}
+                  type="button"
+                  onClick={() => chooseReport(report.type)}
+                  style={{
+                    ...reportNavButton,
+                    ...(activeType === report.type ? reportNavButtonActive : {}),
+                  }}
+                >
+                  <p style={reportNavEyebrow}>{report.eyebrow}</p>
+                  <p style={reportNavTitle}>{report.navTitle}</p>
+                  <p style={reportNavText}>{report.action}</p>
+                </button>
+              ))}
+            </div>
           </aside>
 
           <div style={activePanel}>
