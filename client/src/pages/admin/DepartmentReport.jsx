@@ -116,7 +116,6 @@ function DepartmentReport() {
                 {
                     DepartmentID: dep.DepartmentID,
                     DepartmentName: dep.DepartmentName,
-                    OfficeName: dep.OfficeName,
                     Employees: dep.Employees,
                     Revenue: 0,
                     Percent: 0,
@@ -168,7 +167,6 @@ function DepartmentReport() {
 
     const columnsDep = [
         { name: 'Department', selector: row => row.DepartmentName, sortable: true, grow: 2 },
-        { name: 'Office', selector: row => row.OfficeName, sortable: true, grow: 2 },
         { name: '# of Employees', selector: row => row.Employees, sortable: true },
         { name: 'Revenue', selector: row => currency(row.Revenue), sortable: true },
         { name: 'Percent of Revenue', selector: row => percent(row.Percent), sortable: true },

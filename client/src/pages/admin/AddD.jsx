@@ -8,17 +8,15 @@ import API from '../../api'
 const AddD = ({ onSuccess }) => {
   useStaffAuth('Admin')
   const navigate = useNavigate()
-  const [offices, setOffices] = useState([])
   const [departments,setDepts] = useState([])
   const [check,setCheck] = useState(true)
   const [emp, setEmp] = useState({
-    DepartmentName: '', OfficeID: ''
+    DepartmentName: ''
   })
   const [open, setOpen] = useState(false)
   const [error, setError] = useState('')
 
   useEffect(() => {
-    fetch(`${API}/admin/api/getoffices`).then(r => r.json()).then(setOffices).catch(console.error)
     fetch(`${API}/admin/api/getdepartments`).then(r => r.json()).then(setDepts).catch(console.error)
   }, [])
 
@@ -37,7 +35,7 @@ const AddD = ({ onSuccess }) => {
     e.preventDefault()
     setError('')
     departments.forEach((row) => {
-      if (row.DepartmentName === emp.DepartmentName && row.OfficeID === emp.OfficeID) setCheckEmail(false)}) 
+      if (row.DepartmentName === emp.DepartmentName) setCheckEmail(false)}) 
     if (check) {
       try {
         // Step 1: create department record
@@ -76,7 +74,7 @@ const AddD = ({ onSuccess }) => {
 
           {error && (
             <div style={{ marginBottom: '12px', padding: '10px 14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', fontSize: '13px', color: '#991b1b' }}>
-              {error}{!check && ", That Department already exists in that Office"}
+              {error}{!check && ", That Department already exists"}
             </div>
           )}
 
@@ -86,15 +84,6 @@ const AddD = ({ onSuccess }) => {
               <div style={filterGroup}>
                 <label style={filterLabel}>Department Name *</label>
                 <input style={filterInput} type="text" name="DepartmentName" onChange={handleChange} maxLength="30" required />
-              </div>
-              <div style={filterGroup}>
-                <label style={filterLabel}>Office *</label>
-                <select style={select} name="OfficeID" onChange={handleChange}>
-                  <option value="">Select office</option>
-                  {offices.map(d => (
-                    <option key={d.OfficeID} value={d.OfficeID}>{d.OfficeName}</option>
-                  ))}
-                </select>
               </div>
             </div>
             <div style={{ display: 'flex', gap: '10px', marginTop: '8px' }}>

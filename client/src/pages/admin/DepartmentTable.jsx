@@ -108,7 +108,7 @@ function DepartmentTable({ refreshKey = 0 }) {
 
   async function fetchTableData() {
     setLoading(true)
-    const data = await fetch(`${API}/admin/api/getdepartmentinfo`, { credentials: 'include' }).then(res => res.json())
+    const data = await fetch(`${API}/admin/api/getdepartments`, { credentials: 'include' }).then(res => res.json())
     setResponse(data)
     setRecords(data)
     setLoading(false)
@@ -119,9 +119,6 @@ function DepartmentTable({ refreshKey = 0 }) {
   const columns = [
     { name: "Department ID", selector: row => row.DepartmentID, sortable: true },
     { name: "Department",    selector: row => row.DepartmentName, sortable: true },
-    { name: "Office",        selector: row => row.OfficeName, sortable: true },
-    { name: "Location",      selector: row => row.Street + ", " + row.City + ", " + row.State + " " + row.ZipCode, sortable: true },
-    { name: "Phone Number",  selector: row => row.PhoneNumber },
     { name: "# of Employees", selector: row => row.Employees || "0" },
     {
       name: 'View Employees', button: true,
@@ -140,10 +137,6 @@ function DepartmentTable({ refreshKey = 0 }) {
     setRecords(response.filter(row => row.DepartmentName.toLowerCase().includes(event.target.value.toLowerCase())))
   }
 
-  function handleFilterO(event) {
-    setRecords(response.filter(row => row.OfficeName.toLowerCase().includes(event.target.value.toLowerCase())))
-  }
-
   return (
     <div>
       <div style={filterCard}>
@@ -152,10 +145,6 @@ function DepartmentTable({ refreshKey = 0 }) {
           <div style={filterGroup}>
             <label style={filterLabel}>Department</label>
             <input type="text" onChange={handleFilterD} style={filterInput} placeholder="Search..." />
-          </div>
-          <div style={filterGroup}>
-            <label style={filterLabel}>Office</label>
-            <input type="text" onChange={handleFilterO} style={filterInput} placeholder="Search..." />
           </div>
         </div>
       </div>
