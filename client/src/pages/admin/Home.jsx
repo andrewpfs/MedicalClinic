@@ -12,39 +12,83 @@ import {
 
 const quickCard = {
   background: 'rgba(255,255,255,0.88)', border: '1px solid rgba(255,255,255,0.9)',
-  borderRadius: '24px', padding: '20px', cursor: 'pointer',
+  borderRadius: '24px', padding: '26px', cursor: 'pointer',
   boxShadow: '0 18px 44px rgba(15,23,42,0.09)',
 }
 const cardIcon = {
-  width: '36px', height: '36px', borderRadius: '8px', background: '#EAF3DE',
+  width: '48px', height: '48px', borderRadius: '14px', background: '#EAF3DE',
   display: 'flex', alignItems: 'center', justifyContent: 'center',
-  marginBottom: '12px', fontSize: '16px',
+  marginBottom: '16px', fontSize: '13px', fontWeight: 500, color: '#1e2b1b',
+  letterSpacing: '0.06em',
 }
-const cardTitle = { fontSize: '14px', fontWeight: 500, color: '#1e2b1b', marginBottom: '3px', margin: 0 }
-const cardSub   = { fontSize: '12px', color: '#9ca3af', margin: '3px 0 0' }
+const cardTitle = { fontSize: '18px', fontWeight: 500, color: '#1e2b1b', marginBottom: '5px', margin: 0 }
+const cardSub = { fontSize: '15px', color: '#64748b', margin: '5px 0 0', lineHeight: 1.45 }
 const reportsCard = {
   background: 'rgba(255,255,255,0.88)', border: '1px solid rgba(255,255,255,0.9)',
   borderRadius: '24px', overflow: 'hidden',
   boxShadow: '0 18px 44px rgba(15,23,42,0.09)',
 }
 const reportRow = {
-  display: 'flex', alignItems: 'center', gap: '14px', padding: '16px 20px',
+  display: 'flex', alignItems: 'center', gap: '18px', padding: '22px 24px',
   borderBottom: '1px solid #f3f4f6', cursor: 'pointer',
 }
 const reportRowLast = {
-  display: 'flex', alignItems: 'center', gap: '14px', padding: '16px 20px', cursor: 'pointer',
+  display: 'flex', alignItems: 'center', gap: '18px', padding: '22px 24px', cursor: 'pointer',
 }
 const reportIcon = {
-  width: '36px', height: '36px', borderRadius: '8px', background: '#EAF3DE',
-  display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '16px',
+  width: '52px', height: '52px', borderRadius: '16px', background: '#EAF3DE',
+  display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+  fontSize: '13px', fontWeight: 500, color: '#1e2b1b', letterSpacing: '0.06em',
 }
 
+const reportsHeader = {
+  padding: '24px 24px 12px',
+  borderBottom: '1px solid #f3f4f6',
+}
+
+const reportsTitle = {
+  margin: 0,
+  color: '#1e2b1b',
+  fontSize: '24px',
+  fontWeight: 500,
+}
+
+const reportsSub = {
+  margin: '8px 0 0',
+  color: '#64748b',
+  fontSize: '16px',
+  lineHeight: 1.55,
+}
+
+const quickLinks = [
+  {
+    icon: 'EMP',
+    title: 'Employees',
+    sub: 'View, add, and edit staff records',
+    path: '/admin/employees',
+  },
+  {
+    icon: 'DEPT',
+    title: 'Departments',
+    sub: 'Manage clinic departments and staff',
+    path: '/admin/departments',
+  },
+  {
+    icon: 'APPT',
+    title: 'All Appointments',
+    sub: 'Browse and filter appointment records',
+    path: '/admin/report?type=AllAppt',
+  },
+]
+
 const reports = [
-  { icon: '💰', title: 'Invoice Report',         sub: 'Invoices that have been left unpaid and the amount that each is due',          type: 'Invoice'       },
-  { icon: '📋', title: 'Revenue Report',         sub: 'Transactions that have been completed and how much revenue has been achieved',  type: 'Revenue'       },
-  { icon: '⭐', title: 'Reviews Report',         sub: 'Patient satisfaction ratings filtered by department, doctor, and date',        type: 'Reviews'       },
-  { icon: '🩺', title: 'Patient–Doctor Report',  sub: 'Which patients are seeing which doctors, visit frequency, and last visit date', type: 'PatientDoctor' },
-  { icon: '⭐', title: 'Department Report',  sub: 'See Summarized Data of Departments and Compare to other Departments', type: 'Department'  },
+  { icon: 'AR', title: 'Invoice Risk', sub: 'Find unpaid balances and prioritize patient billing follow-up.', type: 'Invoice' },
+  { icon: 'REV', title: 'Revenue Performance', sub: 'Review completed revenue by department, doctor, patient, and date.', type: 'Revenue' },
+  { icon: 'QA', title: 'Patient Experience', sub: 'Track satisfaction patterns across departments and providers.', type: 'Reviews' },
+  { icon: 'OPS', title: 'Appointment Operations', sub: 'Spot scheduling pressure, department demand, and visit volume.', type: 'AllAppt' },
+  { icon: 'PAY', title: 'Payment Transactions', sub: 'Audit recorded payments against appointments and departments.', type: 'AllTrans' },
+  { icon: 'PDR', title: 'Patient-Doctor Activity', sub: 'See patient-provider relationships, visit frequency, and last visit dates.', type: 'PatientDoctor' },
+  { icon: 'DEP', title: 'Department Summary', sub: 'Compare department activity and spot operational differences.', type: 'Department' },
 ]
 
 function AdminHome() {
@@ -75,39 +119,29 @@ function AdminHome() {
           </div>
         </div>
 
-        <p style={{ ...sectionLabel, marginBottom: '12px' }}>Quick access</p>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '12px', marginBottom: '28px' }}>
-          <div style={quickCard}
-            onClick={() => navigate('/admin/employees')}
-            onMouseEnter={e => e.currentTarget.style.boxShadow = '0 22px 54px rgba(15,23,42,0.14)'}
-            onMouseLeave={e => e.currentTarget.style.boxShadow = '0 18px 44px rgba(15,23,42,0.09)'}
-          >
-            <div style={cardIcon}>👥</div>
-            <p style={cardTitle}>Employees</p>
-            <p style={cardSub}>View, add, and edit staff records</p>
-          </div>
-          <div style={quickCard}
-            onClick={() => navigate('/admin/departments')}
-            onMouseEnter={e => e.currentTarget.style.boxShadow = '0 22px 54px rgba(15,23,42,0.14)'}
-            onMouseLeave={e => e.currentTarget.style.boxShadow = '0 18px 44px rgba(15,23,42,0.09)'}
-          >
-            <div style={cardIcon}>🏥</div>
-            <p style={cardTitle}>Departments</p>
-            <p style={cardSub}>Manage clinic departments and staff</p>
-          </div>
-          <div style={quickCard}
-            onClick={() => navigate('/admin/report?type=AllAppt')}
-            onMouseEnter={e => e.currentTarget.style.boxShadow = '0 22px 54px rgba(15,23,42,0.14)'}
-            onMouseLeave={e => e.currentTarget.style.boxShadow = '0 18px 44px rgba(15,23,42,0.09)'}
-          >
-            <div style={cardIcon}>📅</div>
-            <p style={cardTitle}>All Appointments</p>
-            <p style={cardSub}>Browse and filter appointment records</p>
-          </div>
+        <p style={{ ...sectionLabel, marginBottom: '14px' }}>Quick access</p>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px', marginBottom: '32px' }}>
+          {quickLinks.map(link => (
+            <div
+              key={link.title}
+              style={quickCard}
+              onClick={() => navigate(link.path)}
+              onMouseEnter={e => e.currentTarget.style.boxShadow = '0 22px 54px rgba(15,23,42,0.14)'}
+              onMouseLeave={e => e.currentTarget.style.boxShadow = '0 18px 44px rgba(15,23,42,0.09)'}
+            >
+              <div style={cardIcon}>{link.icon}</div>
+              <p style={cardTitle}>{link.title}</p>
+              <p style={cardSub}>{link.sub}</p>
+            </div>
+          ))}
         </div>
 
-        <p style={{ ...sectionLabel, marginBottom: '12px' }}>Reports</p>
         <div style={reportsCard}>
+          <div style={reportsHeader}>
+            <p style={{ ...sectionLabel, marginBottom: '8px' }}>Reports</p>
+            <h2 style={reportsTitle}>What do you want to review?</h2>
+            <p style={reportsSub}>Start with the admin question, then open the matching report with filters and results.</p>
+          </div>
           {reports.map((r, i) => (
             <div
               key={r.title}
@@ -121,7 +155,7 @@ function AdminHome() {
                 <p style={cardTitle}>{r.title}</p>
                 <p style={cardSub}>{r.sub}</p>
               </div>
-              <span style={{ fontSize: '18px', color: '#9ca3af' }}>›</span>
+              <span style={{ fontSize: '24px', color: '#7c8a78', fontWeight: 400 }}>{'>'}</span>
             </div>
           ))}
         </div>

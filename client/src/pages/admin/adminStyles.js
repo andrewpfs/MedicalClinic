@@ -21,11 +21,11 @@ export const subheading = {
 }
 
 export const sectionLabel = {
-  fontSize: '11px', fontWeight: 500, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '0.75rem',
+  fontSize: '12px', fontWeight: 500, color: '#7c8a78', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.75rem',
 }
 
 export const filterCard = {
-  background: 'white', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '20px', marginBottom: '1.5rem',
+  background: 'white', border: '1px solid #e5e7eb', borderRadius: '18px', padding: '24px', marginBottom: '1.5rem',
 }
 
 export const filterRow = {
@@ -33,23 +33,23 @@ export const filterRow = {
 }
 
 export const filterGroup = {
-  display: 'flex', flexDirection: 'column', gap: '4px',
+  display: 'flex', flexDirection: 'column', gap: '7px',
 }
 
 export const filterLabel = {
-  fontSize: '11px', fontWeight: 500, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.06em',
+  fontSize: '12px', fontWeight: 500, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.06em',
 }
 
 export const filterInput = {
-  fontSize: '14px', padding: '8px 12px', borderRadius: '8px', border: '1px solid #d1d5db', fontFamily: 'Poppins, sans-serif', color: '#111', background: 'white',
+  fontSize: '15px', padding: '11px 14px', borderRadius: '10px', border: '1px solid #d1d5db', fontFamily: 'Poppins, sans-serif', color: '#111', background: 'white',
 }
 
 export const primaryBtn = {
-  padding: '9px 20px', background: '#1e2b1b', color: 'white', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 500, cursor: 'pointer', fontFamily: 'Poppins, sans-serif',
+  padding: '12px 22px', background: '#1e2b1b', color: 'white', border: 'none', borderRadius: '10px', fontSize: '15px', fontWeight: 500, cursor: 'pointer', fontFamily: 'Poppins, sans-serif',
 }
 
 export const resetBtn = {
-  padding: '9px 20px', background: 'white', color: '#374151', border: '1px solid #d1d5db', borderRadius: '8px', fontSize: '13px', fontWeight: 500, cursor: 'pointer', fontFamily: 'Poppins, sans-serif',
+  padding: '12px 22px', background: 'white', color: '#374151', border: '1px solid #d1d5db', borderRadius: '10px', fontSize: '15px', fontWeight: 500, cursor: 'pointer', fontFamily: 'Poppins, sans-serif',
 }
 
 export const statCardsRow = {
@@ -57,35 +57,35 @@ export const statCardsRow = {
 }
 
 export const statCard = {
-  flex: '1 1 200px', background: 'white', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '20px 24px',
+  flex: '1 1 240px', background: 'white', border: '1px solid #e5e7eb', borderRadius: '18px', padding: '24px 26px',
 }
 
 export const statCardAccent = {
-  flex: '1 1 200px', background: '#1e2b1b', border: '1px solid #1e2b1b', borderRadius: '12px', padding: '20px 24px',
+  flex: '1 1 240px', background: '#1e2b1b', border: '1px solid #1e2b1b', borderRadius: '18px', padding: '24px 26px',
 }
 
 export const statLabel = {
-  fontSize: '11px', fontWeight: 500, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '8px',
+  fontSize: '12px', fontWeight: 500, color: '#7c8a78', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '10px',
 }
 
 export const statLabelLight = {
-  fontSize: '11px', fontWeight: 500, color: '#a3b899', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '8px',
+  fontSize: '12px', fontWeight: 500, color: '#a3b899', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '10px',
 }
 
 export const statValue = {
-  fontSize: '22px', fontWeight: 600, color: '#1e2b1b', lineHeight: 1.2,
+  fontSize: '26px', fontWeight: 500, color: '#1e2b1b', lineHeight: 1.15,
 }
 
 export const statValueLight = {
-  fontSize: '22px', fontWeight: 600, color: '#d4e6b5', lineHeight: 1.2,
+  fontSize: '26px', fontWeight: 500, color: '#d4e6b5', lineHeight: 1.15,
 }
 
 export const statSub = {
-  fontSize: '12px', color: '#6b7280', marginTop: '4px',
+  fontSize: '14px', color: '#56616f', marginTop: '8px', lineHeight: 1.45,
 }
 
 export const statSubLight = {
-  fontSize: '12px', color: '#8fad80', marginTop: '4px',
+  fontSize: '14px', color: '#b9d0ad', marginTop: '8px', lineHeight: 1.45,
 }
 
 export const pageHeader = {
@@ -93,7 +93,7 @@ export const pageHeader = {
 }
 
 export const pageHeaderTitle = {
-  fontSize: '20px', fontWeight: 600, color: '#d4e6b5', margin: 0, fontFamily: 'Poppins, sans-serif',
+  fontSize: '20px', fontWeight: 500, color: '#d4e6b5', margin: 0, fontFamily: 'Poppins, sans-serif',
 }
 
 export const pageHeaderSub = {
@@ -108,7 +108,7 @@ export const shellPage = {
 }
 
 export const shellInner = {
-  maxWidth: '1240px', margin: '0 auto', padding: '28px 24px 64px',
+  maxWidth: '1280px', margin: '0 auto', padding: '30px 26px 68px',
 }
 
 export const adminHeroCard = {
@@ -124,20 +124,20 @@ export const adminHeroAccent = {
 }
 
 export const adminHeroContent = {
-  position: 'relative', padding: '30px',
+  position: 'relative', padding: '36px',
 }
 
 export const adminEyebrow = {
   margin: 0, textTransform: 'uppercase', letterSpacing: '0.18em',
-  fontSize: '11px', fontWeight: 700, opacity: 0.82,
+  fontSize: '12px', fontWeight: 500, opacity: 0.86,
 }
 
 export const adminHeroTitle = {
-  margin: '10px 0 10px', fontSize: 'clamp(24px, 3.5vw, 38px)', lineHeight: 1,
+  margin: '12px 0 12px', fontSize: 'clamp(30px, 4vw, 46px)', lineHeight: 1.04,
 }
 
 export const adminHeroText = {
-  margin: 0, maxWidth: '650px', lineHeight: 1.65, color: 'rgba(255,255,255,0.88)', fontSize: '14px',
+  margin: 0, maxWidth: '780px', lineHeight: 1.7, color: 'rgba(255,255,255,0.9)', fontSize: '16px',
 }
 
 export const adminTabRow = {
@@ -147,7 +147,7 @@ export const adminTabRow = {
 export const adminTabButton = {
   border: '1px solid rgba(15, 23, 42, 0.08)', borderRadius: '999px',
   background: 'rgba(255, 255, 255, 0.82)', color: '#4b5563',
-  padding: '10px 18px', fontSize: '14px', fontWeight: 600,
+  padding: '13px 22px', fontSize: '16px', fontWeight: 500,
   cursor: 'pointer', fontFamily: 'inherit',
 }
 
@@ -158,10 +158,10 @@ export const adminTabButtonActive = {
 
 // Custom styles for react-data-table-component
 export const tableCustomStyles = {
-  table: { style: { fontFamily: 'Poppins, sans-serif', borderRadius: '12px', overflow: 'hidden', border: '1px solid #e5e7eb' } },
-  headRow: { style: { backgroundColor: '#f9fafb', borderBottom: '1px solid #e5e7eb', minHeight: '44px' } },
-  headCells: { style: { fontSize: '11px', fontWeight: 500, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.06em', paddingLeft: '20px', paddingRight: '20px' } },
-  rows: { style: { fontSize: '13px', color: '#1e2b1b', minHeight: '48px', borderBottom: '1px solid #f3f4f6', fontFamily: 'Poppins, sans-serif' }, highlightOnHoverStyle: { backgroundColor: '#f9fafb', borderBottomColor: '#f3f4f6', outline: 'none' } },
-  cells: { style: { paddingLeft: '20px', paddingRight: '20px' } },
-  pagination: { style: { fontSize: '13px', color: '#6b7280', fontFamily: 'Poppins, sans-serif', borderTop: '1px solid #e5e7eb', backgroundColor: 'white' } },
+  table: { style: { fontFamily: 'Poppins, sans-serif', borderRadius: '16px', overflow: 'hidden', border: '1px solid #e5e7eb' } },
+  headRow: { style: { backgroundColor: '#f9fafb', borderBottom: '1px solid #e5e7eb', minHeight: '52px' } },
+  headCells: { style: { fontSize: '12px', fontWeight: 500, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.06em', paddingLeft: '22px', paddingRight: '22px' } },
+  rows: { style: { fontSize: '15px', color: '#1e2b1b', minHeight: '58px', borderBottom: '1px solid #f3f4f6', fontFamily: 'Poppins, sans-serif' }, highlightOnHoverStyle: { backgroundColor: '#f9fafb', borderBottomColor: '#f3f4f6', outline: 'none' } },
+  cells: { style: { paddingLeft: '22px', paddingRight: '22px' } },
+  pagination: { style: { fontSize: '14px', color: '#6b7280', fontFamily: 'Poppins, sans-serif', borderTop: '1px solid #e5e7eb', backgroundColor: 'white' } },
 }
