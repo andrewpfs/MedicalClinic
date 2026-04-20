@@ -395,10 +395,20 @@ router.post('/payment', async (req, res) => {
       return res.status(400).json({ success: false, error: 'Missing required payment fields' });
     }
 
+    let resolvedDueDate = dueDate || null;
+    if (!resolvedDueDate) {
+      const [[appt]] = await db.query(
+        'SELECT DATE_FORMAT(AppointmentDate, \'%Y-%m-%d\') AS ApptDate FROM appointment WHERE AppointmentID = ?',
+        [appointmentId]
+      );
+      if (appt) resolvedDueDate = appt.ApptDate;
+    }
+
+    const isPosted = (status || 'Posted') === 'Posted';
     await db.query(`
       INSERT INTO transaction (AppointmentID, PatientID, PaymentCode, Amount, TransactionDateTime, Status, DueDate)
-      VALUES (?, ?, ?, ?, NOW(), ?, ?)
-    `, [appointmentId, patientId, paymentCode || null, amount, status || 'Posted', dueDate || null]);
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `, [appointmentId, patientId, paymentCode || null, amount, isPosted ? new Date() : null, status || 'Posted', resolvedDueDate]);
 
     res.json({ success: true, message: 'Payment recorded successfully' });
   } catch (err) {

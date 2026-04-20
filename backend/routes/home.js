@@ -13,11 +13,9 @@ router.get('/api/session', async (req, res) => {
     if(token){
         try{
             const data = jwt.verify(token, "secretkey")
-            console.log(data)
-            const [rows] = await db.query(`Select FName from patient where PatientID = ${data.id}`)
+            const [rows] = await db.query('SELECT FName FROM patient WHERE PatientID = ?', [data.id])
             isLoggedIn = true
             firstName = rows[0].FName
-            console.log(rows)
         }
         catch(err){
             isLoggedIn = false;
