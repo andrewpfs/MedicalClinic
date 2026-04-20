@@ -5,7 +5,7 @@ const session = require('express-session');
 require('dotenv').config();
 
 const app = express();
-const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN || 'http://localhost:5173';
+const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN || "https://gentle-rock-0d78d0710.7.azurestaticapps.net";
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 
 app.set('trust proxy', 1);
