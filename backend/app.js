@@ -6,7 +6,7 @@ require('dotenv').config();
 
 const app = express();
 const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN || "https://gentle-rock-0d78d0710.7.azurestaticapps.net";
-const IS_PRODUCTION = process.env.NODE_ENV === 'production';
+const IS_PRODUCTION = process.env.NODE_ENV === 'production' || !!process.env.WEBSITE_SITE_NAME;
 
 app.set('trust proxy', 1);
 
