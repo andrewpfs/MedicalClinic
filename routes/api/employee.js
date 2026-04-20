@@ -282,6 +282,101 @@ router.post('/availability', async (req, res) => {
   }
 });
 
+// ── My shifts (for logged-in employee) ───────────────────────────────────────
+router.get('/my-shifts', async (req, res) => {
+  const staff = getStaff(req);
+  if (!staff) return res.status(401).json({ success: false, error: 'Not logged in' });
+  try {
+    const [rows] = await db.query(
+      `SELECT es.ShiftID, es.EmployeeID, e.FirstName, e.LastName, e.Role,
+              es.ShiftDate, es.StartTime, es.EndTime
+       FROM employee_shift es
+       JOIN employee e ON es.EmployeeID = e.EmployeeID
+       WHERE es.EmployeeID = ?
+       ORDER BY es.ShiftDate ASC, es.StartTime ASC`,
+      [staff.id]
+    );
+    res.json({ success: true, shifts: rows });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ── Today's schedule for a doctor ─────────────────────────────────────────────
+router.get('/today-schedule', async (req, res) => {
+  const staff = getStaff(req);
+  if (!staff) return res.status(401).json({ success: false, error: 'Not logged in' });
+  const doctorId = req.query.doctorId || staff.id;
+  try {
+    const [rows] = await db.query(
+      `SELECT a.AppointmentID, a.AppointmentDate, a.AppointmentTime,
+              a.ReasonForVisit, a.StatusCode,
+              p.FName AS PatientFirstName, p.LName AS PatientLastName,
+              s.AppointmentText AS StatusText
+       FROM appointment a
+       JOIN patient p ON a.PatientID = p.PatientID
+       LEFT JOIN appointmentstatus s ON a.StatusCode = s.AppointmentCode
+       WHERE a.DoctorID = ? AND DATE(a.AppointmentDate) = CURDATE()
+       ORDER BY a.AppointmentTime ASC`,
+      [doctorId]
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ── Doctor shifts for booking (by doctorId) ───────────────────────────────────
+router.get('/doctor-shifts/:doctorId', async (req, res) => {
+  const staff = getStaff(req);
+  if (!staff) return res.status(401).json({ success: false, error: 'Not logged in' });
+  try {
+    const [rows] = await db.query(
+      `SELECT ShiftID, ShiftDate, StartTime, EndTime
+       FROM employee_shift
+       WHERE EmployeeID = ? AND ShiftDate >= CURDATE()
+       ORDER BY ShiftDate ASC, StartTime ASC`,
+      [req.params.doctorId]
+    );
+    res.json({ success: true, shifts: rows });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ── Confirm appointment ───────────────────────────────────────────────────────
+router.post('/appointments/:id/confirm', async (req, res) => {
+  const staff = getStaff(req);
+  if (!staff) return res.status(401).json({ success: false, error: 'Not logged in' });
+  try {
+    const [result] = await db.query(
+      'UPDATE appointment SET StatusCode = 2 WHERE AppointmentID = ? AND StatusCode = 1',
+      [req.params.id]
+    );
+    if (result.affectedRows === 0) return res.status(404).json({ success: false, error: 'Appointment not found or already confirmed.' });
+    res.json({ success: true, message: 'Appointment confirmed.' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ── Delete shift ───────────────────────────────────────────────────────────────
+router.delete('/availability/:shiftId', async (req, res) => {
+  const staff = getStaff(req);
+  if (!staff) return res.status(401).json({ success: false, error: 'Not logged in' });
+  try {
+    await db.query('DELETE FROM employee_shift WHERE ShiftID = ?', [req.params.shiftId]);
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // ── Staff notifications ───────────────────────────────────────────────────────
 router.get('/notifications', async (req, res) => {
   const staff = getStaff(req);
