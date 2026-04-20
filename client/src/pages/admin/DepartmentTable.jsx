@@ -105,6 +105,7 @@ function DepartmentTable({ refreshKey = 0, onDelete }) {
   const [loading, setLoading] = useState(false)
   const [viewRow, setViewRow] = useState(null)
   const [editingRow, setEditingRow] = useState(null)
+  const [confirmDeleteRow, setConfirmDeleteRow] = useState(null)
 
   async function fetchTableData() {
     setLoading(true)
@@ -117,8 +118,12 @@ function DepartmentTable({ refreshKey = 0, onDelete }) {
   useEffect(() => { fetchTableData() }, [refreshKey])
 
   const handleDelete = async (row) => {
-    if (!window.confirm(`Delete department "${row.DepartmentName}"? Employees will be unassigned.`)) return
-    await fetch(`${API}/admin/api/deletedepartment/${row.DepartmentID}`, { method: 'DELETE', credentials: 'include' })
+    setConfirmDeleteRow(row)
+  }
+
+  const handleConfirmDelete = async () => {
+    await fetch(`${API}/admin/api/deletedepartment/${confirmDeleteRow.DepartmentID}`, { method: 'DELETE', credentials: 'include' })
+    setConfirmDeleteRow(null)
     fetchTableData()
     if (onDelete) onDelete()
   }
@@ -180,6 +185,24 @@ function DepartmentTable({ refreshKey = 0, onDelete }) {
           onClose={() => setViewRow(null)}
           onSave={() => fetchTableData()}
         />
+      )}
+      {confirmDeleteRow && (
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000 }}>
+          <div style={{ background: 'white', borderRadius: '12px', padding: '2rem', maxWidth: '420px', width: '90%', boxShadow: '0 20px 60px rgba(0,0,0,0.15)' }}>
+            <h3 style={{ margin: '0 0 0.5rem', fontSize: '17px', fontWeight: 600, color: '#111827' }}>Delete department?</h3>
+            <p style={{ margin: '0 0 1.5rem', fontSize: '14px', color: '#6b7280', lineHeight: 1.5 }}>
+              Delete <strong>"{confirmDeleteRow.DepartmentName}"</strong>? Employees will be unassigned.
+            </p>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button onClick={handleConfirmDelete} style={{ flex: 1, padding: '10px', background: '#dc2626', color: 'white', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Poppins, sans-serif' }}>
+                Yes, delete
+              </button>
+              <button onClick={() => setConfirmDeleteRow(null)} style={{ flex: 1, padding: '10px', background: 'white', color: '#374151', border: '1px solid #d1d5db', borderRadius: '8px', fontSize: '14px', cursor: 'pointer', fontFamily: 'Poppins, sans-serif' }}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )
