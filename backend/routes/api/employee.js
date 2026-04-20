@@ -6,7 +6,7 @@ const bcrypt = require('bcryptjs');
 
 const STAFF_SECRET = 'staffsecret';
 const CONFIRMED_STATUS_CODE = 5;
-const IS_PRODUCTION = process.env.NODE_ENV === 'production';
+const IS_PRODUCTION = process.env.NODE_ENV === 'production' || !!process.env.WEBSITE_SITE_NAME;
 
 const getStaff = (req) => {
   try {
