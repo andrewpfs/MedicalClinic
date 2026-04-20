@@ -76,7 +76,7 @@ router.get('/', async (req, res) => {
     `);
 
     const [appointments] = await db.query(`
-      SELECT a.AppointmentID, a.PatientID, a.DoctorID, a.OfficeID,
+      SELECT a.AppointmentID, a.PatientID, a.DoctorID,
         a.AppointmentDate, a.AppointmentTime, a.ReasonForVisit, a.StatusCode,
         p.FName AS PatientFirstName, p.LName AS PatientLastName,
         e.FirstName AS DoctorFirstName, e.LastName AS DoctorLastName,
@@ -100,13 +100,55 @@ router.get('/', async (req, res) => {
 
     const [availability] = await db.query(`
       SELECT es.ShiftID, es.EmployeeID, e.FirstName, e.LastName, e.Role,
-        es.OfficeID, es.ShiftDate, es.StartTime, es.EndTime
+        es.ShiftDate, es.StartTime, es.EndTime
       FROM employee_shift es
       JOIN employee e ON es.EmployeeID = e.EmployeeID
       ORDER BY es.ShiftDate DESC, es.StartTime DESC LIMIT 25
     `);
 
     res.json({ success: true, patients, doctors, employees, paymentMethods, appointments, transactions, availability });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ── Receptionist dashboard data (same payload as /) ──────────────────────────
+router.get('/receptionist', async (req, res) => {
+  if (!getStaff(req)) return res.status(401).json({ success: false, error: 'Not logged in' });
+  try {
+    const [patients] = await db.query(`SELECT PatientID, FName AS FirstName, LName AS LastName FROM patient ORDER BY LName, FName`);
+    const [doctors] = await db.query(`SELECT d.EmployeeID, e.FirstName, e.LastName, d.Specialty FROM doctor d JOIN employee e ON d.EmployeeID = e.EmployeeID ORDER BY e.LastName, e.FirstName`);
+    const [paymentMethods] = await db.query(`SELECT PaymentCode, PaymentText FROM paymentmethod ORDER BY PaymentCode`);
+    const [appointments] = await db.query(`
+      SELECT a.AppointmentID, a.PatientID, a.DoctorID,
+        a.AppointmentDate, a.AppointmentTime, a.ReasonForVisit, a.StatusCode,
+        p.FName AS PatientFirstName, p.LName AS PatientLastName,
+        e.FirstName AS DoctorFirstName, e.LastName AS DoctorLastName,
+        s.AppointmentText AS StatusText
+      FROM appointment a
+      JOIN patient p ON a.PatientID = p.PatientID
+      JOIN employee e ON a.DoctorID = e.EmployeeID
+      LEFT JOIN appointmentstatus s ON a.StatusCode = s.AppointmentCode
+      ORDER BY a.AppointmentDate DESC, a.AppointmentTime DESC LIMIT 25
+    `);
+    const [transactions] = await db.query(`
+      SELECT t.TransactionID, t.AppointmentID, t.PatientID,
+        p.FName AS PatientFirstName, p.LName AS PatientLastName,
+        t.PaymentCode, pm.PaymentText, t.Amount, t.TransactionDateTime, t.Status
+      FROM transaction t
+      JOIN patient p ON t.PatientID = p.PatientID
+      LEFT JOIN paymentmethod pm ON t.PaymentCode = pm.PaymentCode
+      ORDER BY t.TransactionID DESC LIMIT 25
+    `);
+    const [availability] = await db.query(`
+      SELECT es.ShiftID, es.EmployeeID, e.FirstName, e.LastName, e.Role,
+        es.ShiftDate, es.StartTime, es.EndTime
+      FROM employee_shift es
+      JOIN employee e ON es.EmployeeID = e.EmployeeID
+      ORDER BY es.ShiftDate DESC, es.StartTime DESC LIMIT 25
+    `);
+    res.json({ success: true, patients, doctors, paymentMethods, appointments, transactions, availability, employees: [] });
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, error: err.message });
@@ -181,8 +223,8 @@ router.get('/nurse', async (req, res) => {
 router.post('/book', async (req, res) => {
   if (!getStaff(req)) return res.status(401).json({ success: false, error: 'Not logged in' });
   try {
-    const { patientId, doctorId, appointmentDate, officeId, reasonForVisit } = req.body;
-    if (!patientId || !doctorId || !appointmentDate || !officeId) {
+    const { patientId, doctorId, appointmentDate, reasonForVisit } = req.body;
+    if (!patientId || !doctorId || !appointmentDate) {
       return res.status(400).json({ success: false, error: 'Missing required appointment fields' });
     }
     const dt = new Date(appointmentDate);
@@ -192,9 +234,9 @@ router.post('/book', async (req, res) => {
     const sqlDate = dt.toISOString().split('T')[0];
     const sqlTime = dt.toTimeString().split(' ')[0];
     await db.query(`
-      INSERT INTO appointment (PatientID, DoctorID, OfficeID, AppointmentDate, AppointmentTime, ReasonForVisit, StatusCode, CreatedVia)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `, [patientId, doctorId, officeId, sqlDate, sqlTime, reasonForVisit || null, 1, 0]);
+      INSERT INTO appointment (PatientID, DoctorID, AppointmentDate, AppointmentTime, ReasonForVisit, StatusCode, CreatedVia)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `, [patientId, doctorId, sqlDate, sqlTime, reasonForVisit || null, 1, 0]);
     res.json({ success: true, message: 'Appointment booked successfully' });
   } catch (err) {
     console.error(err);
@@ -224,16 +266,15 @@ router.post('/availability', async (req, res) => {
   const staff = getStaff(req);
   if (!staff) return res.status(401).json({ success: false, error: 'Not logged in' });
   try {
-    const { officeId, shiftDate, startTime, endTime } = req.body;
-    // Use employeeId from body if provided, otherwise fall back to the logged-in staff's own ID
+    const { shiftDate, startTime, endTime } = req.body;
     const employeeId = req.body.employeeId || staff.id;
-    if (!employeeId || !officeId || !shiftDate || !startTime || !endTime) {
+    if (!employeeId || !shiftDate || !startTime || !endTime) {
       return res.status(400).json({ success: false, error: 'Missing required availability fields' });
     }
     await db.query(`
-      INSERT INTO employee_shift (EmployeeID, OfficeID, ShiftDate, StartTime, EndTime)
-      VALUES (?, ?, ?, ?, ?)
-    `, [employeeId, officeId, shiftDate, startTime, endTime]);
+      INSERT INTO employee_shift (EmployeeID, ShiftDate, StartTime, EndTime)
+      VALUES (?, ?, ?, ?)
+    `, [employeeId, shiftDate, startTime, endTime]);
     res.json({ success: true, message: 'Availability saved successfully' });
   } catch (err) {
     console.error(err);
