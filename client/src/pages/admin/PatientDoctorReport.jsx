@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import DataTable from 'react-data-table-component'
 import { tableCustomStyles, filterCard, filterRow, filterGroup, filterLabel, filterInput, resetBtn, sectionLabel, statCardsRow, statCard, statCardAccent, statLabel, statLabelLight, statValue, statValueLight, statSub, statSubLight } from './adminStyles'
+import API from '../../api'
 
 function PatientDoctorReport() {
     const [response, setResponse] = useState([])
@@ -28,7 +29,7 @@ function PatientDoctorReport() {
     async function fetchTableData() {
         setLoading(true)
         try {
-            const data = await fetch('/admin/api/pullpatientdoctor', { credentials: 'include' }).then(r => r.json())
+            const data = await fetch(`${API}/admin/api/pullpatientdoctor`, { credentials: 'include' }).then(r => r.json())
             setResponse(data)
             setRecords(data)
         } catch(err) { console.error(err) }
@@ -37,7 +38,7 @@ function PatientDoctorReport() {
 
     async function fetchDoctorData() {
         try {
-            const rows = await fetch('/admin/api/getdeptdoctors', { credentials: 'include' }).then(r => r.json())
+            const rows = await fetch(`${API}/admin/api/getdeptdoctors`, { credentials: 'include' }).then(r => r.json())
             setDoctors(rows)
             setDoctorList(rows)
         } catch(err) { console.error(err) }
@@ -45,7 +46,7 @@ function PatientDoctorReport() {
 
     async function fetchDepartmentData() {
         try {
-            const rows = await fetch('/admin/api/getdepartments', { credentials: 'include' }).then(r => r.json())
+            const rows = await fetch(`${API}/admin/api/getdepartments`, { credentials: 'include' }).then(r => r.json())
             setDepts(rows)
         } catch(err) { console.error(err) }
     }
