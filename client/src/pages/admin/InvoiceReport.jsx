@@ -32,7 +32,7 @@ function InvoiceReport() {
     async function fetchTableData() {
         setLoading(true)
         try {
-            const data = await fetch(`${API}/admin/api/pullinvoice`).then(res => res.json())
+            const data = await fetch(`${API}/admin/api/pullinvoice`, { credentials: 'include' }).then(res => res.json())
             setResponse(data)
             setRecords(data)
         }catch(err){
@@ -44,7 +44,7 @@ function InvoiceReport() {
     async function fetchPatientData() {
         //console.log("fethcing patients")
         try {
-            const response = await fetch(`${API}/admin/api/getpatients`)
+            const response = await fetch(`${API}/admin/api/getpatients`, { credentials: 'include' })
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }

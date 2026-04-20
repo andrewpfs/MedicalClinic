@@ -1,16 +1,17 @@
 import { useMemo, useState } from 'react';
 
-const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 function getWeekDates(offset = 0) {
   const start = new Date();
   const dayOfWeek = start.getDay();
-  const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+  // Sunday (0) → go to next Monday; any other day → back to this Monday
+  const diff = dayOfWeek === 0 ? 1 : 1 - dayOfWeek;
   start.setDate(start.getDate() + diff + offset * 7);
   start.setHours(0, 0, 0, 0);
 
-  return Array.from({ length: 7 }, (_, index) => {
+  return Array.from({ length: 6 }, (_, index) => {
     const current = new Date(start);
     current.setDate(start.getDate() + index);
     return current.toISOString().split('T')[0];
@@ -38,7 +39,7 @@ export default function WeekDayPicker({ shifts = [], employeeId, onSave, onDelet
   const weekDates = useMemo(() => getWeekDates(weekOffset), [weekOffset]);
   const today = new Date().toISOString().split('T')[0];
   const weekStart = weekDates[0];
-  const weekEnd = weekDates[6];
+  const weekEnd = weekDates[5];
 
   const shiftMap = useMemo(() => {
     const map = {};
@@ -281,7 +282,7 @@ const navLabel = {
 
 const dayGrid = {
   display: 'grid',
-  gridTemplateColumns: 'repeat(7, 1fr)',
+  gridTemplateColumns: 'repeat(6, 1fr)',
   gap: '8px',
 };
 

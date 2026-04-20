@@ -42,7 +42,7 @@ async function loadReceptionistWorkspace(staffId) {
 
   const [appointments] = await db.query(`
     SELECT a.AppointmentID, a.PatientID, a.DoctorID,
-      a.AppointmentDate, a.ReasonForVisit, a.StatusCode, a.CreatedVia,
+      a.AppointmentDate, a.ReasonForVisit, a.StatusCode,
       p.FName AS PatientFirstName, p.LName AS PatientLastName,
       e.FirstName AS DoctorFirstName, e.LastName AS DoctorLastName,
       e.Role AS DoctorRole, d.Specialty, s.AppointmentText AS StatusText
@@ -155,7 +155,7 @@ router.get('/', async (req, res) => {
 
     const [appointments] = await db.query(`
       SELECT a.AppointmentID, a.PatientID, a.DoctorID,
-        a.AppointmentDate, a.ReasonForVisit, a.StatusCode, a.CreatedVia,
+        a.AppointmentDate, a.ReasonForVisit, a.StatusCode,
         p.FName AS PatientFirstName, p.LName AS PatientLastName,
         e.FirstName AS DoctorFirstName, e.LastName AS DoctorLastName,
         e.Role AS DoctorRole, d.Specialty, s.AppointmentText AS StatusText
@@ -223,16 +223,18 @@ router.post('/appointments/:appointmentId/confirm', async (req, res) => {
       return res.status(400).json({ success: false, error: 'A valid appointment ID is required.' });
     }
 
-    const [[confirmedStatus]] = await db.query(
-      'SELECT AppointmentCode FROM appointmentstatus WHERE AppointmentCode = ? OR LOWER(AppointmentText) = ? LIMIT 1',
-      [CONFIRMED_STATUS_CODE, 'confirmed']
+    // Look up by text only — never match by code, to avoid accidentally using
+    // a code that maps to a different status (e.g. "Void") in the Azure DB.
+    let [[confirmedStatus]] = await db.query(
+      "SELECT AppointmentCode FROM appointmentstatus WHERE LOWER(AppointmentText) = 'confirmed' LIMIT 1"
     );
 
     if (!confirmedStatus) {
-      return res.status(409).json({
-        success: false,
-        error: 'Confirmed status is missing from appointmentstatus. Run backend/sql/appointment-status-confirmed.sql first.',
-      });
+      // Insert the Confirmed status with a safe code (max existing + 1)
+      const [[maxRow]] = await db.query('SELECT COALESCE(MAX(AppointmentCode), 4) AS maxCode FROM appointmentstatus');
+      const newCode = maxRow.maxCode + 1;
+      await db.query("INSERT INTO appointmentstatus (AppointmentCode, AppointmentText) VALUES (?, 'Confirmed')", [newCode]);
+      confirmedStatus = { AppointmentCode: newCode };
     }
 
     const [[appointment]] = await db.query(
@@ -352,9 +354,9 @@ router.post('/book', async (req, res) => {
     const sqlDateTime = dt.toISOString().slice(0, 19).replace('T', ' ');
 
     await db.query(`
-      INSERT INTO appointment (PatientID, DoctorID, AppointmentDate, ReasonForVisit, StatusCode, CreatedVia)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `, [patientId, doctorId, sqlDateTime, reasonForVisit || null, 1, 1]);
+      INSERT INTO appointment (PatientID, DoctorID, AppointmentDate, ReasonForVisit, StatusCode)
+      VALUES (?, ?, ?, ?, ?)
+    `, [patientId, doctorId, sqlDateTime, reasonForVisit || null, 1]);
 
     res.json({ success: true, message: 'Appointment booked successfully' });
   } catch (err) {
@@ -534,13 +536,13 @@ router.get('/today-schedule', async (req, res) => {
   try {
     let q = `
       SELECT a.AppointmentID, a.AppointmentDate,
-             a.ReasonForVisit, s.StatusText,
+             a.ReasonForVisit, s.AppointmentText AS StatusText,
              p.PatientID, p.FName AS PatFirst, p.LName AS PatLast,
              e.EmployeeID AS DoctorID, e.FirstName AS DoctorFirst, e.LastName AS DoctorLast
       FROM appointment a
       JOIN patient p ON a.PatientID = p.PatientID
       JOIN employee e ON a.DoctorID = e.EmployeeID
-      JOIN appointmentstatus s ON a.StatusCode = s.StatusCode
+      LEFT JOIN appointmentstatus s ON a.StatusCode = s.AppointmentCode
       WHERE DATE(a.AppointmentDate) = CURDATE() AND a.StatusCode != 3`;
     const params = [];
     if (doctorId) { q += ' AND a.DoctorID = ?'; params.push(doctorId); }

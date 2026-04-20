@@ -12,10 +12,10 @@ const SHORT_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 function getWeekDates(offset = 0) {
   const now = new Date();
   const day = now.getDay();
-  // If today is Sunday, jump straight to next week
-  const effectiveOffset = day === 0 ? offset + 1 : offset;
   const monday = new Date(now);
-  monday.setDate(now.getDate() - (day === 0 ? 6 : day - 1) + effectiveOffset * 7);
+  // Sunday (0) → go to next Monday; any other day → back to this Monday
+  const daysToMonday = day === 0 ? 1 : 1 - day;
+  monday.setDate(now.getDate() + daysToMonday + offset * 7);
   monday.setHours(0, 0, 0, 0);
   return DAYS.map((_, index) => {
     const date = new Date(monday);

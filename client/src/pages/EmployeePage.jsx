@@ -6,6 +6,28 @@ import WeekDayPicker from '../components/WeekDayPicker';
 import API from '../api';
 const EMPLOYEE_API = `${API}/api/employee`;
 
+function generateSlots(startTime, endTime) {
+  const slots = [];
+  const [sh, sm] = startTime.split(':').map(Number);
+  const [eh, em] = endTime.split(':').map(Number);
+  let minutes = sh * 60 + sm;
+  const endMinutes = eh * 60 + em;
+  while (minutes < endMinutes) {
+    const h = Math.floor(minutes / 60);
+    const m = minutes % 60;
+    slots.push(`${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`);
+    minutes += 60;
+  }
+  return slots;
+}
+
+function formatSlotLabel(slot) {
+  const [h, m] = slot.split(':').map(Number);
+  const period = h < 12 ? 'AM' : 'PM';
+  const hour = h === 0 ? 12 : h > 12 ? h - 12 : h;
+  return `${hour}:${String(m).padStart(2, '0')} ${period}`;
+}
+
 const EMPLOYEE_TABS = [
   { id: 'overview', label: 'Overview' },
   { id: 'appointments', label: 'Appointments' },
@@ -52,6 +74,7 @@ export default function EmployeePage({ mode = 'employee' }) {
     appointmentDate: '',
     reasonForVisit: '',
   });
+  const [bookShift, setBookShift] = useState(null);
   const [todaySchedule, setTodaySchedule] = useState([]);
   const [schedDoctorId, setSchedDoctorId] = useState('');
   const [rescheduleData, setRescheduleData] = useState(null);
@@ -165,6 +188,7 @@ export default function EmployeePage({ mode = 'employee' }) {
         appointmentDate: '',
         reasonForVisit: '',
       });
+      setBookShift(null);
       setMessage({ type: 'success', text: payload.message });
       loadData();
     } catch (err) {
@@ -388,7 +412,7 @@ export default function EmployeePage({ mode = 'employee' }) {
 
         {activeTab === 'appointments' && (
           <div style={formLayout}>
-            <SurfaceCard title="Book Appointment" subtitle="Creates a staff-booked appointment and stores it with CreatedVia = 1">
+            <SurfaceCard title="Book Appointment" subtitle="Creates a staff-booked appointment">
               <form onSubmit={handleBook}>
                 <Field label="Patient">
                   <select
@@ -438,8 +462,13 @@ export default function EmployeePage({ mode = 'employee' }) {
                   ) : (
                     <select
                       style={inputStyle}
-                      value={bookForm.appointmentDate}
-                      onChange={(event) => setBookForm({ ...bookForm, appointmentDate: event.target.value })}
+                      value={bookShift ? `${String(bookShift.ShiftDate).slice(0, 10)}T${String(bookShift.StartTime).slice(0, 5)}` : ''}
+                      onChange={(event) => {
+                        const val = event.target.value;
+                        const shift = doctorShifts.find((s) => `${String(s.ShiftDate).slice(0, 10)}T${String(s.StartTime).slice(0, 5)}` === val) || null;
+                        setBookShift(shift);
+                        setBookForm({ ...bookForm, appointmentDate: '' });
+                      }}
                       required
                       disabled={!bookForm.doctorId}
                     >
@@ -448,7 +477,7 @@ export default function EmployeePage({ mode = 'employee' }) {
                         const dateStr = String(shift.ShiftDate).slice(0, 10);
                         const start = String(shift.StartTime).slice(0, 5);
                         const end = String(shift.EndTime).slice(0, 5);
-                        const value = `${dateStr}T${String(shift.StartTime).slice(0, 5)}`;
+                        const value = `${dateStr}T${start}`;
                         return (
                           <option key={shift.ShiftID} value={value}>
                             {dateStr} · {start}–{end}
@@ -458,6 +487,27 @@ export default function EmployeePage({ mode = 'employee' }) {
                     </select>
                   )}
                 </Field>
+
+                {bookShift && (
+                  <Field label="Appointment Time">
+                    <select
+                      style={inputStyle}
+                      value={bookForm.appointmentDate}
+                      onChange={(event) => setBookForm({ ...bookForm, appointmentDate: event.target.value })}
+                      required
+                    >
+                      <option value="">Select a time</option>
+                      {generateSlots(String(bookShift.StartTime).slice(0, 5), String(bookShift.EndTime).slice(0, 5)).map((slot) => {
+                        const dateStr = String(bookShift.ShiftDate).slice(0, 10);
+                        return (
+                          <option key={slot} value={`${dateStr}T${slot}`}>
+                            {formatSlotLabel(slot)}
+                          </option>
+                        );
+                      })}
+                    </select>
+                  </Field>
+                )}
 
                 <Field label="Reason for Visit">
                   <input

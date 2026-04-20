@@ -5,15 +5,17 @@ import './patient-layout.css';
 import API from '../../api';
 
 const HOURS = [9, 10, 11, 12, 13, 14, 15, 16];
-const SHORT_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
-const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+const SHORT_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const REVIEW_OPTIONS = [1, 2, 3, 4, 5];
 
 function getWeekDates(offset = 0) {
   const now = new Date();
   const day = now.getDay();
   const monday = new Date(now);
-  monday.setDate(now.getDate() - (day === 0 ? 6 : day - 1) + offset * 7);
+  // Sunday (0) → go to next Monday; any other day → back to this Monday
+  const daysToMonday = day === 0 ? 1 : 1 - day;
+  monday.setDate(now.getDate() + daysToMonday + offset * 7);
   monday.setHours(0, 0, 0, 0);
 
   return DAYS.map((_, index) => {
@@ -109,8 +111,8 @@ const styles = {
   calendarWrap: { background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '1.5rem', marginBottom: '1rem' },
   calHeading: { fontSize: '14px', fontWeight: 500, color: '#1e2b1b', marginBottom: '0.5rem' },
   weekNav: { display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '1rem' },
-  navBtn: { fontSize: '12px', padding: '5px 12px', borderRadius: '6px', border: '1px solid #d1d5db', background: 'white', cursor: 'pointer', width: 'auto' },
-  navBtnDisabled: { fontSize: '12px', padding: '5px 12px', borderRadius: '6px', border: '1px solid #d1d5db', background: 'white', cursor: 'not-allowed', opacity: 0.35, width: 'auto' },
+  navBtn: { fontSize: '12px', padding: '5px 12px', borderRadius: '6px', border: '1px solid #d1d5db', background: 'white', color: '#374151', cursor: 'pointer', width: 'auto', fontFamily: 'inherit' },
+  navBtnDisabled: { fontSize: '12px', padding: '5px 12px', borderRadius: '6px', border: '1px solid #d1d5db', background: 'white', color: '#374151', cursor: 'not-allowed', opacity: 0.35, width: 'auto', fontFamily: 'inherit' },
   weekLabel: { fontSize: '13px', fontWeight: 500, color: '#374151' },
   calTh: { fontSize: '11px', fontWeight: 500, color: '#6b7280', padding: '8px 4px', textAlign: 'center', borderBottom: '1px solid #e5e7eb' },
   timeCell: { fontSize: '10px', color: '#9ca3af', padding: '0 8px 0 0', textAlign: 'right', width: '60px', verticalAlign: 'middle' },
@@ -425,11 +427,11 @@ export default function Visits() {
                     </p>
                     {rescheduleError && <p style={{ color: '#993C1D', fontSize: '12px', marginBottom: '0.5rem' }}>{rescheduleError}</p>}
                     <div style={styles.weekNav}>
-                      <button onClick={() => setWeekOffset((v) => v - 1)} disabled={weekOffset === 0} style={weekOffset === 0 ? styles.navBtnDisabled : styles.navBtn}>Prev</button>
+                      <button onClick={() => setWeekOffset((v) => v - 1)} disabled={weekOffset === 0} style={weekOffset === 0 ? styles.navBtnDisabled : styles.navBtn}>← Prev</button>
                       <span style={styles.weekLabel}>
                         {weekDates[0].toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – {weekDates[4].toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                       </span>
-                      <button onClick={() => setWeekOffset((v) => v + 1)} style={styles.navBtn}>Next</button>
+                      <button onClick={() => setWeekOffset((v) => v + 1)} style={styles.navBtn}>Next →</button>
                     </div>
                     <div style={{ overflowX: 'auto' }}>
                       <table style={{ width: '100%', borderCollapse: 'collapse' }}>
