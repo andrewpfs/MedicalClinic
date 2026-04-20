@@ -1,85 +1,103 @@
-# MedicalClinic
+# Medical Clinic
 
-A full-stack web application for managing a medical clinic — handling patients, staff, appointments, billing, and reporting.
+A full-stack web application for managing a medical clinic built with React, Node.js/Express, and MySQL.
 
-## Tech Stack
+---
 
-| Layer    | Technology                              |
-|----------|-----------------------------------------|
-| Frontend | React, React Router, React Data Table   |
-| Backend  | Node.js, Express                        |
-| Database | MySQL                                   |
-| Auth     | JWT (staff), session (patient)          |
-
-## Features
-
-### Patient Portal
-- Register and manage profile
-- Book appointments with doctors
-- View visit history and notes
-- Billing, payments, and insurance management
-
-### Staff / Admin Portal
-- Role-based login (Admin, Doctor, Nurse, Receptionist)
-- Employee management — add, edit, transfer between departments
-- Department management
-- Shift scheduling (doctors/nurses)
-- Reports:
-  - Doctor Appointment Report
-  - Department Appointment Report
-  - Revenue Report
-  - Reviews Report
-  - Invoice Report
-
-## Project Structure
-
-```
-/
-├── app.js                  # Express entry point
-├── backend/routes/         # Admin and doctor API routes
-├── routes/                 # Patient and employee API routes
-├── client/src/
-│   ├── pages/admin/        # Admin portal pages
-│   ├── pages/patient/      # Patient portal pages
-│   └── hooks/              # Auth hooks
-└── sql/                    # Database setup scripts
-```
-
-## Getting Started
+## Local Setup
 
 ### Prerequisites
 - Node.js 18+
-- MySQL
+- MySQL 8+
 
-### Installation
-
-```bash
-# Install backend dependencies
-npm install
-
-# Install frontend dependencies
-cd client && npm install
-```
-
-### Running
+### 1. Clone the repository
 
 ```bash
-# Start backend (port 3000)
-npm start
-
-# Start frontend (port 5173)
-cd client && npm run dev
+git clone https://github.com/andrewpfs/MedicalClinic.git
+cd MedicalClinic
 ```
 
-The frontend connects to the backend at `http://localhost:3000`.
+### 2. Set up the database
 
-### Environment
+Import the provided SQL dump into your local MySQL instance:
 
-Create a `.env` file in the root with your database credentials:
+```bash
+mysql -u root -p < medicalclinic_dump.sql
+```
+
+### 3. Configure backend environment
+
+Create a `.env` file inside the `backend/` folder:
 
 ```
 DB_HOST=localhost
 DB_USER=root
 DB_PASSWORD=yourpassword
 DB_NAME=medicalclinic
+PORT=3001
 ```
+
+### 4. Install dependencies
+
+```bash
+# Backend
+cd backend
+npm install
+
+# Frontend
+cd ../client
+npm install
+```
+
+### 5. Run the application
+
+```bash
+# Start backend (from /backend folder)
+npm start
+
+# Start frontend (from /client folder)
+npm run dev
+```
+
+- Frontend: http://localhost:3000
+- Backend: http://localhost:3001
+
+---
+
+## Project Structure
+
+```
+/
+├── backend/
+│   ├── app.js                  # Express entry point (port 3001)
+│   ├── db.js                   # MySQL connection pool
+│   ├── routes/
+│   │   ├── admin.js            # Admin API routes
+│   │   ├── patient.js          # Patient API routes
+│   │   └── api/
+│   │       ├── employee.js     # Receptionist/Nurse API routes
+│   │       └── doctor.js       # Doctor API routes
+│   └── sql/                    # Database migration and trigger scripts
+└── client/
+    ├── src/
+    │   ├── pages/
+    │   │   ├── admin/          # Admin portal pages
+    │   │   ├── patient/        # Patient portal pages
+    │   │   ├── DoctorPage.jsx
+    │   │   ├── EmployeePage.jsx
+    │   │   └── NursePage.jsx
+    │   ├── components/         # Shared UI components
+    │   └── api.js              # API base URL config
+    └── .env.production         # Production API URL
+```
+
+---
+
+## Team
+
+| Name | GitHub |
+|------|--------|
+| Duy | andrewpfs |
+| Antonio | toniosandpaper |
+| Juan | JuanPerez1228 |
+| David | DavidE008 |
