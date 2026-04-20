@@ -243,7 +243,6 @@ router.get('/api/booked-slots', async (req, res) => {
   try {
     const [rows] = await db.query(
       `SELECT AppointmentDate,
-              AppointmentTime,
               CASE WHEN PatientID = ? THEN 'patient' ELSE 'doctor' END AS conflictType
        FROM appointment
        WHERE (DoctorID = ? OR PatientID = ?)
@@ -269,7 +268,6 @@ router.get('/api/visits', async (req, res) => {
          a.PatientID,
          a.DoctorID,
          a.AppointmentDate,
-         a.AppointmentTime,
          a.StatusCode,
          a.ReasonForVisit,
          e.FirstName,
@@ -289,7 +287,7 @@ router.get('/api/visits', async (req, res) => {
        JOIN employee e ON a.DoctorID = e.EmployeeID
        LEFT JOIN doctor_review dr ON dr.AppointmentID = a.AppointmentID
        WHERE a.PatientID = ?
-       ORDER BY a.AppointmentDate DESC, a.AppointmentTime DESC`,
+       ORDER BY a.AppointmentDate DESC`,
       [COMPLETED_STATUS_CODE, patientId]
     );
 

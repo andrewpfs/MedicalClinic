@@ -75,7 +75,6 @@ router.get('/', async (req, res) => {
          a.DoctorID,
          NULL AS OfficeID,
          a.AppointmentDate,
-         a.AppointmentTime,
          a.ReasonForVisit,
          a.StatusCode,
          a.DoctorNotes,
@@ -90,7 +89,7 @@ router.get('/', async (req, res) => {
        JOIN employee e ON a.DoctorID = e.EmployeeID
        LEFT JOIN appointmentstatus s ON a.StatusCode = s.AppointmentCode
        WHERE a.DoctorID = ?
-       ORDER BY a.AppointmentDate ASC, a.AppointmentTime ASC
+       ORDER BY a.AppointmentDate ASC
        LIMIT 50`,
       [doctorId]
     );
@@ -129,8 +128,7 @@ router.get('/', async (req, res) => {
          dr.IsSeenByDoctor,
          p.FName AS PatientFirstName,
          p.LName AS PatientLastName,
-         a.AppointmentDate,
-         a.AppointmentTime
+         a.AppointmentDate
        FROM doctor_review dr
        JOIN patient p ON dr.PatientID = p.PatientID
        JOIN appointment a ON dr.AppointmentID = a.AppointmentID
@@ -493,7 +491,6 @@ router.get('/messages', async (req, res) => {
       `SELECT
          a.AppointmentID,
          a.AppointmentDate,
-         a.AppointmentTime,
          p.PatientID,
          p.FName AS PatientFirstName,
          p.LName AS PatientLastName,
@@ -505,7 +502,7 @@ router.get('/messages', async (req, res) => {
        JOIN patient p ON a.PatientID = p.PatientID
        JOIN appointment_message m ON m.AppointmentID = a.AppointmentID
        WHERE a.DoctorID = ?
-       GROUP BY a.AppointmentID, a.AppointmentDate, a.AppointmentTime, p.PatientID, p.FName, p.LName
+       GROUP BY a.AppointmentID, a.AppointmentDate, p.PatientID, p.FName, p.LName
        ORDER BY UnreadCount DESC, LastMessageAt DESC`,
       [staff.id]
     );
@@ -524,7 +521,7 @@ router.get('/messages/:appointmentId', async (req, res) => {
   const appointmentId = Number(req.params.appointmentId);
   try {
     const [[appt]] = await db.query(
-      `SELECT a.AppointmentID, a.PatientID, a.AppointmentDate, a.AppointmentTime,
+      `SELECT a.AppointmentID, a.PatientID, a.AppointmentDate,
               a.ReasonForVisit, a.DoctorNotes, a.PatientSummary, a.StatusCode,
               s.AppointmentText AS StatusText,
               p.FName AS PatientFirstName, p.LName AS PatientLastName
