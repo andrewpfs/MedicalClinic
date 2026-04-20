@@ -12,7 +12,6 @@ const SERVICES = [
   { icon: <OptometryIcon />,  title: "Optometry",                   to: "/patient/booking" },
 ];
 
-console.log(import.meta.env.VITE_API_URL)
 export default function Home() {
   const [session, setSession] = useState({ isLoggedIn: false, firstName: "" });
 
@@ -124,7 +123,6 @@ export default function Home() {
               <div key={s.title} className="home-service-item">
                 <div className="home-service-item__icon">{s.icon}</div>
                 <h3 className="home-service-item__title">{s.title}</h3>
-                <Link to={s.to} className="home-service-item__link">Learn more</Link>
               </div>
             ))}
           </div>
@@ -148,7 +146,7 @@ export default function Home() {
 
       {/* ── Footer ────────────────────────────────────────────── */}
       <footer className="home-footer">
-        <span>© 2025 Medical Clinic. All rights reserved.</span>
+        <span>© 2026 Medical Clinic. All rights reserved.</span>
       </footer>
     </div>
   );
