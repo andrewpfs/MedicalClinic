@@ -502,6 +502,7 @@ export default function EmployeePage({ mode = 'employee' }) {
                   </div>
                 }
               >
+                <div style={{ maxHeight: '360px', overflowY: 'auto' }}>
                 <DataTable
                   headers={['ID', 'Patient', 'Doctor', 'When', 'Created Via', 'Status', 'Action']}
                   rows={filteredAppointments}
@@ -562,6 +563,7 @@ export default function EmployeePage({ mode = 'employee' }) {
                     </tr>
                   )}
                 />
+                </div>
               </SurfaceCard>
 
               {isReceptionistPortal && (
@@ -605,6 +607,7 @@ export default function EmployeePage({ mode = 'employee' }) {
                       <button style={secondaryActionButton} onClick={() => setRescheduleData(null)}>Cancel</button>
                     </div>
                   )}
+                  <div style={{ maxHeight: '360px', overflowY: 'auto' }}>
                   <DataTable
                     headers={['Time', 'Patient', 'Doctor', 'Reason', 'Status', 'Actions']}
                     rows={todaySchedule}
@@ -633,6 +636,7 @@ export default function EmployeePage({ mode = 'employee' }) {
                       </tr>
                     )}
                   />
+                  </div>
                 </SurfaceCard>
               )}
             </div>
@@ -1413,6 +1417,8 @@ const secondaryActionButton = {
   fontWeight: 700,
   cursor: 'pointer',
   fontFamily: 'inherit',
+  width: '80px',
+  textAlign: 'center',
 };
 
 const selectedEmployeeBanner = {
