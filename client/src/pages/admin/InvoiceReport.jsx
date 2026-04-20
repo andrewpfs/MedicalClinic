@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import DataTable from 'react-data-table-component'
 import { tableCustomStyles, filterCard, filterRow, filterGroup, filterLabel, filterInput, primaryBtn, resetBtn, sectionLabel, statCardsRow, statCard, statCardAccent, statLabel, statLabelLight, statValue, statValueLight, statSub, statSubLight, pageHeader, pageHeaderTitle, pageHeaderSub } from './adminStyles'
+import API from '../../api'
 
 function InvoiceReport() {
     const [response, setResponse] = useState([])
@@ -31,7 +32,7 @@ function InvoiceReport() {
     async function fetchTableData() {
         setLoading(true)
         try {
-            const data = await fetch("/admin/api/pullinvoice").then(res => res.json())
+            const data = await fetch(`${API}/admin/api/pullinvoice`).then(res => res.json())
             setResponse(data)
             setRecords(data)
         }catch(err){
@@ -43,7 +44,7 @@ function InvoiceReport() {
     async function fetchPatientData() {
         //console.log("fethcing patients")
         try {
-            const response = await fetch('/admin/api/getpatients')
+            const response = await fetch(`${API}/admin/api/getpatients`)
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
@@ -66,7 +67,7 @@ function InvoiceReport() {
     async function fetchDepartmentData() {
         //console.log("fethcing patients")
         try {
-            const response = await fetch('/admin/api/getdepartments',{credentials:"include"})
+            const response = await fetch(`${API}/admin/api/getdepartments`,{credentials:"include"})
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
@@ -194,7 +195,7 @@ function InvoiceReport() {
         e.preventDefault()
         setLoading(true)
         try {
-            const response = await fetch("/admin/api/pullrevenue", {
+            const response = await fetch(`${API}/admin/api/pullrevenue`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(rep)

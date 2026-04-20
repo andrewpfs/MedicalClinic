@@ -301,35 +301,27 @@ router.post('/api/updateEmployee', requireAdmin, async (req,res) => {
 })
 
 router.get('/api/getdepartments', async (req,res) => {
-    const q = 'SELECT DepartmentID,DepartmentName,OfficeID FROM department';
+    const q = `SELECT D.DepartmentID, D.DepartmentName, COUNT(E.EmployeeID) AS Employees
+               FROM department D LEFT JOIN employee E ON E.DepartmentID = D.DepartmentID
+               GROUP BY D.DepartmentID, D.DepartmentName`;
 
     try {
         const [rows] = await db.query(q)
         return res.json(rows)
     }catch(err){
         console.error(err)
-    }
-})
-
-router.get('/api/getoffices', async (req,res) => {
-    const q = 'SELECT OfficeID,OfficeName FROM office';
-
-    try {
-        const [rows] = await db.query(q)
-        return res.json(rows)
-    }catch(err){
-        console.error(err)
+        res.status(500).json({error: 'Error getting departments'})
     }
 })
 
 router.post('/api/adddepartment', async (req,res) => {
-    const q = 'INSERT INTO department (DepartmentName,OfficeID) VALUES (?,?)'
+    const q = 'INSERT INTO department (DepartmentName) VALUES (?)'
 
     const {DepartmentName} = req.body
 
     try {
-        const rows = await db.query(q,[DepartmentName,OfficeID])
-        return res.json(rows) 
+        const [rows] = await db.query(q,[DepartmentName])
+        return res.json({success: true, insertId: rows.insertId})
     }catch(err){
         res.status(500).json({error: 'Error creating department'})
     }
@@ -346,14 +338,14 @@ router.get('/api/getdeptdoctors', requireAdmin, async (req,res) => {
         return res.json(rows)
     }catch(err){
         console.error(err)
+        res.status(500).json({error: 'Error getting dept doctors'})
     }
 })
 
 router.get('/api/getdepartmentinfo', requireAdmin, async (req,res) => {
     const q = `
-    SELECT D.DepartmentID, D.DepartmentName, O.OfficeName, O.Street, O.City, O.State, O.ZipCode, O.PhoneNumber, COUNT(E.EmployeeID) AS Employees
-    FROM department AS D 
-    JOIN office AS O ON D.OfficeID=O.OfficeID 
+    SELECT D.DepartmentID, D.DepartmentName, COUNT(E.EmployeeID) AS Employees
+    FROM department AS D
     LEFT JOIN employee AS E ON E.DepartmentID=D.DepartmentID
     GROUP BY D.DepartmentID
     ORDER BY Employees DESC`
@@ -363,6 +355,7 @@ router.get('/api/getdepartmentinfo', requireAdmin, async (req,res) => {
         return res.json(rows)
     }catch(err){
         console.error(err)
+        res.status(500).json({error: 'Error getting department info'})
     }
 })
 
@@ -378,6 +371,7 @@ router.get('/api/getpatients', requireAdmin, async (req,res) => {
         return res.json(rows)
     }catch(err){
         console.error(err)
+        res.status(500).json({error: 'Error getting patients'})
     }
 })
 
