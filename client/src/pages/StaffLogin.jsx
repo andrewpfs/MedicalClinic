@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import API from '../api';
 
 export default function StaffLogin() {
   const [employeeId, setEmployeeId] = useState('');
@@ -12,7 +13,7 @@ export default function StaffLogin() {
     setError('');
 
     try {
-      const res = await fetch('/api/employee/login', {
+      const res = await fetch(`${API}/api/employee/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',

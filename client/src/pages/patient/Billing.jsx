@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../../components/Navbar';
 import './patient-layout.css';
+import API from '../../api';
 
 export default function Billing() {
   const [totalDue, setTotalDue] = useState(0);
@@ -9,7 +10,7 @@ export default function Billing() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetch('/patient/api/payments', { credentials: 'include' })
+    fetch(`${API}/patient/api/payments`, { credentials: 'include' })
       .then((res) => {
         if (res.status === 401) {
           navigate('/login');

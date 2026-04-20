@@ -3,8 +3,9 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import StaffNavbar from '../components/StaffNavbar';
 import WeekDayPicker from '../components/WeekDayPicker';
 
-const DOCTOR_API = '/api/doctor';
-const EMPLOYEE_API = '/api/employee';
+import API from '../api';
+const DOCTOR_API = `${API}/api/doctor`;
+const EMPLOYEE_API = `${API}/api/employee`;
 const TABS = [
   { id: 'overview', label: 'Overview' },
   { id: 'schedule', label: 'Schedule' },
@@ -108,7 +109,7 @@ export default function DoctorPage() {
   };
 
   useEffect(() => {
-    fetch('/api/employee/session', { credentials: 'include' })
+    fetch(`${API}/api/employee/session`, { credentials: 'include' })
       .then((res) => res.json())
       .then((session) => {
         if (!session.isLoggedIn) {
