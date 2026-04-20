@@ -116,11 +116,11 @@ export default function NursePage() {
             <div style={nurseHeroHighlights}>
               <div style={nurseHeroStat}>
                 <div style={nurseHeroStatValue}>{scheduled.length}</div>
-                <div style={nurseHeroStatLabel}>Awaiting</div>
+                <div style={nurseHeroStatLabel}>Awaiting Confirmation</div>
               </div>
               <div style={nurseHeroStat}>
                 <div style={nurseHeroStatValue}>{completed.length}</div>
-                <div style={nurseHeroStatLabel}>Completed</div>
+                <div style={nurseHeroStatLabel}>Completed Visits</div>
               </div>
               <div style={nurseHeroStat}>
                 <div style={nurseHeroStatValue}>{data.availability.length}</div>
@@ -370,16 +370,16 @@ const btn = { width: '100%', marginTop: '16px', background: '#0f766e', color: 'w
 
 const nursePageShell  = { minHeight: '100vh', background: 'radial-gradient(circle at top right, #ccfbf1 0%, #f0fdfa 35%, #ecfeff 65%, #f8fafc 100%)', fontFamily: 'Poppins, Inter, sans-serif' };
 const nursePageInner  = { maxWidth: '1100px', margin: '0 auto', padding: '2rem 1.5rem' };
-const nurseHeroCard   = { position: 'relative', overflow: 'hidden', borderRadius: '20px', background: 'linear-gradient(135deg, #134e4a 0%, #0f766e 48%, #0891b2 100%)', padding: '2.5rem 2.5rem 2rem', marginBottom: '2rem', boxShadow: '0 8px 32px rgba(15,118,110,0.25)' };
-const nurseHeroOrb    = { position: 'absolute', top: '-60px', right: '-60px', width: '260px', height: '260px', borderRadius: '50%', background: 'rgba(255,255,255,0.07)', pointerEvents: 'none' };
-const nurseHeroContent= { position: 'relative', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '2rem', flexWrap: 'wrap' };
-const nurseEyebrow    = { margin: '0 0 6px', fontSize: '12px', fontWeight: 600, color: 'rgba(255,255,255,0.65)', textTransform: 'uppercase', letterSpacing: '0.1em' };
-const nurseHeroTitle  = { margin: '0 0 8px', fontSize: '28px', fontWeight: 700, color: '#ffffff', lineHeight: 1.15 };
-const nurseHeroText   = { margin: 0, fontSize: '14px', color: 'rgba(255,255,255,0.8)', maxWidth: '520px' };
-const nurseHeroHighlights = { display: 'flex', gap: '2rem', flexShrink: 0 };
-const nurseHeroStat   = { textAlign: 'center' };
-const nurseHeroStatValue = { fontSize: '30px', fontWeight: 700, color: '#ffffff', lineHeight: 1 };
-const nurseHeroStatLabel = { fontSize: '12px', color: 'rgba(255,255,255,0.65)', marginTop: '4px' };
+const nurseHeroCard   = { position: 'relative', overflow: 'hidden', borderRadius: '28px', background: 'linear-gradient(135deg, #134e4a 0%, #0f766e 48%, #0891b2 100%)', color: '#ffffff', boxShadow: '0 24px 56px rgba(15,118,110,0.25)', marginBottom: '2rem' };
+const nurseHeroOrb    = { position: 'absolute', right: '-50px', top: '-60px', width: '220px', height: '220px', borderRadius: '999px', background: 'rgba(255,255,255,0.1)' };
+const nurseHeroContent= { position: 'relative', display: 'grid', gridTemplateColumns: 'minmax(0, 2fr) minmax(260px, 1fr)', gap: '20px', alignItems: 'end', padding: '30px' };
+const nurseEyebrow    = { margin: 0, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.18em', fontWeight: 700, opacity: 0.82 };
+const nurseHeroTitle  = { margin: '10px 0 12px', fontSize: 'clamp(28px, 4vw, 42px)', lineHeight: 1 };
+const nurseHeroText   = { margin: 0, maxWidth: '650px', lineHeight: 1.65, color: 'rgba(255,255,255,0.88)' };
+const nurseHeroHighlights = { display: 'grid', gap: '12px' };
+const nurseHeroStat   = { borderRadius: '18px', padding: '14px 16px', background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.18)' };
+const nurseHeroStatValue = { fontSize: '26px', fontWeight: 700, lineHeight: 1 };
+const nurseHeroStatLabel = { marginTop: '6px', fontSize: '12px', letterSpacing: '0.06em', textTransform: 'uppercase', opacity: 0.82 };
 const nurseTabRow     = { display: 'flex', gap: '6px', marginBottom: '24px' };
 const nurseTabButton  = { padding: '8px 20px', borderRadius: '8px', border: '1.5px solid #e5e7eb', background: 'white', cursor: 'pointer', fontSize: '13px', fontWeight: 600, fontFamily: 'inherit', color: '#374151', transition: 'all 0.15s' };
 const nurseActiveTab  = { background: '#0f766e', color: 'white', borderColor: '#0f766e' };
