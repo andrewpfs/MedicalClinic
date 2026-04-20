@@ -38,7 +38,6 @@ Website hosted at: https://gentle-rock-0d78d0710.7.azurestaticapps.net/
 /
 ├── app.js                  # Express entry point
 ├── backend/routes/         # Admin and doctor API routes
-├── routes/                 # Patient and employee API routes
 ├── client/src/
 │   ├── pages/admin/        # Admin portal pages
 │   ├── pages/patient/      # Patient portal pages
