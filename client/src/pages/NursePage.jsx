@@ -12,6 +12,28 @@ const TABS = [
   { id: 'schedule',     label: 'My Schedule'  },
 ];
 
+function generateSlots(startTime, endTime) {
+  const slots = [];
+  const [sh, sm] = startTime.split(':').map(Number);
+  const [eh, em] = endTime.split(':').map(Number);
+  let minutes = sh * 60 + sm;
+  const endMinutes = eh * 60 + em;
+  while (minutes < endMinutes) {
+    const h = Math.floor(minutes / 60);
+    const m = minutes % 60;
+    slots.push(`${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`);
+    minutes += 60;
+  }
+  return slots;
+}
+
+function formatSlotLabel(slot) {
+  const [h, m] = slot.split(':').map(Number);
+  const period = h < 12 ? 'AM' : 'PM';
+  const hour = h === 0 ? 12 : h > 12 ? h - 12 : h;
+  return `${hour}:${String(m).padStart(2, '0')} ${period}`;
+}
+
 export default function NursePage() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
@@ -29,6 +51,10 @@ export default function NursePage() {
   const [bookForm, setBookForm] = useState({
     patientId: '', doctorId: '', appointmentDate: '', reasonForVisit: '',
   });
+  const [doctorShifts, setDoctorShifts] = useState([]);
+  const [bookShift, setBookShift] = useState(null);
+  const [apptSearch, setApptSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
 
   const loadData = async () => {
     try {
@@ -76,6 +102,8 @@ export default function NursePage() {
       const r = await post(`${EMP_API}/book`, bookForm);
       setMessage({ type: 'success', text: r.message });
       setBookForm({ patientId: '', doctorId: '', appointmentDate: '', reasonForVisit: '' });
+      setDoctorShifts([]);
+      setBookShift(null);
       loadData();
     } catch (err) {
       setMessage({ type: 'error', text: err.message });
@@ -210,19 +238,69 @@ export default function NursePage() {
                 </FField>
                 <FField label="Doctor">
                   <select style={inp} value={bookForm.doctorId}
-                    onChange={e => setBookForm({ ...bookForm, doctorId: e.target.value })} required>
+                    onChange={e => {
+                      const doctorId = e.target.value;
+                      setBookForm({ ...bookForm, doctorId, appointmentDate: '' });
+                      setDoctorShifts([]);
+                      setBookShift(null);
+                      if (doctorId) {
+                        fetch(`${EMP_API}/doctor-shifts/${doctorId}`, { credentials: 'include' })
+                          .then(r => r.json())
+                          .then(d => { if (d.success) setDoctorShifts(d.shifts); })
+                          .catch(() => {});
+                      }
+                    }} required>
                     <option value="">Select doctor…</option>
                     {data.doctors.map(d => (
                       <option key={d.EmployeeID} value={d.EmployeeID}>
-                        Dr. {d.LastName}, {d.FirstName}{d.Specialty ? ` — ${d.Specialty}` : ''}
+                        Dr. {d.LastName}, {d.FirstName}{d.Specialty ? ` · ${d.Specialty}` : ''}
                       </option>
                     ))}
                   </select>
                 </FField>
-                <FField label="Date & Time">
-                  <input style={inp} type="datetime-local" value={bookForm.appointmentDate}
-                    onChange={e => setBookForm({ ...bookForm, appointmentDate: e.target.value })} required />
+                <FField label="Available Shift">
+                  {bookForm.doctorId && doctorShifts.length === 0 ? (
+                    <p style={{ margin: 0, fontSize: '13px', color: '#6b7280' }}>No upcoming shifts for this doctor.</p>
+                  ) : (
+                    <select style={inp}
+                      value={bookShift ? `${String(bookShift.ShiftDate).slice(0, 10)}T${String(bookShift.StartTime).slice(0, 5)}` : ''}
+                      onChange={e => {
+                        const val = e.target.value;
+                        const shift = doctorShifts.find(s => `${String(s.ShiftDate).slice(0, 10)}T${String(s.StartTime).slice(0, 5)}` === val) || null;
+                        setBookShift(shift);
+                        setBookForm({ ...bookForm, appointmentDate: '' });
+                      }}
+                      required disabled={!bookForm.doctorId}>
+                      <option value="">Select a shift</option>
+                      {doctorShifts.map(shift => {
+                        const dateStr = String(shift.ShiftDate).slice(0, 10);
+                        const start = String(shift.StartTime).slice(0, 5);
+                        const end = String(shift.EndTime).slice(0, 5);
+                        return (
+                          <option key={shift.ShiftID} value={`${dateStr}T${start}`}>
+                            {dateStr} · {start}–{end}
+                          </option>
+                        );
+                      })}
+                    </select>
+                  )}
                 </FField>
+                {bookShift && (
+                  <FField label="Appointment Time">
+                    <select style={inp} value={bookForm.appointmentDate}
+                      onChange={e => setBookForm({ ...bookForm, appointmentDate: e.target.value })} required>
+                      <option value="">Select a time</option>
+                      {generateSlots(String(bookShift.StartTime).slice(0, 5), String(bookShift.EndTime).slice(0, 5)).map(slot => {
+                        const dateStr = String(bookShift.ShiftDate).slice(0, 10);
+                        return (
+                          <option key={slot} value={`${dateStr}T${slot}`}>
+                            {formatSlotLabel(slot)}
+                          </option>
+                        );
+                      })}
+                    </select>
+                  </FField>
+                )}
                 <FField label="Reason for Visit">
                   <input style={inp} type="text" maxLength={20} placeholder="e.g. Check-up"
                     value={bookForm.reasonForVisit}
@@ -234,24 +312,67 @@ export default function NursePage() {
 
             <Card
               title={dr ? `Dr. ${dr.DoctorFirst} ${dr.DoctorLast}'s Appointments` : 'All Appointments'}
-              sub="Recent scheduled visits"
+              sub="Search by patient, doctor, reason, or appointment ID"
+              aside={
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  <input
+                    type="text"
+                    value={apptSearch}
+                    onChange={e => setApptSearch(e.target.value)}
+                    placeholder="Search appointments"
+                    style={{ padding: '7px 12px', border: '1.5px solid #e5e7eb', borderRadius: '8px', fontSize: '13px', fontFamily: 'inherit', outline: 'none', minWidth: '180px' }}
+                  />
+                  <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
+                    style={{ padding: '7px 12px', border: '1.5px solid #e5e7eb', borderRadius: '8px', fontSize: '13px', fontFamily: 'inherit', background: 'white', cursor: 'pointer' }}>
+                    <option value="all">All statuses</option>
+                    <option value="scheduled">Scheduled</option>
+                    <option value="confirmed">Confirmed</option>
+                    <option value="completed">Completed</option>
+                    <option value="cancelled">Cancelled</option>
+                    <option value="paid">Paid</option>
+                  </select>
+                </div>
+              }
             >
-              <DTable
-                headers={['ID', 'Patient', 'Doctor', 'Date', 'Time', 'Reason', 'Status']}
-                rows={data.appointments}
-                empty="No appointments found."
-                renderRow={r => (
-                  <tr key={r.AppointmentID}>
-                    <td style={td}><IBadge>{r.AppointmentID}</IBadge></td>
-                    <td style={td}>{r.PatientLastName}, {r.PatientFirstName}</td>
-                    <td style={td}>Dr. {r.DoctorLastName}</td>
-                    <td style={td}>{fmtDate(r.AppointmentDate)}</td>
-                    <td style={td}>{fmtTime(r.AppointmentDate, r.AppointmentTime)}</td>
-                    <td style={td}>{r.ReasonForVisit || '—'}</td>
-                    <td style={td}><SBadge s={r.StatusText || r.StatusCode} /></td>
-                  </tr>
-                )}
-              />
+              {(() => {
+                const q = apptSearch.toLowerCase();
+                const filtered = data.appointments.filter(r => {
+                  const matchSearch = !q ||
+                    `${r.PatientFirstName} ${r.PatientLastName}`.toLowerCase().includes(q) ||
+                    `${r.DoctorFirstName} ${r.DoctorLastName}`.toLowerCase().includes(q) ||
+                    String(r.AppointmentID).includes(q) ||
+                    (r.ReasonForVisit || '').toLowerCase().includes(q);
+                  const matchStatus = statusFilter === 'all' || (r.StatusText || '').toLowerCase().includes(statusFilter);
+                  return matchSearch && matchStatus;
+                });
+                return (
+                  <div style={{ maxHeight: '360px', overflowY: 'auto' }}>
+                    <DTable
+                      headers={['ID', 'Patient', 'Doctor', 'When', 'Created Via', 'Status']}
+                      rows={filtered}
+                      empty="No appointments match the current filters."
+                      renderRow={r => (
+                        <tr key={r.AppointmentID}>
+                          <td style={td}><IBadge>{r.AppointmentID}</IBadge></td>
+                          <td style={{ ...td, fontWeight: 600 }}>
+                            {r.PatientLastName}, {r.PatientFirstName}
+                            <div style={{ fontSize: '12px', color: '#9ca3af', marginTop: '2px' }}>{r.ReasonForVisit || 'No reason recorded'}</div>
+                          </td>
+                          <td style={td}>
+                            Dr. {r.DoctorLastName}
+                          </td>
+                          <td style={td}>
+                            {fmtDate(r.AppointmentDate)}
+                            <div style={{ fontSize: '12px', color: '#9ca3af', marginTop: '2px' }}>{fmtTime(r.AppointmentDate, r.AppointmentTime)}</div>
+                          </td>
+                          <td style={td}>{r.CreatedVia === 1 ? 'Staff' : 'Patient'}</td>
+                          <td style={td}><SBadge s={r.StatusText || r.StatusCode} /></td>
+                        </tr>
+                      )}
+                    />
+                  </div>
+                );
+              })()}
             </Card>
           </div>
         )}
@@ -297,13 +418,16 @@ function ActionBtn({ onClick, children }) {
   );
 }
 
-function Card({ title, sub, children }) {
+function Card({ title, sub, aside, children }) {
   return (
     <div style={{ background: 'white', borderRadius: '14px', padding: '24px', boxShadow: '0 1px 3px rgba(0,0,0,0.05), 0 4px 16px rgba(0,0,0,0.04)', border: '1px solid #f3f4f6' }}>
-      {(title || sub) && (
-        <div style={{ marginBottom: '16px' }}>
-          {title && <h2 style={{ margin: '0 0 3px', fontSize: '16px', fontWeight: 700, color: '#111827' }}>{title}</h2>}
-          {sub && <p style={{ margin: 0, fontSize: '13px', color: '#6b7280' }}>{sub}</p>}
+      {(title || sub || aside) && (
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '10px', marginBottom: '16px' }}>
+          <div>
+            {title && <h2 style={{ margin: '0 0 3px', fontSize: '16px', fontWeight: 700, color: '#111827' }}>{title}</h2>}
+            {sub && <p style={{ margin: 0, fontSize: '13px', color: '#6b7280' }}>{sub}</p>}
+          </div>
+          {aside && <div>{aside}</div>}
         </div>
       )}
       {children}
