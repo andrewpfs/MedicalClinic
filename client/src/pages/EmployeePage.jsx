@@ -1388,6 +1388,8 @@ const secondaryActionButton = {
   fontWeight: 700,
   cursor: 'pointer',
   fontFamily: 'inherit',
+  width: '80px',
+  textAlign: 'center',
 };
 
 const selectedEmployeeBanner = {
