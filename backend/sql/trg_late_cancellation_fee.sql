@@ -11,7 +11,7 @@ FOR EACH ROW
 BEGIN
   IF OLD.StatusCode != 3
      AND NEW.StatusCode = 3
-     AND TIMESTAMP(OLD.AppointmentDate, COALESCE(OLD.AppointmentTime, '00:00:00')) <= DATE_ADD(NOW(), INTERVAL 24 HOUR)
+     AND OLD.AppointmentDate <= DATE_ADD(NOW(), INTERVAL 24 HOUR)
   THEN
     INSERT INTO transaction
       (AppointmentID, PatientID, PaymentCode, Amount, TransactionDateTime, Status, DueDate)

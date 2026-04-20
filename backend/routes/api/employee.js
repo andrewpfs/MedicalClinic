@@ -42,7 +42,7 @@ async function loadReceptionistWorkspace(staffId) {
 
   const [appointments] = await db.query(`
     SELECT a.AppointmentID, a.PatientID, a.DoctorID,
-      a.AppointmentDate, a.AppointmentTime, a.ReasonForVisit, a.StatusCode, a.CreatedVia,
+      a.AppointmentDate, a.ReasonForVisit, a.StatusCode, a.CreatedVia,
       p.FName AS PatientFirstName, p.LName AS PatientLastName,
       e.FirstName AS DoctorFirstName, e.LastName AS DoctorLastName,
       e.Role AS DoctorRole, d.Specialty, s.AppointmentText AS StatusText
@@ -51,7 +51,7 @@ async function loadReceptionistWorkspace(staffId) {
     JOIN employee e ON a.DoctorID = e.EmployeeID
     LEFT JOIN doctor d ON a.DoctorID = d.EmployeeID
     LEFT JOIN appointmentstatus s ON a.StatusCode = s.AppointmentCode
-    ORDER BY a.AppointmentDate DESC, a.AppointmentTime DESC LIMIT 25
+    ORDER BY a.AppointmentDate DESC LIMIT 25
   `);
 
   const [transactions] = await db.query(`
@@ -155,7 +155,7 @@ router.get('/', async (req, res) => {
 
     const [appointments] = await db.query(`
       SELECT a.AppointmentID, a.PatientID, a.DoctorID,
-        a.AppointmentDate, a.AppointmentTime, a.ReasonForVisit, a.StatusCode, a.CreatedVia,
+        a.AppointmentDate, a.ReasonForVisit, a.StatusCode, a.CreatedVia,
         p.FName AS PatientFirstName, p.LName AS PatientLastName,
         e.FirstName AS DoctorFirstName, e.LastName AS DoctorLastName,
         e.Role AS DoctorRole, d.Specialty, s.AppointmentText AS StatusText
@@ -164,7 +164,7 @@ router.get('/', async (req, res) => {
       JOIN employee e ON a.DoctorID = e.EmployeeID
       LEFT JOIN doctor d ON a.DoctorID = d.EmployeeID
       LEFT JOIN appointmentstatus s ON a.StatusCode = s.AppointmentCode
-      ORDER BY a.AppointmentDate DESC, a.AppointmentTime DESC LIMIT 25
+      ORDER BY a.AppointmentDate DESC LIMIT 25
     `);
 
     const [transactions] = await db.query(`
@@ -286,7 +286,7 @@ router.get('/nurse', async (req, res) => {
 
     const apptQuery = assignedDoctorId
       ? `SELECT a.AppointmentID, a.PatientID, a.DoctorID, a.OfficeID,
-           a.AppointmentDate, a.AppointmentTime, a.ReasonForVisit, a.StatusCode,
+           a.AppointmentDate, a.ReasonForVisit, a.StatusCode,
            p.FName AS PatientFirstName, p.LName AS PatientLastName,
            e.FirstName AS DoctorFirstName, e.LastName AS DoctorLastName,
            s.AppointmentText AS StatusText
@@ -295,9 +295,9 @@ router.get('/nurse', async (req, res) => {
          JOIN employee e ON a.DoctorID = e.EmployeeID
          LEFT JOIN appointmentstatus s ON a.StatusCode = s.AppointmentCode
          WHERE a.DoctorID = ?
-         ORDER BY a.AppointmentDate DESC, a.AppointmentTime DESC LIMIT 25`
+         ORDER BY a.AppointmentDate DESC LIMIT 25`
       : `SELECT a.AppointmentID, a.PatientID, a.DoctorID, a.OfficeID,
-           a.AppointmentDate, a.AppointmentTime, a.ReasonForVisit, a.StatusCode,
+           a.AppointmentDate, a.ReasonForVisit, a.StatusCode,
            p.FName AS PatientFirstName, p.LName AS PatientLastName,
            e.FirstName AS DoctorFirstName, e.LastName AS DoctorLastName,
            s.AppointmentText AS StatusText
@@ -305,7 +305,7 @@ router.get('/nurse', async (req, res) => {
          JOIN patient p ON a.PatientID = p.PatientID
          JOIN employee e ON a.DoctorID = e.EmployeeID
          LEFT JOIN appointmentstatus s ON a.StatusCode = s.AppointmentCode
-         ORDER BY a.AppointmentDate DESC, a.AppointmentTime DESC LIMIT 25`;
+         ORDER BY a.AppointmentDate DESC LIMIT 25`;
 
     const [appointments] = assignedDoctorId
       ? await db.query(apptQuery, [assignedDoctorId])
@@ -349,13 +349,12 @@ router.post('/book', async (req, res) => {
       return res.status(400).json({ success: false, error: 'Invalid appointment date and time' });
     }
 
-    const sqlDate = dt.toISOString().split('T')[0];
-    const sqlTime = dt.toTimeString().split(' ')[0];
+    const sqlDateTime = dt.toISOString().slice(0, 19).replace('T', ' ');
 
     await db.query(`
-      INSERT INTO appointment (PatientID, DoctorID, AppointmentDate, AppointmentTime, ReasonForVisit, StatusCode, CreatedVia)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `, [patientId, doctorId, sqlDate, sqlTime, reasonForVisit || null, 1, 1]);
+      INSERT INTO appointment (PatientID, DoctorID, AppointmentDate, ReasonForVisit, StatusCode, CreatedVia)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `, [patientId, doctorId, sqlDateTime, reasonForVisit || null, 1, 1]);
 
     res.json({ success: true, message: 'Appointment booked successfully' });
   } catch (err) {
@@ -511,13 +510,30 @@ router.get('/nurse-assignments', async (req, res) => {
   }
 });
 
+router.get('/doctor-shifts/:doctorId', async (req, res) => {
+  const staff = getStaff(req);
+  if (!staff) return res.status(401).json({ success: false, error: 'Not logged in' });
+  try {
+    const [shifts] = await db.query(
+      `SELECT ShiftID, ShiftDate, StartTime, EndTime
+       FROM employee_shift
+       WHERE EmployeeID = ? AND ShiftDate >= CURDATE()
+       ORDER BY ShiftDate ASC, StartTime ASC`,
+      [req.params.doctorId]
+    );
+    res.json({ success: true, shifts });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 router.get('/today-schedule', async (req, res) => {
   const staff = getStaff(req);
   if (!staff) return res.status(401).json({ success: false, error: 'Not logged in' });
   const { doctorId } = req.query;
   try {
     let q = `
-      SELECT a.AppointmentID, a.AppointmentDate, a.AppointmentTime,
+      SELECT a.AppointmentID, a.AppointmentDate,
              a.ReasonForVisit, s.StatusText,
              p.PatientID, p.FName AS PatFirst, p.LName AS PatLast,
              e.EmployeeID AS DoctorID, e.FirstName AS DoctorFirst, e.LastName AS DoctorLast
