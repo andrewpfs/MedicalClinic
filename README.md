@@ -2,6 +2,8 @@
 
 A full-stack web application for managing a medical clinic built with React, Node.js/Express, and MySQL.
 
+**Hosted Application:** https://gentle-rock-0d78d0710.7.azurestaticapps.net/login
+
 ---
 
 ## Local Setup
