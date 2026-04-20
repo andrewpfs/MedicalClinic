@@ -1125,12 +1125,8 @@ function fmtWeekday(value) {
 }
 
 function fmtTime(dateValue, timeValue) {
-  if (timeValue) return fmtClock(timeValue);
-
-  if (!dateValue) return 'Not set';
-  const parsed = new Date(dateValue);
-  if (Number.isNaN(parsed.getTime())) return 'Not set';
-  return parsed.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  if (timeValue && timeValue !== '00:00') return fmtClock(timeValue);
+  return 'Not set';
 }
 
 function fmtClock(value) {

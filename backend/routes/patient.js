@@ -471,8 +471,7 @@ router.get('/api/payments', async (req, res) => {
        LEFT JOIN appointment a ON t.AppointmentID = a.AppointmentID
        LEFT JOIN employee e ON a.DoctorID = e.EmployeeID
        WHERE t.PatientID = ?
-         AND t.Status IN ('Pending', 'Cancellation')
-         AND (t.Status = 'Cancellation' OR a.StatusCode = 1)`,
+         AND t.Status IN ('Pending', 'Cancellation')`,
       [patientId]
     );
 

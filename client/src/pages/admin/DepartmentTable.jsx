@@ -50,39 +50,51 @@ function ViewRowForm({ row, onClose, onSave }) {
     justifyContent: 'center', zIndex: 1000
   }
   const modal = {
-    background: 'white', padding: '2rem', borderRadius: '12px',
-    width: '700px', maxHeight: '85vh', display: 'flex', flexDirection: 'column', gap: '1rem', overflowY: 'auto'
+    background: 'white', borderRadius: '14px', width: '860px', maxWidth: '95vw',
+    maxHeight: '85vh', display: 'flex', flexDirection: 'column', overflow: 'hidden',
+    boxShadow: '0 24px 60px rgba(0,0,0,0.18)'
   }
-  const submitBtn = { padding: '9px 20px', background: '#1e2b1b', color: 'white', border: 'none', borderRadius: '8px', fontSize: '14px', cursor: 'pointer', fontFamily: 'Poppins, sans-serif' }
-  const cancelBtn = { padding: '9px 20px', background: 'white', color: '#374151', border: '1px solid #d1d5db', borderRadius: '8px', fontSize: '14px', cursor: 'pointer', fontFamily: 'Poppins, sans-serif' }
-  const selectStyle = { padding: '9px 12px', border: '1px solid #d1d5db', borderRadius: '8px', fontSize: '14px', fontFamily: 'Poppins, sans-serif', minWidth: '220px' }
+  const modalHeader = {
+    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+    padding: '1.25rem 1.75rem', borderBottom: '1px solid #e5e7eb', flexShrink: 0
+  }
+  const modalBody = { overflowY: 'auto', flex: 1 }
+  const modalFooter = {
+    padding: '1rem 1.75rem', borderTop: '1px solid #e5e7eb',
+    display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap', flexShrink: 0,
+    background: '#f9fafb'
+  }
+  const submitBtn = { padding: '9px 24px', background: '#1e2b1b', color: 'white', border: 'none', borderRadius: '8px', fontSize: '14px', cursor: 'pointer', fontFamily: 'Poppins, sans-serif', fontWeight: 500 }
+  const cancelBtn = { padding: '8px 18px', background: 'white', color: '#374151', border: '1px solid #d1d5db', borderRadius: '8px', fontSize: '14px', cursor: 'pointer', fontFamily: 'Poppins, sans-serif' }
+  const selectStyle = { padding: '9px 12px', border: '1px solid #d1d5db', borderRadius: '8px', fontSize: '14px', fontFamily: 'Poppins, sans-serif', flex: 1, minWidth: '200px', maxWidth: '280px' }
 
   const empColumns = [
-    { name: 'Name', selector: r => `${r.FirstName} ${r.LastName}`, sortable: true },
-    { name: 'Role', selector: r => r.Role, sortable: true },
-    { name: 'Email', selector: r => r.Email },
-    { name: 'Phone', selector: r => r.PhoneNumber },
+    { name: 'Name', selector: r => `${r.FirstName} ${r.LastName}`, sortable: true, grow: 2 },
+    { name: 'Role', selector: r => r.Role, sortable: true, width: '130px' },
+    { name: 'Email', selector: r => r.Email, grow: 2 },
+    { name: 'Phone', selector: r => r.PhoneNumber, width: '140px' },
   ]
 
   return (
     <div style={overlay}>
       <div style={modal}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 500, color: '#1e2b1b' }}>
+        <div style={modalHeader}>
+          <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 600, color: '#1e2b1b' }}>
             {row.DepartmentName} — Employees
           </h2>
           <button style={cancelBtn} onClick={onClose}>Close</button>
         </div>
-        <DataTable
-          columns={empColumns}
-          data={employees}
-          selectableRows
-          onSelectedRowsChange={handleSelect}
-          customStyles={tableCustomStyles}
-          dense
-          noDataComponent="No employees in this department."
-        />
-        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
+        <div style={modalBody}>
+          <DataTable
+            columns={empColumns}
+            data={employees}
+            selectableRows
+            onSelectedRowsChange={handleSelect}
+            customStyles={tableCustomStyles}
+            noDataComponent="No employees in this department."
+          />
+        </div>
+        <div style={modalFooter}>
           <select style={selectStyle} value={targetDept} onChange={e => setTargetDept(e.target.value)}>
             <option value="">Transfer selected to…</option>
             {departments.filter(d => d.DepartmentID !== row.DepartmentID).map(d => (

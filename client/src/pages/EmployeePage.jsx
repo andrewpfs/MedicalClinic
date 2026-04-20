@@ -75,6 +75,7 @@ export default function EmployeePage({ mode = 'employee' }) {
     reasonForVisit: '',
   });
   const [bookShift, setBookShift] = useState(null);
+  const [bookDate, setBookDate] = useState('');
   const [todaySchedule, setTodaySchedule] = useState([]);
   const [schedDoctorId, setSchedDoctorId] = useState('');
   const [rescheduleData, setRescheduleData] = useState(null);
@@ -189,6 +190,7 @@ export default function EmployeePage({ mode = 'employee' }) {
         reasonForVisit: '',
       });
       setBookShift(null);
+      setBookDate('');
       setMessage({ type: 'success', text: payload.message });
       loadData();
     } catch (err) {

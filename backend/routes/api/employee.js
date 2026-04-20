@@ -40,9 +40,11 @@ async function loadReceptionistWorkspace(staffId) {
     SELECT PaymentCode, PaymentText FROM paymentmethod ORDER BY PaymentCode
   `);
 
-  const [appointments] = await db.query(`
+   const [appointments] = await db.query(`
     SELECT a.AppointmentID, a.PatientID, a.DoctorID,
-      a.AppointmentDate, a.ReasonForVisit, a.StatusCode,
+      DATE_FORMAT(a.AppointmentDate, '%Y-%m-%d') AS AppointmentDate,
+      TIME_FORMAT(a.AppointmentDate, '%H:%i') AS AppointmentTime,
+      a.ReasonForVisit, a.StatusCode,
       p.FName AS PatientFirstName, p.LName AS PatientLastName,
       e.FirstName AS DoctorFirstName, e.LastName AS DoctorLastName,
       e.Role AS DoctorRole, d.Specialty, s.AppointmentText AS StatusText
@@ -51,7 +53,7 @@ async function loadReceptionistWorkspace(staffId) {
     JOIN employee e ON a.DoctorID = e.EmployeeID
     LEFT JOIN doctor d ON a.DoctorID = d.EmployeeID
     LEFT JOIN appointmentstatus s ON a.StatusCode = s.AppointmentCode
-    ORDER BY a.AppointmentDate DESC LIMIT 25
+    ORDER BY a.AppointmentDate ASC LIMIT 25
   `);
 
   const [transactions] = await db.query(`
@@ -82,10 +84,11 @@ router.post('/login', async (req, res) => {
   const { employeeId, password } = req.body;
   try {
     const [rows] = await db.query(
-      'SELECT EmployeeID, FirstName, LastName, Role, Password FROM employee WHERE EmployeeID = ?',
+      'SELECT EmployeeID, FirstName, LastName, Role, Password, IsActive FROM employee WHERE EmployeeID = ?',
       [employeeId]
     );
     if (rows.length === 0) return res.status(404).json({ error: 'Employee not found.' });
+    if (!rows[0].IsActive) return res.status(403).json({ error: 'Your account is inactive. Please contact an administrator.' });
 
     const storedPassword = rows[0].Password || '';
     const looksHashed = storedPassword.startsWith('$2');
@@ -119,6 +122,23 @@ router.get('/session', (req, res) => {
 // Staff Logout
 router.get('/logout', (req, res) => {
   res.clearCookie('staffToken', staffCookieOptions).json({ success: true });
+});
+
+// Notifications (stub — returns empty until a notification table is added)
+router.get('/notifications', (req, res) => {
+  const staff = getStaff(req);
+  if (!staff) return res.status(401).json({ error: 'Not logged in' });
+  res.json([]);
+});
+router.patch('/notifications/:id/read', (req, res) => {
+  const staff = getStaff(req);
+  if (!staff) return res.status(401).json({ error: 'Not logged in' });
+  res.json({ success: true });
+});
+router.patch('/notifications/read-all', (req, res) => {
+  const staff = getStaff(req);
+  if (!staff) return res.status(401).json({ error: 'Not logged in' });
+  res.json({ success: true });
 });
 
 // Broad employee workspace

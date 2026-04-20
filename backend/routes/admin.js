@@ -137,6 +137,7 @@ router.get('/api/getdoctors', requireAdmin, async (req, res) => {
         const [rows] = await db.query(`
             SELECT e.EmployeeID, e.FirstName, e.LastName, d.Specialty
             FROM doctor d JOIN employee e ON d.EmployeeID = e.EmployeeID
+            WHERE e.IsActive != 0
             ORDER BY e.LastName, e.FirstName
         `);
         res.json(rows);
@@ -167,7 +168,7 @@ router.get('/api/pulldar', requireAdmin, async (req,res) => {
              FROM department AS D
              JOIN employee AS E ON E.DepartmentID = D.DepartmentID
              JOIN appointment AS A ON A.DoctorID = E.EmployeeID
-             WHERE A.AppointmentDate >= ? AND A.AppointmentDate <= ?`;
+             WHERE E.IsActive != 0 AND A.AppointmentDate >= ? AND A.AppointmentDate <= ?`;
     const params = [start, end];
     if (DepartmentName) { q += ' AND D.DepartmentName = ?'; params.push(DepartmentName); }
     q += ' GROUP BY E.EmployeeID ORDER BY Appointments DESC';
@@ -181,7 +182,7 @@ router.get('/api/pulldar', requireAdmin, async (req,res) => {
 })
 
 router.get('/api/pullgar', requireAdmin, async (req,res) => {
-    const q = "SELECT D.DepartmentName,COUNT(A.AppointmentID) AS 'Appointments' FROM department AS D,appointment AS A,employee AS E WHERE A.DoctorID=E.EmployeeID AND D.DepartmentID=E.DepartmentID AND A.AppointmentDate >= ? AND A.AppointmentDate <= ? GROUP BY D.DepartmentID ORDER BY Appointments DESC";
+    const q = "SELECT D.DepartmentName,COUNT(A.AppointmentID) AS 'Appointments' FROM department AS D,appointment AS A,employee AS E WHERE A.DoctorID=E.EmployeeID AND D.DepartmentID=E.DepartmentID AND E.IsActive != 0 AND A.AppointmentDate >= ? AND A.AppointmentDate <= ? GROUP BY D.DepartmentID ORDER BY Appointments DESC";
     const {min, max} = req.query;
 
     try {
@@ -194,7 +195,7 @@ router.get('/api/pullgar', requireAdmin, async (req,res) => {
 })
 
 router.get('/api/pullgrr', requireAdmin, async (req,res) => {
-    const q = "SELECT D.DepartmentName,SUM(T.Amount) AS 'Revenue' FROM department AS D,appointment AS A,employee AS E,transaction as T WHERE A.DoctorID=E.EmployeeID AND D.DepartmentID=E.DepartmentID AND T.AppointmentID=A.AppointmentID AND T.Status='Posted' AND A.AppointmentDate >= ? AND A.AppointmentDate <= ? GROUP BY D.DepartmentID ORDER BY Revenue DESC";
+    const q = "SELECT D.DepartmentName,SUM(T.Amount) AS 'Revenue' FROM department AS D,appointment AS A,employee AS E,transaction as T WHERE A.DoctorID=E.EmployeeID AND D.DepartmentID=E.DepartmentID AND E.IsActive != 0 AND T.AppointmentID=A.AppointmentID AND T.Status='Posted' AND A.AppointmentDate >= ? AND A.AppointmentDate <= ? GROUP BY D.DepartmentID ORDER BY Revenue DESC";
     const {min, max} = req.query;
 
     try {
@@ -210,7 +211,7 @@ router.get('/api/pullrevenue', requireAdmin, async (req,res) => {
     const q = `
     SELECT T.TransactionID AS "Id", P.FName AS "PatFirst", P.LName AS "PatLast", E.FirstName AS "DocFirst", E.LastName AS "DocLast",D.DepartmentName,D.DepartmentID,T.Amount,DATE_FORMAT(T.TransactionDateTime, '%Y-%m-%d') AS "Date",E.EmployeeID AS "DocID",T.Status,P.hasInsurance AS "Insurance"
     FROM transaction AS T, patient AS P,appointment AS A, employee AS E, department AS D
-    WHERE T.AppointmentID=A.AppointmentID AND T.PatientID=P.PatientID AND E.EmployeeID=A.DoctorID AND E.DepartmentID=D.DepartmentID`;
+    WHERE T.AppointmentID=A.AppointmentID AND T.PatientID=P.PatientID AND E.EmployeeID=A.DoctorID AND E.DepartmentID=D.DepartmentID AND E.IsActive != 0`;
 
     try {
         const [rows] = await db.query(q)
@@ -224,7 +225,7 @@ router.get('/api/pullreviews', requireAdmin, async (req,res) => {
     const q = `
     SELECT DR.ReviewID AS "Id", P.FName AS "PatFirst", P.LName AS "PatLast", E.FirstName AS "DocFirst", E.LastName AS "DocLast",D.DepartmentName,D.DepartmentID,DR.Rating,DATE_FORMAT(DR.CreatedAt, '%Y-%m-%d') AS "Date",E.EmployeeID AS "DocID"
     FROM doctor_review AS DR, patient AS P,appointment AS A, employee AS E, department AS D
-    WHERE DR.AppointmentID=A.AppointmentID AND DR.PatientID=P.PatientID AND E.EmployeeID=A.DoctorID AND E.DepartmentID=D.DepartmentID`;
+    WHERE DR.AppointmentID=A.AppointmentID AND DR.PatientID=P.PatientID AND E.EmployeeID=A.DoctorID AND E.DepartmentID=D.DepartmentID AND E.IsActive != 0`;
 
     try {
         const [rows] = await db.query(q)
@@ -238,7 +239,7 @@ router.get('/api/pullinvoice', requireAdmin, async (req,res) => {
     const q = `
     SELECT T.TransactionID AS "Id", P.FName AS "PatFirst", P.LName AS "PatLast", D.DepartmentName, T.Amount, DATE_FORMAT(T.TransactionDateTime, '%Y-%m-%d') AS "Date",T.LateFeeAmount AS Late, P.PatientID as PatID
     FROM transaction AS T, patient AS P,appointment AS A, employee AS E, department AS D
-    WHERE T.AppointmentID=A.AppointmentID AND T.PatientID=P.PatientID AND E.EmployeeID=A.DoctorID AND E.DepartmentID=D.DepartmentID AND T.Status="Pending"`;
+    WHERE T.AppointmentID=A.AppointmentID AND T.PatientID=P.PatientID AND E.EmployeeID=A.DoctorID AND E.DepartmentID=D.DepartmentID AND E.IsActive != 0 AND T.Status="Pending"`;
 
     try {
         const [rows] = await db.query(q)
@@ -268,7 +269,7 @@ router.get('/api/getdeptEmployees', requireAdmin, async (req,res) => {
     const q = `
     SELECT E.EmployeeID,E.FirstName,E.LastName,E.Role,E.Email,E.PhoneNumber,D.DepartmentID,D.DepartmentName 
     FROM employee AS E,department as D
-    WHERE D.DepartmentID=E.DepartmentID AND D.DepartmentID=?`;
+    WHERE D.DepartmentID=E.DepartmentID AND D.DepartmentID=? AND E.IsActive != 0`;
     
     try {
         const [rows] = await db.query(q,[DepartmentID])
@@ -331,7 +332,7 @@ router.get('/api/getdeptdoctors', requireAdmin, async (req,res) => {
     const q = `
     SELECT E.EmployeeID, E.FirstName, E.LastName, D.DepartmentName
     FROM employee AS E, department AS D, doctor AS DO
-    WHERE E.EmployeeID=DO.EmployeeID AND D.DepartmentID=E.DepartmentID`
+    WHERE E.EmployeeID=DO.EmployeeID AND D.DepartmentID=E.DepartmentID AND E.IsActive != 0`
 
     try {
         const [rows] = await db.query(q)
@@ -388,12 +389,13 @@ router.get('/api/pullpatientdoctor', requireAdmin, async (req,res) => {
         D.DepartmentName,
         DATE_FORMAT(A.AppointmentDate, '%Y-%m-%d') AS VisitDate,
         A.ReasonForVisit,
-        S.StatusText AS StatusText
+        S.AppointmentText AS StatusText
     FROM appointment AS A
     JOIN patient AS P ON A.PatientID = P.PatientID
     JOIN employee AS E ON A.DoctorID = E.EmployeeID
     JOIN department AS D ON E.DepartmentID = D.DepartmentID
-    JOIN appointmentstatus AS S ON A.StatusCode = S.StatusCode
+    JOIN appointmentstatus AS S ON A.StatusCode = S.AppointmentCode
+    WHERE E.IsActive != 0
     ORDER BY A.AppointmentDate DESC`;
     try {
         const [rows] = await db.query(q);

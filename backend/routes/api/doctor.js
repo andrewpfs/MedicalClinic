@@ -492,7 +492,6 @@ router.get('/messages', async (req, res) => {
       `SELECT
          a.AppointmentID,
          a.AppointmentDate,
-         
          p.PatientID,
          p.FName AS PatientFirstName,
          p.LName AS PatientLastName,
