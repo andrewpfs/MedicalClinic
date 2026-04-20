@@ -55,6 +55,7 @@ export default function EmployeePage({ mode = 'employee' }) {
   const [todaySchedule, setTodaySchedule] = useState([]);
   const [schedDoctorId, setSchedDoctorId] = useState('');
   const [rescheduleData, setRescheduleData] = useState(null);
+  const [doctorShifts, setDoctorShifts] = useState([]);
   const [payForm, setPayForm] = useState({
     appointmentId: '',
     patientId: '',
@@ -409,7 +410,17 @@ export default function EmployeePage({ mode = 'employee' }) {
                   <select
                     style={inputStyle}
                     value={bookForm.doctorId}
-                    onChange={(event) => setBookForm({ ...bookForm, doctorId: event.target.value })}
+                    onChange={(event) => {
+                      const doctorId = event.target.value;
+                      setBookForm({ ...bookForm, doctorId, appointmentDate: '' });
+                      setDoctorShifts([]);
+                      if (doctorId) {
+                        fetch(`${EMPLOYEE_API}/doctor-shifts/${doctorId}`, { credentials: 'include' })
+                          .then(r => r.json())
+                          .then(d => { if (d.success) setDoctorShifts(d.shifts); })
+                          .catch(() => {});
+                      }
+                    }}
                     required
                   >
                     <option value="">Select doctor</option>
@@ -421,14 +432,31 @@ export default function EmployeePage({ mode = 'employee' }) {
                   </select>
                 </Field>
 
-                <Field label="Date and Time">
-                  <input
-                    type="datetime-local"
-                    style={inputStyle}
-                    value={bookForm.appointmentDate}
-                    onChange={(event) => setBookForm({ ...bookForm, appointmentDate: event.target.value })}
-                    required
-                  />
+                <Field label="Available Shift">
+                  {bookForm.doctorId && doctorShifts.length === 0 ? (
+                    <p style={{ margin: 0, fontSize: '13px', color: '#6b7280' }}>No upcoming shifts for this doctor.</p>
+                  ) : (
+                    <select
+                      style={inputStyle}
+                      value={bookForm.appointmentDate}
+                      onChange={(event) => setBookForm({ ...bookForm, appointmentDate: event.target.value })}
+                      required
+                      disabled={!bookForm.doctorId}
+                    >
+                      <option value="">Select a shift</option>
+                      {doctorShifts.map((shift) => {
+                        const dateStr = String(shift.ShiftDate).slice(0, 10);
+                        const start = String(shift.StartTime).slice(0, 5);
+                        const end = String(shift.EndTime).slice(0, 5);
+                        const value = `${dateStr}T${String(shift.StartTime).slice(0, 5)}`;
+                        return (
+                          <option key={shift.ShiftID} value={value}>
+                            {dateStr} · {start}–{end}
+                          </option>
+                        );
+                      })}
+                    </select>
+                  )}
                 </Field>
 
                 <Field label="Reason for Visit">
