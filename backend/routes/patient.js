@@ -463,14 +463,18 @@ router.get('/api/payments', async (req, res) => {
       `SELECT DISTINCT
          t.TransactionID,
          t.Amount,
-         a.AppointmentDate,
-         e.LastName AS DoctorName
+         t.DueDate,
+         COALESCE(a.AppointmentDate, t.TransactionDateTime) AS AppointmentDate,
+         COALESCE(e.LastName, 'Cancellation Fee') AS DoctorName,
+         GREATEST(0, DATEDIFF(CURDATE(), t.DueDate)) AS DaysOverdue,
+         0 AS LateFeeAmount,
+         CASE WHEN t.Status = 'Cancellation' THEN 1 ELSE 0 END AS IsCancellationFee
        FROM transaction t
-       JOIN appointment a ON t.AppointmentID = a.AppointmentID
-       JOIN employee e ON a.DoctorID = e.EmployeeID
+       LEFT JOIN appointment a ON t.AppointmentID = a.AppointmentID
+       LEFT JOIN employee e ON a.DoctorID = e.EmployeeID
        WHERE t.PatientID = ?
-         AND t.Status = 'Pending'
-         AND a.StatusCode = 1`,
+         AND t.Status IN ('Pending', 'Cancellation')
+         AND (t.Status = 'Cancellation' OR a.StatusCode = 1)`,
       [patientId]
     );
 

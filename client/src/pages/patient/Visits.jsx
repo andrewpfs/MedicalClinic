@@ -352,6 +352,16 @@ export default function Visits() {
 
   const todayStr = toLocalDateString(new Date());
 
+  function isWithin24Hours(visit) {
+    if (!visit) return false;
+    const d = new Date(visit.AppointmentDate);
+    if (visit.AppointmentTime) {
+      const [h, m] = String(visit.AppointmentTime).split(':').map(Number);
+      d.setHours(h, m, 0, 0);
+    }
+    return d <= new Date(Date.now() + 24 * 60 * 60 * 1000);
+  }
+
   return (
     <div style={styles.body}>
       <Navbar />
@@ -602,6 +612,11 @@ export default function Visits() {
           <div style={styles.modal}>
             <div style={styles.modalBox}>
               <h3 style={styles.modalHeading}>Cancel appointment</h3>
+              {isWithin24Hours(cancelTarget) && (
+                <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: '8px', padding: '10px 14px', marginBottom: '12px', fontSize: '13px', color: '#9a3412' }}>
+                  ⚠️ This appointment is within 24 hours. A <strong>$15 late cancellation fee</strong> will be charged to your account.
+                </div>
+              )}
               <p style={styles.modalSub}>
                 Are you sure you want to cancel your appointment with <strong>Dr. {cancelTarget.FirstName} {cancelTarget.LastName}</strong> on <strong>{formatDate(cancelTarget.AppointmentDate)}</strong> at <strong>{formatTime(cancelTarget.AppointmentDate, cancelTarget.AppointmentTime)}</strong>? This cannot be undone.
               </p>

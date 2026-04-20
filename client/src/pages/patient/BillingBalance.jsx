@@ -163,8 +163,14 @@ export default function BillingBalance() {
             return (
               <div key={inv.TransactionID} style={isOverdue ? s.invoiceCardOverdue : s.invoiceCard}>
                 <div style={s.invoiceLeft}>
-                  <p style={s.invoiceTitle}>Invoice #{inv.TransactionID}</p>
-                  <p style={s.invoiceSub}>Visit on {formatDate(inv.AppointmentDate)} · Dr. {inv.DoctorName}</p>
+                  <p style={s.invoiceTitle}>
+                    {inv.IsCancellationFee ? 'Late Cancellation Fee' : `Invoice #${inv.TransactionID}`}
+                  </p>
+                  <p style={s.invoiceSub}>
+                    {inv.IsCancellationFee
+                      ? `Charged on ${formatDate(inv.AppointmentDate)} · Appointment cancelled within 24 hrs`
+                      : `Visit on ${formatDate(inv.AppointmentDate)} · Dr. ${inv.DoctorName}`}
+                  </p>
                   {dueDate && !isOverdue && <p style={{ ...s.invoiceSub, marginTop: '4px' }}>Due {dueDate}</p>}
                   {isOverdue && (
                     <p style={s.lateFeeNote}>{inv.DaysOverdue} day{inv.DaysOverdue > 1 ? 's' : ''} overdue · was due {dueDate}</p>
