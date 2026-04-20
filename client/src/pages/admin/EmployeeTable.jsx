@@ -81,11 +81,33 @@ function EditRowForm({ row, onClose, onSave }) {
   )
 }
 
+function ConfirmModal({ name, onConfirm, onCancel }) {
+  return (
+    <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000 }}>
+      <div style={{ background: 'white', borderRadius: '12px', padding: '2rem', maxWidth: '420px', width: '90%', boxShadow: '0 20px 60px rgba(0,0,0,0.15)' }}>
+        <h3 style={{ margin: '0 0 0.5rem', fontSize: '17px', fontWeight: 600, color: '#111827' }}>Mark as inactive?</h3>
+        <p style={{ margin: '0 0 1.5rem', fontSize: '14px', color: '#6b7280', lineHeight: 1.5 }}>
+          Mark <strong>{name}</strong> as inactive? They will no longer appear in department listings.
+        </p>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <button onClick={onConfirm} style={{ flex: 1, padding: '10px', background: '#dc2626', color: 'white', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Poppins, sans-serif' }}>
+            Yes, mark inactive
+          </button>
+          <button onClick={onCancel} style={{ flex: 1, padding: '10px', background: 'white', color: '#374151', border: '1px solid #d1d5db', borderRadius: '8px', fontSize: '14px', cursor: 'pointer', fontFamily: 'Poppins, sans-serif' }}>
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function EmployeeTable({ refreshKey = 0 }) {
   const [response, setResponse] = useState([])
   const [records, setRecords] = useState([])
   const [loading, setLoading] = useState(false)
   const [editingRow, setEditingRow] = useState(null)
+  const [confirmRow, setConfirmRow] = useState(null)
 
   async function fetchTableData() {
     setLoading(true)
@@ -100,8 +122,8 @@ function EmployeeTable({ refreshKey = 0 }) {
   const handleToggleActive = async (row) => {
     const newVal = row.IsActive ? 0 : 1
     if (newVal === 0) {
-      const confirmed = window.confirm(`Mark ${row.FirstName} ${row.LastName} as inactive? They will no longer appear in department listings.`)
-      if (!confirmed) return
+      setConfirmRow(row)
+      return
     }
     await fetch(`${API}/admin/api/toggleActive`, {
       method: 'POST',
@@ -109,6 +131,17 @@ function EmployeeTable({ refreshKey = 0 }) {
       credentials: 'include',
       body: JSON.stringify({ EmployeeID: row.EmployeeID, IsActive: newVal })
     })
+    fetchTableData()
+  }
+
+  const handleConfirmInactive = async () => {
+    await fetch(`${API}/admin/api/toggleActive`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ EmployeeID: confirmRow.EmployeeID, IsActive: 0 })
+    })
+    setConfirmRow(null)
     fetchTableData()
   }
 
@@ -180,6 +213,13 @@ function EmployeeTable({ refreshKey = 0 }) {
           row={editingRow}
           onClose={() => setEditingRow(null)}
           onSave={() => { setEditingRow(null); fetchTableData() }}
+        />
+      )}
+      {confirmRow && (
+        <ConfirmModal
+          name={`${confirmRow.FirstName} ${confirmRow.LastName}`}
+          onConfirm={handleConfirmInactive}
+          onCancel={() => setConfirmRow(null)}
         />
       )}
     </div>
